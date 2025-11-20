@@ -1,0 +1,46 @@
+<article class="timeline-entry article-entry{{if (not git?)}} article-entry--no-git{{end}}{{if git?}}{{if git.dirty?}} article-entry--dirty{{end}}{{end}}">
+  <header class="entry-header">
+      <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
+      {{if categoryPath?}}
+      <a href="{{categoryPath}}{{if anchorId?}}#{{anchorId}}{{end}}">{{title}}</a>
+      {{
+      else
+        title
+      end
+      }}
+    </h1>
+    <div class="entry-meta">
+      {{if category?}}
+      <p>
+        <span class="me-1">{{getMessage 'category'}}:</span>
+        {{if categoryPath?}}
+        <a class="badge rounded-pill text-decoration-none" href="{{categoryPath}}">{{getMessage category}}</a>
+        {{else}}
+        <span class="badge rounded-pill">{{getMessage category}}</span>
+        {{end}}
+      </p>
+      {{end}}
+      {{
+      if git?
+        if git.committer.date?
+      }}
+      <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' git.committer.date}}</p>
+      {{
+        end
+        if git.author.name?
+      }}
+      <p>{{getMessage 'author'}}: {{git.author.name}}</p>
+      {{elseif git.author.email?}}
+      <p>{{getMessage 'author'}}: {{git.author.email}}</p>
+      {{
+        end
+      else
+      }}
+      <p>({{getMessage 'uncommitted'}})</p>
+      {{end}}
+    </div>
+  </header>
+  <div class="entry-body">
+{{body}}
+  </div>
+</article>

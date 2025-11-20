@@ -1,0 +1,13 @@
+{
+  "name": "atr-doc-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "atr build"
+  },
+  "devDependencies": {
+    "atr": ">=0.1.0",
+    "vite": ">=5.0.0"
+  }
+}

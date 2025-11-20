@@ -1,0 +1,63 @@
+{
+  "variables": {
+    "baseUrl": "https://atr-doc-site.github.io",
+    "siteName": "atr-doc-site",
+    "siteDescription": "Sample a-terra-gorge site",
+    "locale": "en",
+    "frontPage": "timeline",
+    "headerIcon": "activity", // https://icons.getbootstrap.com/
+    "primaryColor": "#0080ff",
+    "secondaryColor": "#40ff40",
+    "inlineCodeColor": "#0080ff",
+    "siteTemplates": [
+      "style.css",
+      "site-script.js",
+      "feed.xml",
+      "atom.xml",
+      "sitemap.xml"
+    ]
+  },
+  "contentFiles": ["./**/*.png", "./**/*.jpg"],
+  "categories": ["timeline", "hello"],
+  "categoriesAfter": ["about"],
+  "messages": {
+    "en": {
+      "date": "Date",
+      "author": "Author",
+      "category": "Category",
+      "timeline": "Timeline",
+      "develop": "Develop",
+      "guide": "Guide",
+      "reference": "Reference",
+      "topics": "Topics",
+      "basics": "Basics",
+      "about": "About",
+      "endOfTimeline": "End of timeline.",
+      "noArticlesYet": "No articles yet.",
+      "uncommitted": "uncommitted"
+    },
+    "ja": {
+      "date": "日時",
+      "author": "執筆者",
+      "category": "カテゴリ",
+      "timeline": "タイムライン",
+      "develop": "開発",
+      "guide": "ガイド",
+      "reference": "リファレンス",
+      "topics": "トピック",
+      "basics": "基本",
+      "about": "About",
+      "endOfTimeline": "タイムラインは以上です",
+      "noArticlesYet": "文書はありません",
+      "uncommitted": "未コミット"
+    }
+  },
+  "codeHighlight": {
+    "lineNumbers": true,
+    "theme": {
+      // https://shiki.style/themes
+      "light": "light-plus",
+      "dark": "dark-plus"
+    }
+  }
+}

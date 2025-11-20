@@ -1,0 +1,108 @@
+<nav class="navbar navbar-expand-sm bg-body-tertiary">
+  <div class="container-fluid">
+    <button
+      class="navbar-toggler"
+      type="button"
+      data-bs-toggle="collapse"
+      data-bs-target="#navbarContent"
+      aria-controls="navbarContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    {{if siteName?}}
+    <a class="navbar-brand ms-2" href="#">{{siteName}}</a>
+    {{end}}
+    <div class="collapse navbar-collapse" id="navbarContent">
+      <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+        {{
+        for navItem navItems
+          if navItem.children?
+        }}
+        <li class="nav-item dropdown d-none d-sm-block">
+          <a
+            class="nav-link dropdown-toggle {{cond navItem.isActive 'active' ''}}"
+            href="#"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"><span class="nav-link-label">{{getMessage navItem.label}}</span></a>
+          <ul class="dropdown-menu">
+            {{for child navItem.children}}
+            <li>
+              <a class="dropdown-item {{cond child.isActive 'active' ''}}" href="{{child.href}}"><span class="nav-link-label">{{getMessage child.label}}</span></a>
+            </li>
+            {{end}}
+          </ul>
+        </li>
+        <li class="nav-item d-sm-none nav-item-nested">
+          <span class="nav-link nav-category-label {{cond navItem.isActive 'active' ''}}"><span class="nav-link-label">{{getMessage navItem.label}}</span></span>
+          <ul class="navbar-nav nav-submenu">
+            {{for child navItem.children}}
+            <li class="nav-item">
+              <a class="nav-link {{cond child.isActive 'active' ''}}" href="{{child.href}}"><span class="nav-link-label">{{getMessage child.label}}</span></a>
+            </li>
+            {{end}}
+          </ul>
+        </li>
+          {{else}}
+        <li class="nav-item">
+          <a class="nav-link {{cond navItem.isActive 'active' ''}}" href="{{navItem.href}}"><span class="nav-link-label">{{getMessage navItem.label}}</span></a>
+        </li>
+        {{
+          end
+        end
+        }}
+      </ul>
+      {{if navItemsAfter?}}
+      <ul class="navbar-nav mb-2 mb-sm-0 nav-items-after me-sm-2">
+        {{
+        for navItem navItemsAfter
+          if navItem.children?
+        }}
+        <li class="nav-item dropdown d-none d-sm-block">
+          <a
+            class="nav-link dropdown-toggle {{cond navItem.isActive 'active' ''}}"
+            href="#"
+            role="button"
+            data-bs-toggle="dropdown"
+            aria-expanded="false"><span class="nav-link-label">{{getMessage navItem.label}}</span></a>
+          <ul class="dropdown-menu">
+            {{for child navItem.children}}
+            <li>
+              <a class="dropdown-item {{cond child.isActive 'active' ''}}" href="{{child.href}}"><span class="nav-link-label">{{getMessage child.label}}</span></a>
+            </li>
+            {{end}}
+          </ul>
+        </li>
+        <li class="nav-item d-sm-none nav-item-nested">
+          <span class="nav-link nav-category-label {{cond navItem.isActive 'active' ''}}"><span class="nav-link-label">{{getMessage navItem.label}}</span></span>
+          <ul class="navbar-nav nav-submenu">
+            {{for child navItem.children}}
+            <li class="nav-item">
+              <a class="nav-link {{cond child.isActive 'active' ''}}" href="{{child.href}}"><span class="nav-link-label">{{getMessage child.label}}</span></a>
+            </li>
+            {{end}}
+          </ul>
+        </li>
+          {{else}}
+        <li class="nav-item">
+          <a class="nav-link {{cond navItem.isActive 'active' ''}}" href="{{navItem.href}}"><span class="nav-link-label">{{getMessage navItem.label}}</span></a>
+        </li>
+        {{
+          end
+        end
+        }}
+      </ul>
+      {{end}}
+      <div class="form-check form-switch m-0 align-items-center">
+        <input
+          class="form-check-input"
+          type="checkbox"
+          role="switch"
+          id="themeToggle"
+          aria-label="theme-switch" />
+        <i class="bi bi-moon-fill"></i>
+      </div>
+    </div>
+  </div>
+</nav>

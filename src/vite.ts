@@ -1,0 +1,8 @@
+// a-terra-gorge - Universal document-oriented markdown site generator
+// Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
+// Under MIT.
+// https://github.com/kekyo/a-terra-gorge
+
+///////////////////////////////////////////////////////////////////////////////////
+
+export * from './vite/index';

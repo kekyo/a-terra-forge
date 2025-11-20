@@ -1,0 +1,780 @@
+// a-terra-gorge - Universal document-oriented markdown site generator
+// Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
+// Under MIT.
+// https://github.com/kekyo/a-terra-gorge
+
+import { mkdtemp, mkdir, readFile, rename, rm, stat } from 'fs/promises';
+import { basename, dirname, join, relative, resolve } from 'path';
+import {
+  buildCandidateVariables,
+  combineVariables,
+  outputErrors,
+  type FunCityVariables,
+  type FunCityLogEntry,
+} from 'funcity';
+
+import { git_commit_hash, version } from './generated/packageMetadata';
+import type {
+  GitCommitMetadata,
+  AterraConfigOverrides,
+  AterraProcessingOptions,
+} from './types';
+import { collectGitMetadata } from './gitMetadata';
+import {
+  assertDirectoryExists,
+  collectArticleFiles,
+  copyTargetContentFiles,
+  getTrimmingConsoleLogger,
+  groupArticleFilesByDirectory,
+  loadAterraConfig,
+  mergeAterraConfig,
+  resolveAterraConfigPathFromDir,
+  adjustPath,
+  toRgbString,
+  toPosixRelativePath,
+  writeContentFile,
+  type ArticleFileInfo,
+} from './utils';
+import { applyHeaderIconCode, scriptVariables } from './process/helpers';
+import { defaultUserAgent, parseFrontmatterInfo } from './process/frontmatter';
+import {
+  readFileIfExists,
+  renderTemplateWithImportHandler,
+} from './process/templates';
+import {
+  buildNavOrderAfter,
+  buildNavOrderBefore,
+  buildOrderedNames,
+  resolveCategoryDestinationPath,
+  resolveTimelineDestinationPath,
+  splitDirectory,
+  timelineKey,
+  type NavCategory,
+} from './process/navigation';
+import {
+  generateDirectoryDocument,
+  type PageTemplateInfo,
+  type RenderedArticleInfo,
+} from './process/directory';
+import { generateTimelineDocument } from './process/timeline';
+import { buildSitemapUrls } from './process/sitemap';
+import { buildFeedTemplateData } from './process/feed';
+import { createWorkDir } from './worker/workdir';
+import {
+  buildRenderPlan,
+  loadRenderedSnapshots,
+  runRenderWorkers,
+} from './worker/renderPlan';
+
+///////////////////////////////////////////////////////////////////////////////////
+
+const filterGroupedArticleFiles = (
+  groupedArticleFiles: ReadonlyMap<string, ArticleFileInfo[]>,
+  categoriesWithSubcategories: ReadonlySet<string>,
+  reservedDirectories: ReadonlySet<string>,
+  logger: AterraProcessingOptions['logger'],
+  logWarnings: boolean
+): Map<string, ArticleFileInfo[]> => {
+  const filteredGroupedArticleFiles = new Map<string, ArticleFileInfo[]>();
+  for (const [directory, files] of groupedArticleFiles.entries()) {
+    if (reservedDirectories.has(directory)) {
+      continue;
+    }
+    const segments = splitDirectory(directory);
+    if (segments.length === 0) {
+      filteredGroupedArticleFiles.set(directory, files);
+      continue;
+    }
+    if (segments.length === 1) {
+      if (categoriesWithSubcategories.has(segments[0]!)) {
+        if (logWarnings) {
+          logger?.warn(
+            `warning: Articles in "${directory}" were ignored because subcategories are present.`
+          );
+        }
+        continue;
+      }
+      filteredGroupedArticleFiles.set(directory, files);
+      continue;
+    }
+    if (segments.length === 2) {
+      filteredGroupedArticleFiles.set(directory, files);
+      continue;
+    }
+    if (logWarnings) {
+      logger?.warn(
+        `warning: Articles in "${directory}" were ignored because nested categories are not supported.`
+      );
+    }
+  }
+  return filteredGroupedArticleFiles;
+};
+
+const defaultSiteTemplates = [
+  'style.css',
+  'site-script.js',
+  'feed.xml',
+  'atom.xml',
+  'sitemap.xml',
+];
+
+const normalizeSiteTemplates = (raw: unknown): string[] => {
+  const list: string[] = [];
+  if (Array.isArray(raw)) {
+    for (const entry of raw) {
+      if (typeof entry !== 'string') {
+        continue;
+      }
+      const trimmed = entry.trim();
+      if (!trimmed) {
+        continue;
+      }
+      list.push(trimmed);
+    }
+  } else if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (trimmed) {
+      list.push(trimmed);
+    }
+  }
+  const seen = new Set<string>();
+  return list.filter((entry) => {
+    if (seen.has(entry)) {
+      return false;
+    }
+    seen.add(entry);
+    return true;
+  });
+};
+
+type SiteTemplateEntry = {
+  name: string;
+  templatePath: string;
+  outputPath: string;
+  script: string;
+};
+
+const resolveSiteTemplateEntries = async (
+  templatesDir: string,
+  outDir: string,
+  siteTemplates: readonly string[]
+): Promise<SiteTemplateEntry[]> => {
+  const entries = await Promise.all(
+    siteTemplates.map(async (name) => {
+      const templatePath = resolve(templatesDir, name);
+      const script = await readFileIfExists(templatePath);
+      if (script === undefined) {
+        return undefined;
+      }
+      return {
+        name,
+        templatePath,
+        outputPath: resolve(outDir, name),
+        script,
+      } satisfies SiteTemplateEntry;
+    })
+  );
+  return entries.filter((entry): entry is SiteTemplateEntry => !!entry);
+};
+
+const renderSiteTemplates = async (
+  entries: readonly SiteTemplateEntry[],
+  variables: FunCityVariables,
+  configDir: string,
+  outDir: string,
+  finalOutDir: string,
+  logger: NonNullable<AterraProcessingOptions['logger']>,
+  signal: AbortSignal
+): Promise<void> => {
+  await Promise.all(
+    entries.map(async (entry) => {
+      const logs: FunCityLogEntry[] = [];
+      const rendered = await renderTemplateWithImportHandler(
+        entry.templatePath,
+        entry.script,
+        variables,
+        logs,
+        [entry.templatePath],
+        signal
+      );
+      const isError = outputErrors(entry.templatePath, logs);
+      if (!isError) {
+        await writeContentFile(entry.outputPath, rendered);
+        const builtPath = toPosixRelativePath(
+          configDir,
+          adjustPath(entry.outputPath, outDir, finalOutDir)
+        );
+        logger.info(`built: ${builtPath}`);
+      }
+    })
+  );
+};
+
+const ensureTrailingSlash = (value: string): string =>
+  value.endsWith('/') ? value : `${value}/`;
+
+/**
+ * Build documentation site output from markdown sources.
+ */
+export const generateDocs = async (
+  options: Readonly<AterraProcessingOptions>,
+  signal: AbortSignal,
+  configOverrides?: AterraConfigOverrides
+): Promise<void> => {
+  const docsDir = resolve(options.docsDir);
+  const templatesDir = resolve(options.templatesDir);
+  const finalOutDir = resolve(options.outDir);
+  const configPath = options.configPath
+    ? resolve(options.configPath)
+    : resolveAterraConfigPathFromDir(process.cwd());
+  const configDir = dirname(configPath);
+  const logger = options.logger ?? getTrimmingConsoleLogger();
+  const config = mergeAterraConfig(
+    await loadAterraConfig(configPath),
+    configOverrides
+  );
+
+  logger.info(`Preparing...`);
+
+  const configVariablesRaw = new Map(config.variables);
+
+  const primaryColorRgb = toRgbString(configVariablesRaw.get('primaryColor'));
+  if (primaryColorRgb && !configVariablesRaw.has('primaryColorRgb')) {
+    configVariablesRaw.set('primaryColorRgb', primaryColorRgb);
+  }
+  configVariablesRaw.delete('primaryColor');
+
+  const secondaryColorRgb = toRgbString(
+    configVariablesRaw.get('secondaryColor')
+  );
+  if (secondaryColorRgb && !configVariablesRaw.has('secondaryColorRgb')) {
+    configVariablesRaw.set('secondaryColorRgb', secondaryColorRgb);
+  }
+  configVariablesRaw.delete('secondaryColor');
+
+  const inlineCodeColorRgb = toRgbString(
+    configVariablesRaw.get('inlineCodeColor')
+  );
+  if (inlineCodeColorRgb && !configVariablesRaw.has('inlineCodeColorRgb')) {
+    configVariablesRaw.set('inlineCodeColorRgb', inlineCodeColorRgb);
+  }
+  configVariablesRaw.delete('inlineCodeColor');
+
+  const siteTemplatesRaw = configVariablesRaw.get('siteTemplates');
+  const hasSiteTemplates = configVariablesRaw.has('siteTemplates');
+  const normalizedSiteTemplates = normalizeSiteTemplates(siteTemplatesRaw);
+  const siteTemplates = hasSiteTemplates
+    ? normalizedSiteTemplates
+    : defaultSiteTemplates;
+  configVariablesRaw.set('siteTemplates', siteTemplates);
+
+  await assertDirectoryExists(templatesDir, 'templates');
+  await assertDirectoryExists(docsDir, 'docs');
+  const linkTarget = '_blank';
+  const userAgent = options.userAgent ?? defaultUserAgent;
+  const tmpDir = options.tmpDir ? resolve(options.tmpDir) : resolve('/tmp');
+
+  const articleFiles = await collectArticleFiles(docsDir, '.md');
+  if (articleFiles.length === 0) {
+    logger.warn(`warning: Any markdown files are not found (${docsDir})`);
+  }
+
+  articleFiles.sort();
+
+  const activeArticleFiles = (
+    await Promise.all(
+      articleFiles.map(async (articleFilePath) => {
+        const content = await readFile(articleFilePath, 'utf8');
+        const relativePath = relative(docsDir, articleFilePath);
+        const info = parseFrontmatterInfo(content, relativePath);
+        return info.draft ? undefined : articleFilePath;
+      })
+    )
+  ).filter((articleFilePath): articleFilePath is string =>
+    Boolean(articleFilePath)
+  );
+
+  const groupedArticleFiles = groupArticleFilesByDirectory(
+    activeArticleFiles,
+    docsDir
+  );
+  const allGroupedArticleFiles = groupArticleFilesByDirectory(
+    articleFiles,
+    docsDir
+  );
+  const subcategoryLookup = new Map<string, Map<string, string>>();
+  const categoriesWithSubcategories = new Set<string>();
+  const reservedDirectories = new Set<string>();
+  const isReservedTimelineDirectory = (directory: string): boolean =>
+    splitDirectory(directory).some((segment) => segment === timelineKey);
+
+  for (const directory of groupedArticleFiles.keys()) {
+    if (isReservedTimelineDirectory(directory)) {
+      reservedDirectories.add(directory);
+      logger.warn(
+        `warning: Articles in "${directory}" were ignored because "${timelineKey}" is reserved.`
+      );
+      continue;
+    }
+    const segments = splitDirectory(directory);
+    if (segments.length === 2) {
+      const category = segments[0]!;
+      const subcategory = segments[1]!;
+      const subcategories = subcategoryLookup.get(category) ?? new Map();
+      subcategories.set(subcategory, directory);
+      subcategoryLookup.set(category, subcategories);
+      categoriesWithSubcategories.add(category);
+    }
+  }
+
+  const filteredGroupedArticleFiles = filterGroupedArticleFiles(
+    groupedArticleFiles,
+    categoriesWithSubcategories,
+    reservedDirectories,
+    logger,
+    true
+  );
+  const filteredAllGroupedArticleFiles = filterGroupedArticleFiles(
+    allGroupedArticleFiles,
+    categoriesWithSubcategories,
+    reservedDirectories,
+    logger,
+    false
+  );
+
+  const variableFrontPage = configVariablesRaw.get('frontPage');
+  if (
+    variableFrontPage !== undefined &&
+    typeof variableFrontPage !== 'string'
+  ) {
+    throw new Error(`"frontPage" in variables must be a string: ${configPath}`);
+  }
+  const frontPageRaw =
+    typeof variableFrontPage === 'string' ? variableFrontPage : undefined;
+  const frontPage =
+    typeof frontPageRaw === 'string' && frontPageRaw.trim().length > 0
+      ? frontPageRaw.trim()
+      : timelineKey;
+  if (frontPage !== timelineKey) {
+    if (frontPage === '.' || /[\\/]/.test(frontPage)) {
+      throw new Error(`Front page category "${frontPage}" does not exist.`);
+    }
+    if (!filteredGroupedArticleFiles.has(frontPage)) {
+      throw new Error(`Front page category "${frontPage}" does not exist.`);
+    }
+  }
+
+  const outDir = await createOutputStagingDir(finalOutDir);
+  const siteTemplateEntries = await resolveSiteTemplateEntries(
+    templatesDir,
+    outDir,
+    siteTemplates
+  );
+  const baseUrlDependentTemplates = new Set([
+    'feed.xml',
+    'atom.xml',
+    'sitemap.xml',
+  ]);
+  const needsBaseUrl = siteTemplateEntries.some((entry) =>
+    baseUrlDependentTemplates.has(entry.name)
+  );
+  const baseUrlRaw = configVariablesRaw.get('baseUrl');
+  const trimmedBaseUrl =
+    typeof baseUrlRaw === 'string' ? baseUrlRaw.trim() : '';
+  let resolvedBaseUrl: URL | undefined;
+  if (needsBaseUrl && trimmedBaseUrl.length > 0) {
+    const normalizedBaseUrl = ensureTrailingSlash(trimmedBaseUrl);
+    try {
+      resolvedBaseUrl = new URL(normalizedBaseUrl);
+    } catch {
+      logger.warn(
+        `warning: Invalid baseUrl "${baseUrlRaw}", feed.xml/atom.xml/sitemap.xml were not generated.`
+      );
+    }
+  }
+  const filteredSiteTemplateEntries =
+    needsBaseUrl && !resolvedBaseUrl
+      ? siteTemplateEntries.filter(
+          (entry) => !baseUrlDependentTemplates.has(entry.name)
+        )
+      : siteTemplateEntries;
+  const siteTemplateOutputMap = new Map(
+    filteredSiteTemplateEntries.map((entry) => [entry.name, entry.outputPath])
+  );
+  let outputSwapped = false;
+  try {
+    const articleDirs = [...filteredGroupedArticleFiles.keys()].sort();
+    const navCategoryNames = new Set<string>();
+    for (const category of categoriesWithSubcategories) {
+      navCategoryNames.add(category);
+    }
+    for (const directory of filteredGroupedArticleFiles.keys()) {
+      const segments = splitDirectory(directory);
+      if (segments.length === 1) {
+        navCategoryNames.add(segments[0]!);
+      }
+    }
+    const categoryOrder = config.categories;
+    const categoryAfterOrder = config.categoriesAfter;
+    const combinedOrder = [...categoryOrder, ...categoryAfterOrder];
+    const includeTimeline = true;
+    const timelineInBefore = categoryOrder.includes(timelineKey);
+    const timelineInAfter = categoryAfterOrder.includes(timelineKey);
+    const includeTimelineInAfter =
+      includeTimeline && !timelineInBefore && timelineInAfter;
+    const includeTimelineInBefore = includeTimeline && !includeTimelineInAfter;
+    const afterSet = new Set(categoryAfterOrder);
+    const leftCategoryNames = [...navCategoryNames].filter(
+      (category) => !afterSet.has(category)
+    );
+    const rightCategoryNames = [...navCategoryNames].filter((category) =>
+      afterSet.has(category)
+    );
+
+    const navCategories: NavCategory[] = [...navCategoryNames]
+      .sort((a, b) => a.localeCompare(b))
+      .map((category) => {
+        const subcategories = subcategoryLookup.get(category);
+        if (!subcategories) {
+          return {
+            category,
+            subcategories: [],
+          };
+        }
+        const orderedSubcategories = buildOrderedNames(
+          [...subcategories.keys()],
+          combinedOrder
+        ).map((label) => ({
+          label,
+          path: subcategories.get(label)!,
+        }));
+        return {
+          category,
+          subcategories: orderedSubcategories,
+        };
+      });
+    const navCategoryMap = new Map(
+      navCategories.map((navCategory) => [navCategory.category, navCategory])
+    );
+    const navOrderBefore = buildNavOrderBefore(
+      leftCategoryNames,
+      categoryOrder,
+      includeTimelineInBefore
+    );
+    const navOrderAfter = buildNavOrderAfter(
+      rightCategoryNames,
+      categoryAfterOrder,
+      includeTimelineInAfter
+    );
+
+    const categoryIndexTemplatePath = join(templatesDir, 'index-category.html');
+    const categoryEntryTemplatePath = join(templatesDir, 'category-entry.html');
+    const timelineIndexTemplatePath = join(templatesDir, 'index-timeline.html');
+    const timelineEntryTemplatePath = join(templatesDir, 'timeline-entry.html');
+
+    const frontPagePrefix =
+      frontPage !== timelineKey ? `${frontPage.replaceAll('\\', '/')}/` : '';
+    const rewriteContentPath =
+      frontPage !== timelineKey
+        ? (relativePath: string) => {
+            const normalized = relativePath.replaceAll('\\', '/');
+            return normalized.startsWith(frontPagePrefix)
+              ? normalized.slice(frontPagePrefix.length)
+              : normalized;
+          }
+        : undefined;
+
+    const [
+      pageTemplateScript,
+      indexTemplateScript,
+      timelineEntryTemplateScript,
+      categoryEntryTemplateScript,
+    ] = await Promise.all([
+      readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
+      readFile(timelineIndexTemplatePath, { encoding: 'utf-8' }),
+      readFile(timelineEntryTemplatePath, { encoding: 'utf-8' }),
+      readFileIfExists(categoryEntryTemplatePath),
+      copyTargetContentFiles(docsDir, config.contentFiles, outDir, {
+        rewritePath: rewriteContentPath,
+        detectDuplicates: frontPage !== timelineKey,
+      }),
+    ]);
+
+    const pageTemplate: PageTemplateInfo = {
+      script: pageTemplateScript,
+      path: categoryIndexTemplatePath,
+    };
+
+    const indexTemplate: PageTemplateInfo = {
+      script: indexTemplateScript,
+      path: timelineIndexTemplatePath,
+    };
+    const timelineEntryTemplate: PageTemplateInfo = {
+      script: timelineEntryTemplateScript,
+      path: timelineEntryTemplatePath,
+    };
+    const categoryEntryTemplate: PageTemplateInfo | undefined =
+      categoryEntryTemplateScript
+        ? {
+            script: categoryEntryTemplateScript,
+            path: categoryEntryTemplatePath,
+          }
+        : undefined;
+
+    const articleFileInfos = Array.from(
+      filteredGroupedArticleFiles.values()
+    ).flat();
+    const codeHighlight = config.codeHighlight;
+    const enableGitMetadata = options.enableGitMetadata ?? true;
+    let renderedResults: RenderedArticleInfo[] = [];
+
+    if (articleFileInfos.length > 0) {
+      logger.info(`Render each articles [${articleFileInfos.length}]...`);
+
+      const gitMetadataPromise: Promise<
+        ReadonlyMap<string, GitCommitMetadata | undefined>
+      > =
+        enableGitMetadata && articleFileInfos.length > 0
+          ? collectGitMetadata(docsDir, articleFileInfos, logger)
+          : Promise.resolve(new Map<string, GitCommitMetadata | undefined>());
+
+      const workDir = await createWorkDir(tmpDir);
+      let cleanup = true;
+      try {
+        const plan = await buildRenderPlan(
+          Array.from(filteredAllGroupedArticleFiles.values()).flat(),
+          docsDir
+        );
+        await writeContentFile(
+          join(workDir, 'plan.json'),
+          JSON.stringify(plan)
+        );
+
+        await runRenderWorkers({
+          logger,
+          plan,
+          workDir,
+          cacheDir: options.cacheDir,
+          userAgent,
+          codeHighlight,
+          linkTarget,
+          signal,
+        });
+
+        const snapshots = await loadRenderedSnapshots(plan, workDir);
+        const gitMetadataByPath = await gitMetadataPromise;
+
+        const articleMap = new Map(
+          articleFileInfos.map((info) => [info.relativePath, info])
+        );
+
+        renderedResults = snapshots.map((snapshot) => {
+          const articleFile = articleMap.get(snapshot.relativePath);
+          if (!articleFile) {
+            throw new Error(
+              `Rendered output does not match article list: ${snapshot.relativePath}`
+            );
+          }
+          return {
+            articleFile,
+            result: {
+              html: snapshot.html,
+              frontmatter: snapshot.frontmatter,
+              uniqueIdPrefix: snapshot.uniqueIdPrefix,
+            },
+            timelineHtml: snapshot.timelineHtml,
+            git: gitMetadataByPath.get(snapshot.relativePath),
+          };
+        });
+      } catch (error) {
+        cleanup = false;
+        throw error;
+      } finally {
+        if (cleanup) {
+          await rm(workDir, { recursive: true, force: true });
+        } else {
+          logger.warn(`Render work directory retained: ${workDir}`);
+        }
+      }
+    }
+
+    logger.info('Finalizing now...');
+
+    const renderedByDir = new Map<string, RenderedArticleInfo[]>();
+    for (const rendered of renderedResults) {
+      const list = renderedByDir.get(rendered.articleFile.directory) ?? [];
+      list.push(rendered);
+      renderedByDir.set(rendered.articleFile.directory, list);
+    }
+
+    const documentPaths = new Set<string>();
+    if (includeTimeline) {
+      documentPaths.add(resolveTimelineDestinationPath(outDir, frontPage));
+    }
+
+    const configVariables = combineVariables(
+      {
+        $$messages$$: config.messages,
+        version,
+        git_commit_hash,
+      },
+      configVariablesRaw
+    );
+
+    await Promise.all(
+      articleDirs.map((articleDir) => {
+        if ((articleDir === '.' || articleDir === '') && includeTimeline) {
+          return Promise.resolve();
+        }
+
+        const renderedArticles = renderedByDir.get(articleDir) ?? [];
+        if (renderedArticles.length === 0) {
+          return Promise.resolve();
+        }
+
+        documentPaths.add(
+          resolveCategoryDestinationPath(outDir, articleDir, frontPage)
+        );
+        return generateDirectoryDocument(
+          logger,
+          configDir,
+          outDir,
+          finalOutDir,
+          articleDir,
+          renderedArticles,
+          pageTemplate,
+          categoryEntryTemplate,
+          configVariables,
+          navOrderBefore,
+          navOrderAfter,
+          navCategoryMap,
+          frontPage,
+          includeTimeline,
+          siteTemplateOutputMap,
+          signal
+        );
+      })
+    );
+
+    await generateTimelineDocument(
+      logger,
+      configDir,
+      outDir,
+      finalOutDir,
+      renderedResults,
+      indexTemplate,
+      configVariables,
+      navOrderBefore,
+      navOrderAfter,
+      navCategoryMap,
+      timelineEntryTemplate,
+      frontPage,
+      siteTemplateOutputMap,
+      signal
+    );
+
+    const siteTemplateData: Record<string, unknown> = {};
+    const hasFeedTemplates = filteredSiteTemplateEntries.some(
+      (entry) => entry.name === 'feed.xml' || entry.name === 'atom.xml'
+    );
+    const hasSitemapTemplate = filteredSiteTemplateEntries.some(
+      (entry) => entry.name === 'sitemap.xml'
+    );
+    if (resolvedBaseUrl) {
+      if (hasFeedTemplates) {
+        const feedData = await buildFeedTemplateData({
+          logger,
+          outDir,
+          baseUrl: resolvedBaseUrl,
+          renderedResults,
+          variables: configVariables,
+          frontPage,
+          siteTemplateOutputMap,
+        });
+        Object.assign(siteTemplateData, feedData);
+      }
+      if (hasSitemapTemplate) {
+        siteTemplateData.sitemapUrls = buildSitemapUrls({
+          outDir,
+          baseUrl: resolvedBaseUrl,
+          documentPaths: Array.from(documentPaths),
+        });
+      }
+    }
+
+    const siteTemplateVariables = applyHeaderIconCode(
+      buildCandidateVariables(
+        scriptVariables,
+        configVariables,
+        siteTemplateData
+      ),
+      configVariables
+    );
+
+    await renderSiteTemplates(
+      filteredSiteTemplateEntries,
+      siteTemplateVariables,
+      configDir,
+      outDir,
+      finalOutDir,
+      logger,
+      signal
+    );
+    await swapOutputDir(outDir, finalOutDir);
+    outputSwapped = true;
+  } finally {
+    if (!outputSwapped) {
+      await rm(outDir, { recursive: true, force: true });
+    }
+  }
+};
+
+const pathExists = async (targetPath: string): Promise<boolean> => {
+  try {
+    await stat(targetPath);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const createOutputStagingDir = async (finalOutDir: string): Promise<string> => {
+  const parentDir = dirname(finalOutDir);
+  await mkdir(parentDir, { recursive: true });
+  const baseName = basename(finalOutDir);
+  const prefix = join(parentDir, `${baseName}.atr-next-`);
+  return mkdtemp(prefix);
+};
+
+const swapOutputDir = async (
+  stagingDir: string,
+  finalOutDir: string
+): Promise<void> => {
+  const parentDir = dirname(finalOutDir);
+  const baseName = basename(finalOutDir);
+  const hasOutDir = await pathExists(finalOutDir);
+  const backupDir = hasOutDir
+    ? join(parentDir, `${baseName}.atr-prev-${Date.now()}`)
+    : undefined;
+
+  if (hasOutDir && backupDir) {
+    await rename(finalOutDir, backupDir);
+  }
+
+  try {
+    await rename(stagingDir, finalOutDir);
+  } catch (error) {
+    if (backupDir) {
+      try {
+        await rename(backupDir, finalOutDir);
+      } catch {
+        // ignore restore failure
+      }
+    }
+    throw error;
+  }
+
+  if (backupDir) {
+    await rm(backupDir, { recursive: true, force: true });
+  }
+};

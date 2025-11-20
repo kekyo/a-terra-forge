@@ -1,0 +1,78 @@
+{
+  "name": "a-terra-gorge",
+  "version": "0.1.0",
+  "description": "Universal document-oriented markdown site generator",
+  "author": "Kouji Matsui (@kekyo@mi.kekyo.net)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kekyo/a-terra-gorge"
+  },
+  "homepage": "https://github.com/kekyo/a-terra-gorge#readme",
+  "keywords": [
+    "document",
+    "article",
+    "markdown",
+    "site-generator"
+  ],
+  "readme": "README_pack.md",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./vite": {
+      "types": "./dist/vite.d.ts",
+      "import": "./dist/vite.mjs",
+      "require": "./dist/vite.cjs"
+    }
+  },
+  "bin": {
+    "atr": "./dist/index.cjs"
+  },
+  "files": [
+    "dist",
+    "scaffold",
+    "images/a-terra-gorge.120.png"
+  ],
+  "scripts": {
+    "metadata": "node scripts/generate-bootstrap-icons.js && npx screw-up metadata",
+    "build": "npm run metadata && vite build",
+    "dev": "npm run metadata && vite",
+    "test": "npm run build && vitest run",
+    "gen": "npm run build && node dist/index.cjs --docs demo/docs --templates scaffold/templates --out demo/dist --config demo/atr.json",
+    "pack": "npm run build && screw-up pack --pack-destination ./artifacts/"
+  },
+  "dependencies": {
+    "async-primitives": ">=1.5.0",
+    "commander": ">=14.0.0",
+    "dayjs": ">=1.11.0",
+    "debug": ">=4.4.0",
+    "funcity": "^1.1.0",
+    "glob": ">=11.0.0",
+    "isomorphic-git": ">=1.26.0",
+    "js-yaml": ">=4.1.0",
+    "json5": ">=2.2.0",
+    "mark-deco": ">=0.28.0"
+  },
+  "peerDependencies": {
+    "vite": ">=5.0.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": ">=4.0.0",
+    "@types/node": ">=20.0.0",
+    "bootstrap-icons": "^1.11.3",
+    "prettier-max": ">=1.14.0",
+    "screw-up": ">=1.26.0",
+    "simple-git": ">=3.26.0",
+    "typescript": ">=5.0.0",
+    "vite": ">=5.0.0",
+    "vite-plugin-dts": ">=3.0.0",
+    "vitest": ">=1.0.0"
+  }
+}
