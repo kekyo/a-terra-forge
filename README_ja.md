@@ -6,6 +6,7 @@
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![NPM](https://img.shields.io/npm/v/a-terra-gorge.svg)](https://www.npmjs.com/package/a-terra-gorge)|
 
 ---
 
@@ -38,7 +39,7 @@ a-terra-gorgeは、執筆中の文書はタイムラインページで追うこ�
 まずはNPMでa-terra-gorge CLIをインストールします:
 
 ```bash
-$ npm install -g a-terra-gorge
+$ npm i -g a-terra-gorge
 ```
 
 使用方法には大きく2通りありまます。CLIを直接使用する方法と、Viteプラグインを使用する方法です。
