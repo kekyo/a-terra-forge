@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { existsSync } from 'fs';
 import { copyFile, mkdir, readdir, rm, stat } from 'fs/promises';
@@ -13,7 +13,7 @@ import { assertDirectoryExists, getTrimmingConsoleLogger } from './utils';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-export interface AterraInitOptions {
+export interface ATerraForgeInitOptions {
   /** Target directory to scaffold into. */
   targetDir: string;
   /** Include Vite scaffold files (defaults to true). */
@@ -184,7 +184,7 @@ const executeCopyPlan = async (
 };
 
 export const initScaffold = async (
-  options: Readonly<AterraInitOptions>
+  options: Readonly<ATerraForgeInitOptions>
 ): Promise<void> => {
   const targetDir = resolve(options.targetDir);
   const includeVite = options.includeVite ?? true;

@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { mkdtemp, mkdir, readFile, rename, rm, stat } from 'fs/promises';
 import { basename, dirname, join, relative, resolve } from 'path';
@@ -16,8 +16,8 @@ import {
 import { git_commit_hash, version } from './generated/packageMetadata';
 import type {
   GitCommitMetadata,
-  AterraConfigOverrides,
-  AterraProcessingOptions,
+  ATerraForgeConfigOverrides,
+  ATerraForgeProcessingOptions,
 } from './types';
 import { collectGitMetadata } from './gitMetadata';
 import {
@@ -26,9 +26,9 @@ import {
   copyTargetContentFiles,
   getTrimmingConsoleLogger,
   groupArticleFilesByDirectory,
-  loadAterraConfig,
-  mergeAterraConfig,
-  resolveAterraConfigPathFromDir,
+  loadATerraForgeConfig,
+  mergeATerraForgeConfig,
+  resolveATerraForgeConfigPathFromDir,
   adjustPath,
   toRgbString,
   toPosixRelativePath,
@@ -72,7 +72,7 @@ const filterGroupedArticleFiles = (
   groupedArticleFiles: ReadonlyMap<string, ArticleFileInfo[]>,
   categoriesWithSubcategories: ReadonlySet<string>,
   reservedDirectories: ReadonlySet<string>,
-  logger: AterraProcessingOptions['logger'],
+  logger: ATerraForgeProcessingOptions['logger'],
   logWarnings: boolean
 ): Map<string, ArticleFileInfo[]> => {
   const filteredGroupedArticleFiles = new Map<string, ArticleFileInfo[]>();
@@ -183,7 +183,7 @@ const renderSiteTemplates = async (
   configDir: string,
   outDir: string,
   finalOutDir: string,
-  logger: NonNullable<AterraProcessingOptions['logger']>,
+  logger: NonNullable<ATerraForgeProcessingOptions['logger']>,
   signal: AbortSignal
 ): Promise<void> => {
   await Promise.all(
@@ -217,20 +217,20 @@ const ensureTrailingSlash = (value: string): string =>
  * Build documentation site output from markdown sources.
  */
 export const generateDocs = async (
-  options: Readonly<AterraProcessingOptions>,
+  options: Readonly<ATerraForgeProcessingOptions>,
   signal: AbortSignal,
-  configOverrides?: AterraConfigOverrides
+  configOverrides?: ATerraForgeConfigOverrides
 ): Promise<void> => {
   const docsDir = resolve(options.docsDir);
   const templatesDir = resolve(options.templatesDir);
   const finalOutDir = resolve(options.outDir);
   const configPath = options.configPath
     ? resolve(options.configPath)
-    : resolveAterraConfigPathFromDir(process.cwd());
+    : resolveATerraForgeConfigPathFromDir(process.cwd());
   const configDir = dirname(configPath);
   const logger = options.logger ?? getTrimmingConsoleLogger();
-  const config = mergeAterraConfig(
-    await loadAterraConfig(configPath),
+  const config = mergeATerraForgeConfig(
+    await loadATerraForgeConfig(configPath),
     configOverrides
   );
 

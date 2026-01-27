@@ -1,8 +1,8 @@
-# a-terra-gorge
+# a-terra-forge
 
 Universal document-oriented markdown site generator
 
-![a-terra-gorge](./images/a-terra-gorge.120.png)
+![a-terra-forge](./images/a-terra-forge.120.png)
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -14,7 +14,7 @@ Universal document-oriented markdown site generator
 Have you ever felt like writing documents that are somewhat organized, bit by bit?
 General blog systems are cumbersome to manage, and simple blog generators are primarily designed for writing “blogs,” making it difficult to present documents cohesively and ensure readers can follow them smoothly.
 
-a-terra-gorge is a document site generator that lets you track documents in progress via a timeline page while also grouping and displaying documents by category.
+a-terra-forge is a document site generator that lets you track documents in progress via a timeline page while also grouping and displaying documents by category.
 It features:
 
 - As a static site generator, no server is required. Deploy and publish to any web server, such as GitHub Pages.
@@ -33,10 +33,10 @@ TODO:
 
 ## How to use
 
-Install a-terra-gorge CLI interface via NPM:
+Install a-terra-forge CLI interface via NPM:
 
 ```bash
-$ npm i -g a-terra-gorge
+$ npm i -g a-terra-forge
 ```
 
 ### Initialize a document site space

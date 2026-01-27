@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { existsSync } from 'fs';
 import {
@@ -34,12 +34,12 @@ import type { FunCityVariables } from 'funcity';
 
 import type {
   Logger,
-  AterraConfig,
-  AterraConfigInput,
-  AterraConfigOverrides,
-  AterraMessageList,
-  AterraMessageListByLocale,
-  AterraProcessingOptions,
+  ATerraForgeConfig,
+  ATerraForgeConfigInput,
+  ATerraForgeConfigOverrides,
+  ATerraForgeMessageList,
+  ATerraForgeMessageListByLocale,
+  ATerraForgeProcessingOptions,
 } from './types';
 
 //////////////////////////////////////////////////////////////////////////////
@@ -384,7 +384,7 @@ const recordToMapSkippingUndefined = (
 
 const buildMessageList = (
   value: Record<string, unknown>
-): AterraMessageList => {
+): ATerraForgeMessageList => {
   const map = new Map<string, string>();
   for (const key of Object.keys(value)) {
     map.set(key, String(value[key]));
@@ -395,8 +395,8 @@ const buildMessageList = (
 const buildMessageListByLocale = (
   value: Record<string, unknown>,
   configPath: string
-): AterraMessageListByLocale => {
-  const map = new Map<string, AterraMessageList>();
+): ATerraForgeMessageListByLocale => {
+  const map = new Map<string, ATerraForgeMessageList>();
   const keys = Object.keys(value);
   const isFlatList =
     keys.length > 0 && keys.every((key) => !isRecord(value[key]));
@@ -519,7 +519,7 @@ const parseVariablesOverrides = (
 const parseMessages = (
   value: unknown,
   configPath: string
-): AterraMessageListByLocale => {
+): ATerraForgeMessageListByLocale => {
   if (value === undefined) {
     return new Map();
   }
@@ -532,7 +532,7 @@ const parseMessages = (
 const parseMessagesOverrides = (
   value: unknown,
   configPath: string
-): AterraMessageListByLocale | undefined => {
+): ATerraForgeMessageListByLocale | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -661,7 +661,7 @@ const parseCategoriesAfter = (
     ? []
     : parseStringList(value, configPath, 'categoriesAfter');
 
-const createDefaultAterraConfig = (): AterraConfig => ({
+const createDefaultATerraForgeConfig = (): ATerraForgeConfig => ({
   variables: new Map(),
   messages: new Map(),
   codeHighlight: defaultCodeHighlightConfig,
@@ -670,10 +670,10 @@ const createDefaultAterraConfig = (): AterraConfig => ({
   categoriesAfter: [],
 });
 
-const parseAterraConfigObject = (
+const parseATerraForgeConfigObject = (
   parsed: Record<string, unknown>,
   configPath: string
-): AterraConfig => ({
+): ATerraForgeConfig => ({
   variables: parseVariables(parsed.variables, configPath),
   messages: parseMessages(parsed.messages, configPath),
   codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
@@ -682,15 +682,15 @@ const parseAterraConfigObject = (
   categoriesAfter: parseCategoriesAfter(parsed.categoriesAfter, configPath),
 });
 
-export const parseAterraConfigOverrides = (
-  input: AterraConfigInput | undefined,
+export const parseATerraForgeConfigOverrides = (
+  input: ATerraForgeConfigInput | undefined,
   configPath: string
-): AterraConfigOverrides => {
+): ATerraForgeConfigOverrides => {
   if (!input) {
     return {};
   }
 
-  const overrides: AterraConfigOverrides = {};
+  const overrides: ATerraForgeConfigOverrides = {};
 
   if (input.variables !== undefined) {
     overrides.variables = parseVariablesOverrides(input.variables, configPath);
@@ -734,10 +734,10 @@ export const parseAterraConfigOverrides = (
   return overrides;
 };
 
-export const mergeAterraConfig = (
-  baseConfig: AterraConfig,
-  overrides: AterraConfigOverrides | undefined
-): AterraConfig => {
+export const mergeATerraForgeConfig = (
+  baseConfig: ATerraForgeConfig,
+  overrides: ATerraForgeConfigOverrides | undefined
+): ATerraForgeConfig => {
   if (!overrides) {
     return baseConfig;
   }
@@ -761,7 +761,9 @@ export const mergeAterraConfig = (
 
 const defaultConfigFileNames = ['atr.json5', 'atr.jsonc', 'atr.json'] as const;
 
-export const resolveAterraConfigPathFromDir = (configDir: string): string => {
+export const resolveATerraForgeConfigPathFromDir = (
+  configDir: string
+): string => {
   const resolvedDir = resolve(configDir);
   for (const filename of defaultConfigFileNames) {
     const candidate = join(resolvedDir, filename);
@@ -774,9 +776,9 @@ export const resolveAterraConfigPathFromDir = (configDir: string): string => {
   return join(resolvedDir, fallbackName);
 };
 
-export const loadAterraConfig = async (
+export const loadATerraForgeConfig = async (
   configPath: string
-): Promise<AterraConfig> => {
+): Promise<ATerraForgeConfig> => {
   try {
     const content = await readFile(configPath, 'utf8');
     const parsed = JSON5.parse<Record<string, unknown>>(content);
@@ -785,10 +787,10 @@ export const loadAterraConfig = async (
       throw new Error(`atr.json must be an object: ${configPath}`);
     }
 
-    return parseAterraConfigObject(parsed, configPath);
+    return parseATerraForgeConfigObject(parsed, configPath);
   } catch (error: unknown) {
     if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-      return createDefaultAterraConfig();
+      return createDefaultATerraForgeConfig();
     }
 
     const message = error instanceof Error ? error.message : String(error);
@@ -817,11 +819,11 @@ const resolveVariablePath = (
   return trimmed ? resolve(baseDir, trimmed) : undefined;
 };
 
-export const resolveAterraProcessingOptionsFromVariables = (
+export const resolveATerraForgeProcessingOptionsFromVariables = (
   variables: FunCityVariables,
   baseDir: string
-): Partial<AterraProcessingOptions> => {
-  const resolved: Partial<AterraProcessingOptions> = {};
+): Partial<ATerraForgeProcessingOptions> => {
+  const resolved: Partial<ATerraForgeProcessingOptions> = {};
 
   const docsDir = resolveVariablePath(variables, baseDir, 'docsDir');
   if (docsDir) {

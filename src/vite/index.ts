@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { watch, type FSWatcher } from 'fs';
 import { dirname, isAbsolute, join, relative, resolve } from 'path';
@@ -19,16 +19,16 @@ import { generateDocs } from '../process';
 import { createConsoleLogger, createViteLoggerAdapter } from '../logger';
 import type {
   Logger,
-  AterraConfigInput,
-  AterraConfigOverrides,
-  AterraProcessingOptions,
+  ATerraForgeConfigInput,
+  ATerraForgeConfigOverrides,
+  ATerraForgeProcessingOptions,
 } from '../types';
 import {
-  loadAterraConfig,
-  mergeAterraConfig,
-  parseAterraConfigOverrides,
-  resolveAterraConfigPathFromDir,
-  resolveAterraProcessingOptionsFromVariables,
+  loadATerraForgeConfig,
+  mergeATerraForgeConfig,
+  parseATerraForgeConfigOverrides,
+  resolveATerraForgeConfigPathFromDir,
+  resolveATerraForgeProcessingOptionsFromVariables,
 } from '../utils';
 import { createPreviewHtmlNotFoundMiddleware } from './previewMiddleware';
 import { collectGitWatchTargets, resolveGitDir } from './gitWatch';
@@ -36,9 +36,9 @@ import { collectGitWatchTargets, resolveGitDir } from './gitWatch';
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
- * a-terra-gorge preview plugin options.
+ * a-terra-forge preview plugin options.
  */
-export interface AterraVitePluginOptions extends AterraConfigInput {
+export interface ATerraForgeVitePluginOptions extends ATerraForgeConfigInput {
   /** Path to atr config (defaults to atr.json5/atr.jsonc/atr.json in the Vite root when omitted). */
   configPath?: string;
   /** Temporary working directory base (defaults to /tmp when omitted). */
@@ -49,7 +49,9 @@ const resolveConfigPath = (
   configPath: string | undefined,
   baseDir: string
 ): string =>
-  configPath ? resolve(configPath) : resolveAterraConfigPathFromDir(baseDir);
+  configPath
+    ? resolve(configPath)
+    : resolveATerraForgeConfigPathFromDir(baseDir);
 
 const isWithinDir = (filePath: string, dirPath: string): boolean => {
   const relativePath = relative(dirPath, filePath);
@@ -62,11 +64,13 @@ const isWithinDir = (filePath: string, dirPath: string): boolean => {
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
- * a-terra-gorge preview plugin for Vite.
- * @param options - a-terra-gorge options.
+ * a-terra-forge preview plugin for Vite.
+ * @param options - a-terra-forge options.
  * @returns Vite plugin instance.
  */
-export const atrPreview = (options: AterraVitePluginOptions = {}): Plugin => {
+export const atrPreview = (
+  options: ATerraForgeVitePluginOptions = {}
+): Plugin => {
   const defaultCacheDir = process.env.HOME
     ? join(process.env.HOME, '.cache', 'atr')
     : '.cache';
@@ -76,10 +80,8 @@ export const atrPreview = (options: AterraVitePluginOptions = {}): Plugin => {
   const defaultTmpDir = resolve('/tmp');
   const defaultCacheDirResolved = resolve(defaultCacheDir);
   let configPath = resolveConfigPath(options.configPath, process.cwd());
-  const configOverrides: AterraConfigOverrides = parseAterraConfigOverrides(
-    options,
-    configPath
-  );
+  const configOverrides: ATerraForgeConfigOverrides =
+    parseATerraForgeConfigOverrides(options, configPath);
   let docsDir = defaultDocsDir;
   let templatesDir = defaultTemplatesDir;
   const pluginName = `atr-vite-plugin`;
@@ -161,40 +163,44 @@ export const atrPreview = (options: AterraVitePluginOptions = {}): Plugin => {
     watchedGitDir = gitDir;
   };
 
-  const resolveRuntimeOptions = async (): Promise<AterraProcessingOptions> => {
-    const baseConfig = await loadAterraConfig(configPath);
-    const resolvedConfig = mergeAterraConfig(baseConfig, configOverrides);
-    const variableOptions = resolveAterraProcessingOptionsFromVariables(
-      resolvedConfig.variables,
-      dirname(configPath)
-    );
+  const resolveRuntimeOptions =
+    async (): Promise<ATerraForgeProcessingOptions> => {
+      const baseConfig = await loadATerraForgeConfig(configPath);
+      const resolvedConfig = mergeATerraForgeConfig(
+        baseConfig,
+        configOverrides
+      );
+      const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
+        resolvedConfig.variables,
+        dirname(configPath)
+      );
 
-    docsDir = variableOptions.docsDir ?? defaultDocsDir;
-    templatesDir = variableOptions.templatesDir ?? defaultTemplatesDir;
+      docsDir = variableOptions.docsDir ?? defaultDocsDir;
+      templatesDir = variableOptions.templatesDir ?? defaultTemplatesDir;
 
-    const outDir = variableOptions.outDir ?? defaultOutDir;
-    const cacheDir = variableOptions.cacheDir ?? defaultCacheDirResolved;
-    const tmpDir = options.tmpDir
-      ? resolve(options.tmpDir)
-      : (variableOptions.tmpDir ?? defaultTmpDir);
+      const outDir = variableOptions.outDir ?? defaultOutDir;
+      const cacheDir = variableOptions.cacheDir ?? defaultCacheDirResolved;
+      const tmpDir = options.tmpDir
+        ? resolve(options.tmpDir)
+        : (variableOptions.tmpDir ?? defaultTmpDir);
 
-    updateWatchTargets([docsDir, templatesDir, configPath]);
-    await updateGitWatchTargets(
-      docsDir,
-      variableOptions.enableGitMetadata ?? true
-    );
+      updateWatchTargets([docsDir, templatesDir, configPath]);
+      await updateGitWatchTargets(
+        docsDir,
+        variableOptions.enableGitMetadata ?? true
+      );
 
-    return {
-      docsDir,
-      templatesDir,
-      outDir,
-      tmpDir,
-      cacheDir,
-      enableGitMetadata: variableOptions.enableGitMetadata ?? true,
-      userAgent: variableOptions.userAgent,
-      configPath,
+      return {
+        docsDir,
+        templatesDir,
+        outDir,
+        tmpDir,
+        cacheDir,
+        enableGitMetadata: variableOptions.enableGitMetadata ?? true,
+        userAgent: variableOptions.userAgent,
+        configPath,
+      };
     };
-  };
 
   const runGenerate = async (): Promise<void> => {
     if (running) {
@@ -253,7 +259,7 @@ export const atrPreview = (options: AterraVitePluginOptions = {}): Plugin => {
     configureServer(devServer) {
       server = devServer;
       if (!options.configPath) {
-        configPath = resolveAterraConfigPathFromDir(devServer.config.root);
+        configPath = resolveATerraForgeConfigPathFromDir(devServer.config.root);
       }
       const viteLogger =
         devServer.config.customLogger ?? devServer.config.logger;
@@ -263,7 +269,7 @@ export const atrPreview = (options: AterraVitePluginOptions = {}): Plugin => {
         pluginName,
         debugNamespace
       );
-      logger.info(`a-terra-gorge - ${description}`);
+      logger.info(`a-terra-forge - ${description}`);
       logger.info(`Copyright (c) ${author}`);
       logger.info(`License under ${license}`);
       logger.info(repository_url);

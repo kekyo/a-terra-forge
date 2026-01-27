@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join, relative, resolve } from 'path';
@@ -12,7 +12,7 @@ import { defaultProviderList } from 'mark-deco/misc';
 
 import { generateDocs } from '../src/process';
 import { copyTargetContentFiles, toPosixRelativePath } from '../src/utils';
-import type { AterraProcessingOptions } from '../src/types';
+import type { ATerraForgeProcessingOptions } from '../src/types';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -115,7 +115,7 @@ Details here`,
     await writeFile(join(templatesDir, 'style.css'), cssContent, 'utf8');
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -167,7 +167,7 @@ Details here`,
     await writeFile(configPath, '{}', 'utf8');
 
     const infoMessages: string[] = [];
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -225,7 +225,7 @@ Details here`,
     );
 
     const infoMessages: string[] = [];
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -300,7 +300,7 @@ Details here`,
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -396,7 +396,7 @@ Details here`,
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -471,7 +471,7 @@ Details here`,
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -507,7 +507,7 @@ Details here`,
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -546,7 +546,7 @@ Details here`,
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -596,7 +596,7 @@ Details here`,
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -660,7 +660,7 @@ More text
     await writeFile(join(templatesDir, 'style.css'), cssContent, 'utf8');
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -734,7 +734,7 @@ title: Frontmatter Title
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -808,7 +808,7 @@ Body text
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -882,7 +882,7 @@ title: Entry
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -943,7 +943,7 @@ title: Beta
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -998,7 +998,7 @@ title: Beta
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1073,7 +1073,7 @@ title: Gamma
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1135,7 +1135,7 @@ title: Note
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1197,7 +1197,7 @@ Second body
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1266,7 +1266,7 @@ Second body
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1301,7 +1301,7 @@ Second body
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1345,7 +1345,7 @@ Details here
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1393,7 +1393,7 @@ Details here
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1452,7 +1452,7 @@ Details here
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1521,7 +1521,7 @@ Details here
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir,
       templatesDir,
       outDir,
@@ -1601,7 +1601,7 @@ title: Second
     await commitWithDate(firstPath, '2024-01-01T00:00:00Z');
     await commitWithDate(secondPath, '2024-02-01T00:00:00Z');
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1689,7 +1689,7 @@ Dirty edit`,
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1759,7 +1759,7 @@ title: Uncommitted
       })
       .commit('Commit committed', relCommitted);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1807,7 +1807,7 @@ title: Reference
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -1916,7 +1916,7 @@ title: Reference
     await writeRequiredTemplates(templatesDir);
 
     const warnings: string[] = [];
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -2024,7 +2024,7 @@ title: ${title}
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -2091,7 +2091,7 @@ console.log(value);
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -2203,7 +2203,7 @@ Dirty edit`,
         '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}</section></article>',
     });
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -2314,7 +2314,7 @@ Body
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -2458,7 +2458,7 @@ Draft body
       })
       .commit('Commit committed', relCommitted);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
       outDir: outDir,
@@ -2525,7 +2525,7 @@ Draft body
     );
     await writeRequiredTemplates(templatesDir);
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
@@ -2608,7 +2608,7 @@ ${sampleUrl}
     }) as typeof fetch;
 
     try {
-      const options: AterraProcessingOptions = {
+      const options: ATerraForgeProcessingOptions = {
         docsDir: resolve(docsDir),
         templatesDir: resolve(templatesDir),
         outDir: resolve(outDir),
@@ -2668,7 +2668,7 @@ ${sampleUrl}
       'utf8'
     );
 
-    const options: AterraProcessingOptions = {
+    const options: ATerraForgeProcessingOptions = {
       docsDir: resolve(docsDir),
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),

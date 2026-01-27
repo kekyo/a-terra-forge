@@ -1,14 +1,14 @@
 {
-  "name": "a-terra-gorge",
+  "name": "a-terra-forge",
   "version": "0.1.0",
   "description": "Universal document-oriented markdown site generator",
   "author": "Kouji Matsui (@kekyo@mi.kekyo.net)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kekyo/a-terra-gorge"
+    "url": "https://github.com/kekyo/a-terra-forge"
   },
-  "homepage": "https://github.com/kekyo/a-terra-gorge#readme",
+  "homepage": "https://github.com/kekyo/a-terra-forge#readme",
   "keywords": [
     "document",
     "article",
@@ -38,12 +38,12 @@
   "files": [
     "dist",
     "scaffold",
-    "images/a-terra-gorge.120.png"
+    "images/a-terra-forge.120.png"
   ],
   "scripts": {
     "metadata": "node scripts/generate-bootstrap-icons.js && npx screw-up metadata",
-    "build": "npm run metadata && vite build",
-    "dev": "npm run metadata && vite",
+    "build": "vite build",
+    "dev": "npm run build && vite",
     "test": "npm run build && vitest run",
     "gen": "npm run build && node dist/index.cjs --docs demo/docs --templates scaffold/templates --out demo/dist --config demo/atr.json",
     "pack": "npm run build && screw-up pack --pack-destination ./artifacts/"

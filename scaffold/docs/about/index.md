@@ -3,7 +3,7 @@ title: About
 hideMeta: true
 ---
 
-![a-terra-gorge](a-terra-gorge.png)
+![a-terra-forge](a-terra-forge.png)
 
-My name is a-terra-gorge.
+My name is a-terra-forge.
 This site compiles and publishes my personal materials.

@@ -2,7 +2,7 @@
   "variables": {
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",
-    "siteDescription": "Sample a-terra-gorge site",
+    "siteDescription": "Sample a-terra-forge site",
     "locale": "en",
     "frontPage": "timeline",
     "headerIcon": "activity", // https://icons.getbootstrap.com/

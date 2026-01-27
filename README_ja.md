@@ -1,12 +1,12 @@
-# a-terra-gorge
+# a-terra-forge
 
 汎用的なmarkdownドキュメントサイトジェネレータ
 
-![a-terra-gorge](./images/a-terra-gorge.120.png)
+![a-terra-forge](./images/a-terra-forge.120.png)
 
 [![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![NPM](https://img.shields.io/npm/v/a-terra-gorge.svg)](https://www.npmjs.com/package/a-terra-gorge)|
+[![NPM](https://img.shields.io/npm/v/a-terra-forge.svg)](https://www.npmjs.com/package/a-terra-forge)|
 
 ---
 
@@ -17,7 +17,7 @@
 ある程度整理されたドキュメントを、少しずつ執筆したいと感じたことはありませんか？
 一般的なブログシステムは管理が大変で、簡易なブログジェネレータもあくまで「ブログ」を執筆することが主目的のため、文書にまとまりが無く読み手にスムーズに文書を読んでもらうことが難しくなります。
 
-a-terra-gorgeは、執筆中の文書はタイムラインページで追うことが出来て、かつ、文書をカテゴリでまとめて表示させることができる、ドキュメントサイトジェネレータです。
+a-terra-forgeは、執筆中の文書はタイムラインページで追うことが出来て、かつ、文書をカテゴリでまとめて表示させることができる、ドキュメントサイトジェネレータです。
 以下のような特徴があります:
 
 - スタティックサイトジェネレータなので、サーバーは不要です。GitHub Pagesなど、任意のウェブサーバーにデプロイして公開できます。
@@ -36,10 +36,10 @@ a-terra-gorgeは、執筆中の文書はタイムラインページで追うこ�
 
 ## CLIの使い方
 
-まずはNPMでa-terra-gorge CLIをインストールします:
+まずはNPMでa-terra-forge CLIをインストールします:
 
 ```bash
-$ npm i -g a-terra-gorge
+$ npm i -g a-terra-forge
 ```
 
 使用方法には大きく2通りありまます。CLIを直接使用する方法と、Viteプラグインを使用する方法です。
