@@ -105,14 +105,14 @@ Details here`,
     );
 
     const fallbackTemplate =
-      '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'style.css\'}}" /></head><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" /></head><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
       'utf8'
     );
     const cssContent = 'body { color: red; }';
-    await writeFile(join(templatesDir, 'style.css'), cssContent, 'utf8');
+    await writeFile(join(templatesDir, 'site-style.css'), cssContent, 'utf8');
     await writeRequiredTemplates(templatesDir);
 
     const options: ATerraForgeProcessingOptions = {
@@ -132,9 +132,9 @@ Details here`,
     expect(html).toContain('<p>Docs body</p>');
     expect(html).toMatch(/<h2[^>]*>Usage<\/h2>/);
     expect(html).toContain('<p>Details here</p>');
-    expect(html).toContain('href="../style.css"');
+    expect(html).toContain('href="../site-style.css"');
 
-    const copiedCss = await readFile(join(outDir, 'style.css'), 'utf8');
+    const copiedCss = await readFile(join(outDir, 'site-style.css'), 'utf8');
     expect(copiedCss).toBe(cssContent);
   });
 
@@ -203,7 +203,7 @@ Details here`,
     );
     const cssContent = `body { color: {{themeColor}}; }
 /* {{formatDate 'YYYY' '2024-02-03'}} */`;
-    await writeFile(join(templatesDir, 'style.css'), cssContent, 'utf8');
+    await writeFile(join(templatesDir, 'site-style.css'), cssContent, 'utf8');
     const scriptContent = `console.log('{{siteName}} {{formatDate 'YYYY-MM-DD' '2024-02-03'}}');`;
     await writeFile(
       join(templatesDir, 'site-script.js'),
@@ -242,7 +242,7 @@ Details here`,
     const abortController = new AbortController();
     await generateDocs(options, abortController.signal);
 
-    const copiedCss = await readFile(join(outDir, 'style.css'), 'utf8');
+    const copiedCss = await readFile(join(outDir, 'site-style.css'), 'utf8');
     expect(copiedCss).toContain('body { color: tomato; }');
     expect(copiedCss).toContain('/* 2024 */');
 
@@ -255,7 +255,7 @@ Details here`,
 
     const expectedCssPath = toPosixRelativePath(
       resolve(configDir),
-      resolve(outDir, 'style.css')
+      resolve(outDir, 'site-style.css')
     );
     const expectedScriptPath = toPosixRelativePath(
       resolve(configDir),
@@ -289,7 +289,7 @@ Details here`,
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'style.css'),
+      join(templatesDir, 'site-style.css'),
       ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
       'utf8'
     );
@@ -643,7 +643,7 @@ More text
   <html>
   <head>
     <title>{{ title }}</title>
-    <link rel="stylesheet" href="{{getSiteTemplatePath 'style.css'}}" />
+    <link rel="stylesheet" href="{{getSiteTemplatePath 'site-style.css'}}" />
   </head>
   <body>
     <header>{{description}}</header>
@@ -657,7 +657,7 @@ More text
       'utf8'
     );
     const cssContent = 'body { color: green; }';
-    await writeFile(join(templatesDir, 'style.css'), cssContent, 'utf8');
+    await writeFile(join(templatesDir, 'site-style.css'), cssContent, 'utf8');
     await writeRequiredTemplates(templatesDir);
 
     const options: ATerraForgeProcessingOptions = {
@@ -674,14 +674,14 @@ More text
 
     expect(html).toContain('<title>Frontmatter Title</title>');
     expect(html).toContain('<header>Summary here</header>');
-    expect(html).toContain('href="../style.css"');
+    expect(html).toContain('href="../site-style.css"');
 
     const mainMatch = html.match(/<main class="article">([\s\S]*?)<\/main>/);
     expect(mainMatch).not.toBeNull();
     expect(mainMatch?.[1]).toContain('<p>Main content</p>');
     expect(mainMatch?.[1]).toContain('<p>More text</p>');
 
-    const copiedCss = await readFile(join(outDir, 'style.css'), 'utf8');
+    const copiedCss = await readFile(join(outDir, 'site-style.css'), 'utf8');
     expect(copiedCss).toBe(cssContent);
   });
 
@@ -937,7 +937,7 @@ title: Beta
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'style.css'),
+      join(templatesDir, 'site-style.css'),
       ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
       'utf8'
     );
@@ -1237,14 +1237,14 @@ Second body
     await writeFile(join(markdownDir, 'overview.md'), '# Overview', 'utf8');
 
     const fallbackTemplate =
-      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'style.css\'}}" />Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body>';
+      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'style.css'),
+      join(templatesDir, 'site-style.css'),
       'body { color: red; }',
       'utf8'
     );
@@ -1253,7 +1253,7 @@ Second body
     const specificTemplateDir = join(templatesDir, 'guide');
     await mkdir(specificTemplateDir, { recursive: true });
     const specificTemplate =
-      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'style.css\'}}" />Specific template {{for article articles}}{{article.entryHtml}}{{end}} End</body>';
+      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Specific template {{for article articles}}{{article.entryHtml}}{{end}} End</body>';
     await writeFile(
       join(specificTemplateDir, 'intro.html'),
       specificTemplate,
@@ -1261,7 +1261,7 @@ Second body
     );
     const specificStyle = 'body { color: blue; }';
     await writeFile(
-      join(specificTemplateDir, 'style.css'),
+      join(specificTemplateDir, 'site-style.css'),
       specificStyle,
       'utf8'
     );
@@ -1280,9 +1280,9 @@ Second body
 
     expect(html).not.toContain('Specific template');
     expect(html).toContain('Fallback');
-    expect(html).toContain('href="../style.css"');
+    expect(html).toContain('href="../site-style.css"');
 
-    const copiedCss = await readFile(join(outDir, 'style.css'), 'utf8');
+    const copiedCss = await readFile(join(outDir, 'site-style.css'), 'utf8');
     expect(copiedCss).toBe('body { color: red; }');
   });
 
@@ -1575,7 +1575,7 @@ title: Second
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'style.css'),
+      join(templatesDir, 'site-style.css'),
       ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
       'utf8'
     );
@@ -2650,7 +2650,7 @@ ${sampleUrl}
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'style.css'),
+      join(templatesDir, 'site-style.css'),
       ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
       'utf8'
     );
@@ -2679,7 +2679,7 @@ ${sampleUrl}
     const abortController = new AbortController();
     await generateDocs(options, abortController.signal);
 
-    const css = await readFile(join(outDir, 'style.css'), 'utf8');
+    const css = await readFile(join(outDir, 'site-style.css'), 'utf8');
     expect(css).toContain('--primary-rgb: 255, 32, 32;');
     expect(css).toContain('--secondary-rgb: 10, 20, 30;');
   });

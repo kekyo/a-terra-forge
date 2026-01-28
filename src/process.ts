@@ -111,7 +111,7 @@ const filterGroupedArticleFiles = (
 };
 
 const defaultSiteTemplates = [
-  'style.css',
+  'site-style.css',
   'site-script.js',
   'feed.xml',
   'atom.xml',

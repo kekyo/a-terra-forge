@@ -10,7 +10,7 @@
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
     "siteTemplates": [
-      "style.css",
+      "site-style.css",
       "site-script.js",
       "feed.xml",
       "atom.xml",
