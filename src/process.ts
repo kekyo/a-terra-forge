@@ -111,7 +111,7 @@ const filterGroupedArticleFiles = (
 };
 
 const defaultSiteTemplates = [
-  'style.css',
+  'site-style.css',
   'site-script.js',
   'feed.xml',
   'atom.xml',
@@ -231,7 +231,8 @@ export const generateDocs = async (
   const logger = options.logger ?? getTrimmingConsoleLogger();
   const config = mergeATerraForgeConfig(
     await loadATerraForgeConfig(configPath),
-    configOverrides
+    configOverrides,
+    configPath
   );
 
   logger.info(`Preparing...`);

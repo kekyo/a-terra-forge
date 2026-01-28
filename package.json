@@ -38,7 +38,8 @@
   "files": [
     "dist",
     "scaffold",
-    "images/a-terra-forge.120.png"
+    "images/a-terra-forge.120.png",
+    "images/light-dark.png"
   ],
   "scripts": {
     "metadata": "node scripts/generate-bootstrap-icons.js && npx screw-up metadata",

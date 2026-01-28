@@ -10,16 +10,16 @@
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
     "siteTemplates": [
-      "style.css",
+      "site-style.css",
       "site-script.js",
       "feed.xml",
       "atom.xml",
       "sitemap.xml"
-    ]
+    ],
+    "contentFiles": ["./**/*.png", "./**/*.jpg"],
+    "categories": ["timeline", "hello"],
+    "categoriesAfter": ["about"]
   },
-  "contentFiles": ["./**/*.png", "./**/*.jpg"],
-  "categories": ["timeline", "hello"],
-  "categoriesAfter": ["about"],
   "messages": {
     "en": {
       "date": "Date",

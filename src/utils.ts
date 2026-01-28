@@ -628,59 +628,89 @@ const parseCodeHighlightOverrides = (
   return parseCodeHighlightConfig(value, configPath);
 };
 
-const parseStringListOverrides = (
-  value: unknown,
+const resolveVariableStringList = (
+  variables: FunCityVariables,
   configPath: string,
-  label: string
-): string[] | undefined => {
+  key: string,
+  defaultValue: readonly string[]
+): readonly string[] => {
+  const value = variables.get(key);
   if (value === undefined) {
-    return undefined;
+    return [...defaultValue];
   }
-  return parseStringList(value, configPath, label);
+  return parseStringList(value, configPath, `variables.${key}`);
 };
 
-const parseContentFiles = (
-  value: unknown,
+const normalizeVariablesWithLists = (
+  variables: FunCityVariables,
   configPath: string
-): readonly string[] =>
-  value === undefined
-    ? defaultTargetContents
-    : parseStringList(value, configPath, 'contentFiles');
+): Pick<
+  ATerraForgeConfig,
+  'variables' | 'contentFiles' | 'categories' | 'categoriesAfter'
+> => {
+  const normalized = new Map(variables);
+  const contentFiles = resolveVariableStringList(
+    normalized,
+    configPath,
+    'contentFiles',
+    defaultTargetContents
+  );
+  const categories = resolveVariableStringList(
+    normalized,
+    configPath,
+    'categories',
+    []
+  );
+  const categoriesAfter = resolveVariableStringList(
+    normalized,
+    configPath,
+    'categoriesAfter',
+    []
+  );
 
-const parseCategories = (
-  value: unknown,
-  configPath: string
-): readonly string[] =>
-  value === undefined ? [] : parseStringList(value, configPath, 'categories');
+  normalized.set('contentFiles', contentFiles);
+  normalized.set('categories', categories);
+  normalized.set('categoriesAfter', categoriesAfter);
 
-const parseCategoriesAfter = (
-  value: unknown,
-  configPath: string
-): readonly string[] =>
-  value === undefined
-    ? []
-    : parseStringList(value, configPath, 'categoriesAfter');
+  return {
+    variables: normalized,
+    contentFiles,
+    categories,
+    categoriesAfter,
+  };
+};
 
-const createDefaultATerraForgeConfig = (): ATerraForgeConfig => ({
-  variables: new Map(),
-  messages: new Map(),
-  codeHighlight: defaultCodeHighlightConfig,
-  contentFiles: defaultTargetContents,
-  categories: [],
-  categoriesAfter: [],
-});
+const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
+  const { variables, contentFiles, categories, categoriesAfter } =
+    normalizeVariablesWithLists(new Map(), '<defaults>');
+
+  return {
+    variables,
+    messages: new Map(),
+    codeHighlight: defaultCodeHighlightConfig,
+    contentFiles,
+    categories,
+    categoriesAfter,
+  };
+};
 
 const parseATerraForgeConfigObject = (
   parsed: Record<string, unknown>,
   configPath: string
-): ATerraForgeConfig => ({
-  variables: parseVariables(parsed.variables, configPath),
-  messages: parseMessages(parsed.messages, configPath),
-  codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
-  contentFiles: parseContentFiles(parsed.contentFiles, configPath),
-  categories: parseCategories(parsed.categories, configPath),
-  categoriesAfter: parseCategoriesAfter(parsed.categoriesAfter, configPath),
-});
+): ATerraForgeConfig => {
+  const parsedVariables = parseVariables(parsed.variables, configPath);
+  const { variables, contentFiles, categories, categoriesAfter } =
+    normalizeVariablesWithLists(parsedVariables, configPath);
+
+  return {
+    variables,
+    messages: parseMessages(parsed.messages, configPath),
+    codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
+    contentFiles,
+    categories,
+    categoriesAfter,
+  };
+};
 
 export const parseATerraForgeConfigOverrides = (
   input: ATerraForgeConfigInput | undefined,
@@ -707,36 +737,13 @@ export const parseATerraForgeConfigOverrides = (
     );
   }
 
-  if (input.contentFiles !== undefined) {
-    overrides.contentFiles = parseStringListOverrides(
-      input.contentFiles,
-      configPath,
-      'contentFiles'
-    );
-  }
-
-  if (input.categories !== undefined) {
-    overrides.categories = parseStringListOverrides(
-      input.categories,
-      configPath,
-      'categories'
-    );
-  }
-
-  if (input.categoriesAfter !== undefined) {
-    overrides.categoriesAfter = parseStringListOverrides(
-      input.categoriesAfter,
-      configPath,
-      'categoriesAfter'
-    );
-  }
-
   return overrides;
 };
 
 export const mergeATerraForgeConfig = (
   baseConfig: ATerraForgeConfig,
-  overrides: ATerraForgeConfigOverrides | undefined
+  overrides: ATerraForgeConfigOverrides | undefined,
+  configPath = '<config>'
 ): ATerraForgeConfig => {
   if (!overrides) {
     return baseConfig;
@@ -749,13 +756,15 @@ export const mergeATerraForgeConfig = (
     }
   }
 
+  const normalized = normalizeVariablesWithLists(variables, configPath);
+
   return {
-    variables,
+    variables: normalized.variables,
     messages: overrides.messages ?? baseConfig.messages,
     codeHighlight: overrides.codeHighlight ?? baseConfig.codeHighlight,
-    contentFiles: overrides.contentFiles ?? baseConfig.contentFiles,
-    categories: overrides.categories ?? baseConfig.categories,
-    categoriesAfter: overrides.categoriesAfter ?? baseConfig.categoriesAfter,
+    contentFiles: normalized.contentFiles,
+    categories: normalized.categories,
+    categoriesAfter: normalized.categoriesAfter,
   };
 };
 

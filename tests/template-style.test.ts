@@ -45,7 +45,7 @@ const extractMediaBlock = (css: string, mediaQuery: string) =>
 
 describe('template style', () => {
   it('sets smaller docs padding for the smartphone breakpoint', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const mediaBlocks = extractMediaBlocks(css, '@media (max-width: 575.98px)');
 
     expect(mediaBlocks.length).toBeGreaterThan(0);
@@ -57,7 +57,7 @@ describe('template style', () => {
   });
 
   it('truncates navbar labels for the expanded navbar breakpoint', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const mediaBlock = extractMediaBlock(css, '@media (min-width: 576px)');
 
     expect(mediaBlock).not.toBeNull();
@@ -76,7 +76,7 @@ describe('template style', () => {
   });
 
   it('darkens the light theme navbar background', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const navMatch = css.match(
       /\[data-bs-theme="light"\]\s+\.navbar\.bg-body-tertiary\s*\{([^}]*)\}/
     );
@@ -87,7 +87,7 @@ describe('template style', () => {
   });
 
   it('sizes the image modal to the viewport width minus spacing', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const dialogMatch = css.match(
       /\.image-modal\s+\.image-modal-dialog\s*\{([^}]*)\}/
     );
@@ -97,7 +97,7 @@ describe('template style', () => {
   });
 
   it('renders blockquotes with the bootstrap quote icon', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const blockquoteMatch = css.match(/\.entry-body blockquote\s*\{([^}]*)\}/);
 
     expect(blockquoteMatch).not.toBeNull();
@@ -120,7 +120,7 @@ describe('template style', () => {
   });
 
   it('raises responsive oEmbed embeds above the external link overlay', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const wrapperMatch = css.match(/\.oembed-responsive-wrapper\s*\{([^}]*)\}/);
 
     expect(wrapperMatch).not.toBeNull();
@@ -129,7 +129,7 @@ describe('template style', () => {
   });
 
   it('defines primary and secondary palette variables', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
       /--primary-rgb:\s*\{\{cond\s+primaryColorRgb\?\s+primaryColorRgb\s+'13,\s*110,\s*253'\}\};/
     );
@@ -150,7 +150,7 @@ describe('template style', () => {
   });
 
   it('defines inline code palette variables for each theme', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
       /:root\[data-bs-theme="light"\][\s\S]*--inline-code-color:\s*color-mix\(in\s+srgb,\s*var\(--inline-code\)\s+65%,\s*#303030c0\);/
     );
@@ -166,7 +166,7 @@ describe('template style', () => {
   });
 
   it('overrides primary tint and shade values with OKLCH adjustments', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const oklchMatch = css.match(
       /@supports\s+\(color:\s*oklch\(from\s+black\s+l\s+c\s+h\)\)[\s\S]*?\{([\s\S]*?)\}/
     );
@@ -190,14 +190,14 @@ describe('template style', () => {
   });
 
   it('styles inline code with the inline palette', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
       /\.entry-body\s+:not\(pre\)\s*>\s*code\s*\{[^}]*color:\s*var\(--inline-code-color\);[^}]*background-color:\s*var\(--inline-code-bg\);/
     );
   });
 
   it('maps the bootstrap theme palette to the primary colors', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(/--bs-primary:\s*rgb\(var\(--bs-primary-rgb\)\);/);
     expect(css).toMatch(/--bs-secondary:\s*rgb\(var\(--bs-secondary-rgb\)\);/);
     expect(css).toMatch(/--bs-primary-rgb:\s*var\(--primary-rgb\);/);
@@ -211,7 +211,7 @@ describe('template style', () => {
   });
 
   it('overrides bootstrap primary colors for hard-coded components', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
       /\.form-check-input:checked[^}]*\{[^}]*background-color:\s*var\(--bs-primary\);/
     );
@@ -224,7 +224,7 @@ describe('template style', () => {
   });
 
   it('styles badges with the primary-derived palette', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(/--badge-bg:\s*var\(--primary-alpha-50\);/);
     expect(css).toMatch(/--badge-color:\s*var\(--primary-tint-69\);/);
     expect(css).toMatch(
@@ -233,7 +233,7 @@ describe('template style', () => {
   });
 
   it('applies primary palette to headings and timeline accents', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const h1Match = css.match(/h1\s*\{([^}]*)\}/);
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
     const h2Match = css.match(/h2\s*\{[^}]*border-left:[^}]*\}/);
@@ -259,7 +259,7 @@ describe('template style', () => {
   });
 
   it('defines panel palette variables', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
       /--panel-surface:\s*\{\{cond\s+panelSurface\?\s+panelSurface\s+'var\(--panel-surface-base\)'\}\};/
     );
@@ -275,7 +275,7 @@ describe('template style', () => {
   });
 
   it('derives panel base palette from the primary color', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const darkMatch = css.match(
       /:root\[data-bs-theme="dark"\]\s*\{[^}]*--panel-surface-base:[^}]*\}/
     );
@@ -299,7 +299,7 @@ describe('template style', () => {
   });
 
   it('clears floats on entry body headings', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const headingClearMatch = css.match(/\.entry-body h1[\s\S]*?\{([^}]*)\}/);
 
     expect(headingClearMatch).not.toBeNull();
@@ -307,7 +307,7 @@ describe('template style', () => {
   });
 
   it('scales the h1 icon with the heading size', async () => {
-    const css = await readFile('scaffold/templates/style.css', 'utf8');
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
 
     expect(h1IconMatch).not.toBeNull();

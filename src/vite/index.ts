@@ -168,7 +168,8 @@ export const atrPreview = (
       const baseConfig = await loadATerraForgeConfig(configPath);
       const resolvedConfig = mergeATerraForgeConfig(
         baseConfig,
-        configOverrides
+        configOverrides,
+        configPath
       );
       const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
         resolvedConfig.variables,

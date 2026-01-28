@@ -70,6 +70,12 @@ export interface ATerraForgeVariablesInput {
   userAgent?: string;
   /** Site template asset names rendered from templates directory. */
   siteTemplates?: readonly string[];
+  /** Glob patterns for static content files to copy. */
+  contentFiles?: readonly string[];
+  /** Category ordering for primary navigation. */
+  categories?: readonly string[];
+  /** Category ordering for secondary navigation. */
+  categoriesAfter?: readonly string[];
   /** Additional variable entries. */
   [key: string]: unknown;
 }
@@ -84,12 +90,6 @@ export interface ATerraForgeConfigInput {
   messages?: Record<string, unknown>;
   /** Code highlighting configuration values. */
   codeHighlight?: Record<string, unknown>;
-  /** Glob patterns for static content files to copy. */
-  contentFiles?: unknown;
-  /** Category ordering for primary navigation. */
-  categories?: unknown;
-  /** Category ordering for secondary navigation. */
-  categoriesAfter?: unknown;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -128,12 +128,6 @@ export interface ATerraForgeConfigOverrides {
   messages?: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration to replace base config values. */
   codeHighlight?: CodeHighlightOptions;
-  /** Content file globs to replace base config values. */
-  contentFiles?: readonly string[];
-  /** Category ordering to replace base config values. */
-  categories?: readonly string[];
-  /** Secondary category ordering to replace base config values. */
-  categoriesAfter?: readonly string[];
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

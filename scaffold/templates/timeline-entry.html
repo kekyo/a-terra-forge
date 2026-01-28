@@ -1,4 +1,4 @@
-<article class="timeline-entry article-entry{{if (not git?)}} article-entry--no-git{{end}}{{if git?}}{{if git.dirty?}} article-entry--dirty{{end}}{{end}}">
+<article class="timeline-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
   <header class="entry-header">
       <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
       {{if categoryPath?}}

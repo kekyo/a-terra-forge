@@ -56,3 +56,5 @@ gen/
 
 test_results/
 scaffold/templates/
+
+*.md
