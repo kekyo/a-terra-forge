@@ -5,7 +5,7 @@
 
 import { resolve } from 'path';
 import { defineConfig } from 'vite';
-import { atrPreview } from 'atr/vite';
+import { atrPreview } from 'a-terra-forge/vite';
 
 const projectRoot = process.cwd();
 
