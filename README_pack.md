@@ -12,9 +12,11 @@ Universal document-oriented markdown site generator
 ## What is this?
 
 Have you ever felt like writing documents that are somewhat organized, bit by bit?
-General blog systems are cumbersome to manage, and simple blog generators are primarily designed for writing “blogs,” making it difficult to present documents cohesively and ensure readers can follow them smoothly.
+General blog systems are cumbersome to manage, and simple blog generators are primarily designed for writing "blogs," so documents tend to lack cohesion and can be hard for readers to follow smoothly.
 
-a-terra-forge is a document site generator that lets you track documents in progress via a timeline page while also grouping and displaying documents by category.
+"a-terra-forge" is a document site generator that allows you to organize and display documents by category, and track documents in progress chronologically on a timeline page.
+The site is built fully static, so no server code is required.
+Documents can be written in Markdown, and it also supports rich expressions such as:
 
 ![System theme (light/dark)](./images/light-dark.png)
 

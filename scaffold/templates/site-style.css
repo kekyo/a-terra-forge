@@ -674,22 +674,22 @@ h6 {
 .oembed-header {
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.5rem;
+  padding: 0.9rem 1.2rem;
   gap: 0.35rem;
   min-width: 0;
   align-self: start;
 }
 
 .oembed-title {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.35;
 }
 
 .oembed-description {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: var(--panel-muted);
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 .oembed-author {
@@ -698,7 +698,8 @@ h6 {
 
 .oembed-author,
 .oembed-provider {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
   color: var(--panel-muted);
 }
 
@@ -844,7 +845,7 @@ h6 {
 .card-body {
   display: flex;
   flex-direction: column;
-  padding: 1rem 1.5rem;
+  padding: 0.9rem 1.2rem;
   gap: 0.35rem;
   min-width: 0;
   order: 1;
@@ -877,21 +878,22 @@ h6 {
 }
 
 .card-title {
-  font-size: 1.15rem;
+  font-size: 0.95rem;
   font-weight: 600;
   line-height: 1.35;
 }
 
 .card-description {
-  font-size: 0.95rem;
+  font-size: 0.8rem;
   color: var(--panel-muted);
-  line-height: 1.5;
+  line-height: 1.35;
 }
 
 .card-provider {
   display: inline-flex;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
   color: var(--panel-muted);
 }
 

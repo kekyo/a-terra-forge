@@ -26,17 +26,10 @@ const run = async (
   // Run the tokenizer
   const blocks: FunCityToken[] = runTokenizer(script, logs);
 
-  // Run the parser
-  const nodes: FunCityBlockNode[] = runParser(blocks, logs);
+  // :
+  // :
+  // :
 
-  // Run the reducer
-  const variables: FunCityVariables = buildCandidateVariables();
-  const warningLogs: FunCityWarningLogEntry[] = [];
-  const results: unknown[] = await runReducer(nodes, variables, warningLogs);
-
-  logs.push(...warningLogs);
-
-  // Concatenate all results as text
   const text: string = results.join('');
   return text;
 };

@@ -48,9 +48,9 @@ Using the Mermaid plugin, you can create diagrams and flowcharts using mermaid.j
 
 ```mermaid
 flowchart LR
-  A[Markdown] --> B[mark-deco]
-  B --> C[HTML]
-  C --> D[Mermaid.js]
+  A[Start] --> B{Decision}
+  B -->|Yes| C[Process]
+  B -->|No| D[Stop]
 ```
 
 Note that the Mermaid plugin doesn't generate actual SVG graphics, but creates HTML elements to pass to Mermaid. This means it's insufficient to draw graphics alone, and you need to introduce the Mermaid main script when displaying HTML.
