@@ -101,7 +101,21 @@ const buildCopyPlan = async (
     targetDir,
     new Set(['templates', 'vite'])
   );
-  entries.push(...scaffoldEntries);
+  entries.push(
+    ...scaffoldEntries.map((entry) => {
+      if (entry.isDirectory) {
+        return entry;
+      }
+      const relativePath = relative(scaffoldDir, entry.source);
+      if (relativePath === '_gitignore') {
+        return {
+          ...entry,
+          target: join(targetDir, '.gitignore'),
+        };
+      }
+      return entry;
+    })
+  );
 
   if (includeVite) {
     await assertDirectoryExists(viteScaffoldDir, 'vite');

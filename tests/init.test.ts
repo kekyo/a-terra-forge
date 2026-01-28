@@ -42,7 +42,7 @@ const writeFixture = async (root: string) => {
     '{"variables":{}}',
     'utf8'
   );
-  await writeFile(join(root, 'scaffold', '.gitignore'), 'dist/', 'utf8');
+  await writeFile(join(root, 'scaffold', '_gitignore'), 'dist/', 'utf8');
   await writeFile(
     join(root, 'scaffold', 'docs', 'index.md'),
     '# Hello',
