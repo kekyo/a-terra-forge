@@ -119,28 +119,36 @@ describe('resolveATerraForgeConfigPathFromDir', () => {
 describe('mergeATerraForgeConfig', () => {
   it('merges variables but replaces other config blocks.', () => {
     const baseConfig: ATerraForgeConfig = {
-      variables: new Map([
+      variables: new Map<string, unknown>([
         ['siteName', 'Base'],
         ['docsDir', 'docs'],
+        ['contentFiles', ['a.txt']],
+        ['categories', ['alpha']],
+        ['categoriesAfter', ['omega']],
       ]),
       messages: new Map([['', new Map([['hello', 'base']])]]),
       codeHighlight: {},
       contentFiles: ['a.txt'],
       categories: ['alpha'],
-      categoriesAfter: [],
+      categoriesAfter: ['omega'],
     };
 
     const overrides: ATerraForgeConfigOverrides = {
-      variables: new Map([['siteName', 'Override']]),
+      variables: new Map<string, unknown>([
+        ['siteName', 'Override'],
+        ['categories', ['beta']],
+      ]),
       messages: new Map([['', new Map([['hello', 'override']])]]),
     };
 
-    const merged = mergeATerraForgeConfig(baseConfig, overrides);
+    const merged = mergeATerraForgeConfig(baseConfig, overrides, 'atr.json');
 
     expect(merged.variables.get('siteName')).toBe('Override');
     expect(merged.variables.get('docsDir')).toBe('docs');
+    expect(merged.variables.get('categories')).toEqual(['beta']);
     expect(merged.messages.get('')?.get('hello')).toBe('override');
-    expect(merged.contentFiles).toBe(baseConfig.contentFiles);
-    expect(merged.categories).toBe(baseConfig.categories);
+    expect(merged.contentFiles).toEqual(['a.txt']);
+    expect(merged.categories).toEqual(['beta']);
+    expect(merged.categoriesAfter).toEqual(['omega']);
   });
 });

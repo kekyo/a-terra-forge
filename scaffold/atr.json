@@ -15,11 +15,11 @@
       "feed.xml",
       "atom.xml",
       "sitemap.xml"
-    ]
+    ],
+    "contentFiles": ["./**/*.png", "./**/*.jpg"],
+    "categories": ["timeline", "hello"],
+    "categoriesAfter": ["about"]
   },
-  "contentFiles": ["./**/*.png", "./**/*.jpg"],
-  "categories": ["timeline", "hello"],
-  "categoriesAfter": ["about"],
   "messages": {
     "en": {
       "date": "Date",

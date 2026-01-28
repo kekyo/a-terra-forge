@@ -187,7 +187,7 @@ $ npm run dev
 
 The page shown includes the scaffold's sample documents and images.
 You might feel uneasy if documents already exist or everything is bright blue, but there is no need to worry.
-You can quickly delete them, start writing from scratch, and adjust the appearance.
+You can quickly delete them, start writing from scratch, and adjust the appearance (At least, the accent color can be easily changed).
 
 When the preview is displayed, the document site has already been built, but to build it manually, use the following command:
 
@@ -408,7 +408,7 @@ a-terra-forge manages the overall document space using a file called `atr.json`.
 This file is in JSON format (strictly speaking, JSON5) and includes site-wide settings, message lists, and more.
 Below is a partial excerpt of `atr.json`:
 
-```json5
+```json
 {
   "variables": {
     "baseUrl": "https://atr-doc-site.github.io",
@@ -421,16 +421,16 @@ Below is a partial excerpt of `atr.json`:
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
     "siteTemplates": [
-        "site-style.css",
-        "site-script.js",
-        "feed.xml",
-        "atom.xml",
-        "sitemap.xml"
-      ],
+      "site-style.css",
+      "site-script.js",
+      "feed.xml",
+      "atom.xml",
+      "sitemap.xml"
+    ],
     "contentFiles": ["./**/*.png", "./**/*.jpg"],
     "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"],
-  },
+    "categoriesAfter": ["about"]
+  }
   // :
   // :
   // :
@@ -441,21 +441,21 @@ The definitions included in `variables` above are treated as "variables" and are
 
 Below is an explanation of these values:
 
-| Variable name     | Details                                                                                                                                                                                                                                                                                                                    |
-| :---------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `baseUrl`         | Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it.                                                                                                                                        |
-| `siteName`        | The site name of this site, used for the left end of the navigation menu and for embedding page metadata.                                                                                                                                                                                                                  |
-| `siteDescription` | The site description, used for embedding page metadata.                                                                                                                                                                                                                                                                    |
-| `locale`          | The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. This setting does not automatically translate content.                                                                                     |
-| `frontPage`       | Specifies which category to display as the site's front page (top page). The default is `timeline`, which is a special category name that shows the timeline.                                                                                                                                                              |
-| `headerIcon`      | The icon displayed in document titles. The name is specified using [Bootstrap Icons](https://icons.getbootstrap.com/). You can also specify it per document, but this value is used when omitted.                                                                                                                          |
-| `primaryColor`    | Specifies the primary accent color for the site. The scaffold uses many blue accents because of this setting. If you change this color, you can use your preferred accent color. However, do not forget to try colors that are well balanced between the system light and dark themes.                                     |
-| `secondaryColor`  | Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes.                                                                                                                                                                                                             |
-| `inlineCodeColor` | Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting.                                                                                                                        |
-| `siteTemplates`   | Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets. |
-| `contentFiles`    | TODO:                                                                                                                                                                                                                                                                                                                      |
-| `categories`      | A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored.                                                                                   |
-| `categoriesAfter` | A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories.                                                                                 |
+|Variable name|Details|
+|:----|:----|
+|`baseUrl`|Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it. |
+|`siteName`|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
+|`siteDescription`|The site description, used for embedding page metadata.  |
+|`locale`|The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. This setting does not automatically translate content. |
+|`frontPage`|Specifies which category to display as the site's front page (top page). The default is `timeline`, which is a special category name that shows the timeline. |
+|`headerIcon`|The icon displayed in document titles. The name is specified using [Bootstrap Icons](https://icons.getbootstrap.com/). You can also specify it per document, but this value is used when omitted.                                                                                                                          |
+|`primaryColor`|Specifies the primary accent color for the site. The scaffold uses many blue accents because of this setting. If you change this color, you can use your preferred accent color. However, do not forget to try colors that are well balanced between the system light and dark themes.                                     |
+|`secondaryColor`|Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes. |
+|`inlineCodeColor`|Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting. |
+|`siteTemplates`|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets. |
+|`contentFiles`|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. |
+|`categories`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
+|`categoriesAfter`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
 
 For example, changing `primaryColor` to `#ff4040` will alter the accent color as follows:
 

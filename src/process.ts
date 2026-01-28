@@ -231,7 +231,8 @@ export const generateDocs = async (
   const logger = options.logger ?? getTrimmingConsoleLogger();
   const config = mergeATerraForgeConfig(
     await loadATerraForgeConfig(configPath),
-    configOverrides
+    configOverrides,
+    configPath
   );
 
   logger.info(`Preparing...`);

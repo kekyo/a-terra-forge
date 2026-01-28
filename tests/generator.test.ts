@@ -296,7 +296,9 @@ Details here`,
     await writeRequiredTemplates(templatesDir);
 
     const config = {
-      contentFiles: ['develop/**/*.png', 'develop/**/*.txt'],
+      variables: {
+        contentFiles: ['develop/**/*.png', 'develop/**/*.txt'],
+      },
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 
@@ -390,8 +392,7 @@ Details here`,
     await writeFile(
       join(siteRoot, 'atr.json'),
       JSON.stringify({
-        variables: { frontPage: 'guide' },
-        contentFiles: ['**/*.png'],
+        variables: { frontPage: 'guide', contentFiles: ['**/*.png'] },
       }),
       'utf8'
     );
@@ -590,8 +591,7 @@ Details here`,
     await writeFile(
       join(siteRoot, 'atr.json'),
       JSON.stringify({
-        variables: { frontPage: 'guide' },
-        contentFiles: ['**/*.png'],
+        variables: { frontPage: 'guide', contentFiles: ['**/*.png'] },
       }),
       'utf8'
     );
@@ -2019,8 +2019,10 @@ title: ${title}
     await writeRequiredTemplates(templatesDir);
 
     const config = {
-      categories: ['beta', 'topics', 'two', 'one'],
-      categoriesAfter: ['alpha', 'timeline'],
+      variables: {
+        categories: ['beta', 'topics', 'two', 'one'],
+        categoriesAfter: ['alpha', 'timeline'],
+      },
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
 

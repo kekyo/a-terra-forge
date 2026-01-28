@@ -1,4 +1,4 @@
-<article class="article-entry{{if (not git?)}} article-entry--no-git{{end}}{{if git?}}{{if git.dirty?}} article-entry--dirty{{end}}{{end}}">
+<article class="article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
   <div class="entry-body">
 {{contentHtml}}
   </div>
