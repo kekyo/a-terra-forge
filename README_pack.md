@@ -9,6 +9,8 @@ Universal document-oriented markdown site generator
 
 ---
 
+TODO: WIP
+
 ## What is this?
 
 Have you ever felt like writing documents that are somewhat organized, bit by bit?
@@ -22,6 +24,7 @@ It features:
 - Documents are written in Markdown. Markdown supports syntax highlighting for code, card display for oEmbed/OGP sources, and Mermaid rendering by default.
 - HTML rendering uses [mark-deco](https://github.com/kekyo/mark-deco/), while page composition employs script-based processing via [funcity](https://github.com/kekyo/funcity/).
   This enables high page customizability.
+- Using the Vite plugin, you can write documents while previewing pages in your browser.
 - Document management assumes the use of Git. Document dates and author information are automatically collected from Git, eliminating the need for manual frontmatter management.
   Document writing management follows standard Git workflows, making it ideal for users who regularly write code.
 - Built entirely with TypeScript/NPM, it can be used immediately with Node.js installed.
@@ -44,3 +47,13 @@ $ npm i -g a-terra-forge
 ```bash
 $ atr init
 ```
+
+---
+
+## Documentation
+
+For detailed documentation and advanced features, please visit our [GitHub repository](https://github.com/kekyo/funcity).
+
+## License
+
+Under MIT.
