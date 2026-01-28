@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { join, resolve } from 'path';
 import { describe, expect, it } from 'vitest';

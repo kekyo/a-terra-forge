@@ -3,11 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "atr build && vite",
     "build": "atr build"
   },
   "devDependencies": {
-    "atr": ">=0.1.0",
+    "a-terra-forge": ">=0.0.1",
     "vite": ">=5.0.0"
   }
 }

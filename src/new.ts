@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { existsSync } from 'fs';
 import { readdir, stat } from 'fs/promises';
@@ -11,14 +11,14 @@ import { writeContentFile } from './utils';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-export interface AterraNewOptions {
+export interface ATerraForgeNewOptions {
   /** Markdown document directory. */
   docsDir: string;
   /** Category path. */
   category: string;
 }
 
-export interface AterraNewResult {
+export interface ATerraForgeNewResult {
   /** Created file path. */
   path: string;
   /** True when index.md was created. */
@@ -122,8 +122,8 @@ const resolveNextArticleName = (dir: string): string => {
 };
 
 export const createNewArticle = async (
-  options: Readonly<AterraNewOptions>
-): Promise<AterraNewResult> => {
+  options: Readonly<ATerraForgeNewOptions>
+): Promise<ATerraForgeNewResult> => {
   const docsDir = resolve(options.docsDir);
   await ensureDirectoryIfExists(docsDir, 'Docs directory');
 

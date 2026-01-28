@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import type { FunCityVariables } from 'funcity';
 import type { CodeHighlightOptions } from 'mark-deco';
@@ -25,9 +25,9 @@ export interface Logger {
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
- * a-terra-gorge processing options.
+ * a-terra-forge processing options.
  */
-export interface AterraProcessingOptions {
+export interface ATerraForgeProcessingOptions {
   /** Markdown document directory. */
   docsDir: string;
   /** Template directory. */
@@ -51,9 +51,9 @@ export interface AterraProcessingOptions {
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
- * a-terra-gorge config variables input.
+ * a-terra-forge config variables input.
  */
-export interface AterraVariablesInput {
+export interface ATerraForgeVariablesInput {
   /** Markdown document directory. */
   docsDir?: string;
   /** Template directory. */
@@ -77,9 +77,9 @@ export interface AterraVariablesInput {
 /**
  * Raw configuration input compatible with atr.json (also used by Vite plugin options).
  */
-export interface AterraConfigInput {
+export interface ATerraForgeConfigInput {
   /** Template variables to parse and merge into config. */
-  variables?: AterraVariablesInput;
+  variables?: ATerraForgeVariablesInput;
   /** Message dictionaries keyed by locale. */
   messages?: Record<string, unknown>;
   /** Code highlighting configuration values. */
@@ -94,17 +94,20 @@ export interface AterraConfigInput {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
-export type AterraMessageList = ReadonlyMap<string, string>;
-export type AterraMessageListByLocale = ReadonlyMap<string, AterraMessageList>;
+export type ATerraForgeMessageList = ReadonlyMap<string, string>;
+export type ATerraForgeMessageListByLocale = ReadonlyMap<
+  string,
+  ATerraForgeMessageList
+>;
 
 /**
  * Parsed configuration derived from atr.json with defaults applied.
  */
-export interface AterraConfig {
+export interface ATerraForgeConfig {
   /** Template variables available to FunCity rendering. */
   variables: FunCityVariables;
   /** Localized message dictionaries. */
-  messages: AterraMessageListByLocale;
+  messages: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration. */
   codeHighlight: CodeHighlightOptions;
   /** Glob patterns for static content files to copy. */
@@ -118,11 +121,11 @@ export interface AterraConfig {
 /**
  * Parsed configuration overrides applied on top of a base config.
  */
-export interface AterraConfigOverrides {
+export interface ATerraForgeConfigOverrides {
   /** Variables to merge with base config variables. */
   variables?: FunCityVariables;
   /** Message dictionaries to replace base config messages. */
-  messages?: AterraMessageListByLocale;
+  messages?: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration to replace base config values. */
   codeHighlight?: CodeHighlightOptions;
   /** Content file globs to replace base config values. */

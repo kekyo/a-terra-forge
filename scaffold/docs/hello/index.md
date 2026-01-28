@@ -1,8 +1,8 @@
 ---
-title: Hello a-terra-gorge world!
+title: Hello a-terra-forge world!
 ---
 
-Entered a-terra-gorge world.
+Entered a-terra-forge world.
 
 # Level1
 

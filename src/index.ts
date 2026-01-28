@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { realpathSync } from 'fs';
 import { dirname, join, resolve } from 'path';
@@ -20,13 +20,13 @@ import {
 import { generateDocs } from './process';
 import { initScaffold } from './init';
 import { createNewArticle } from './new';
-import type { AterraProcessingOptions } from './types';
+import type { ATerraForgeProcessingOptions } from './types';
 import {
   type ConsoleLogLevel,
   getTrimmingConsoleLogger,
-  loadAterraConfig,
-  resolveAterraConfigPathFromDir,
-  resolveAterraProcessingOptionsFromVariables,
+  loadATerraForgeConfig,
+  resolveATerraForgeConfigPathFromDir,
+  resolveATerraForgeProcessingOptionsFromVariables,
   toPosixRelativePath,
 } from './utils';
 
@@ -83,12 +83,12 @@ const resolveLogLevel = (value: unknown): ConsoleLogLevel => {
 
 const resolveBuildOptions = async (
   opts: BuildCliOptions
-): Promise<AterraProcessingOptions> => {
+): Promise<ATerraForgeProcessingOptions> => {
   const configPath = opts.config
     ? resolve(opts.config)
-    : resolveAterraConfigPathFromDir(process.cwd());
-  const config = await loadAterraConfig(configPath);
-  const variableOptions = resolveAterraProcessingOptionsFromVariables(
+    : resolveATerraForgeConfigPathFromDir(process.cwd());
+  const config = await loadATerraForgeConfig(configPath);
+  const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
     config.variables,
     dirname(configPath)
   );
@@ -122,9 +122,9 @@ const resolveBuildOptions = async (
 const resolveDocsDir = async (opts: NewCliOptions): Promise<string> => {
   const configPath = opts.config
     ? resolve(opts.config)
-    : resolveAterraConfigPathFromDir(process.cwd());
-  const config = await loadAterraConfig(configPath);
-  const variableOptions = resolveAterraProcessingOptionsFromVariables(
+    : resolveATerraForgeConfigPathFromDir(process.cwd());
+  const config = await loadATerraForgeConfig(configPath);
+  const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
     config.variables,
     dirname(configPath)
   );

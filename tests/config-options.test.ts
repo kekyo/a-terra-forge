@@ -1,18 +1,21 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { mkdir, writeFile } from 'fs/promises';
 import { resolve } from 'path';
 import { describe, expect, it, type TestContext } from 'vitest';
 
 import {
-  mergeAterraConfig,
-  resolveAterraConfigPathFromDir,
-  resolveAterraProcessingOptionsFromVariables,
+  mergeATerraForgeConfig,
+  resolveATerraForgeConfigPathFromDir,
+  resolveATerraForgeProcessingOptionsFromVariables,
 } from '../src/utils';
-import type { AterraConfig, AterraConfigOverrides } from '../src/types';
+import type {
+  ATerraForgeConfig,
+  ATerraForgeConfigOverrides,
+} from '../src/types';
 
 const createTempDir = async (fn: TestContext, name: string) => {
   const basePath = resolve('test_results', 'config-path', fn.task.name, name);
@@ -20,7 +23,7 @@ const createTempDir = async (fn: TestContext, name: string) => {
   return basePath;
 };
 
-describe('resolveAterraProcessingOptionsFromVariables', () => {
+describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
   it('resolves relative paths against the config directory.', () => {
     const baseDir = resolve('test_results', 'options');
     const variables = new Map<string, unknown>([
@@ -34,7 +37,7 @@ describe('resolveAterraProcessingOptionsFromVariables', () => {
       ['siteName', 'Sample'],
     ]);
 
-    const resolved = resolveAterraProcessingOptionsFromVariables(
+    const resolved = resolveATerraForgeProcessingOptionsFromVariables(
       variables,
       baseDir
     );
@@ -59,7 +62,7 @@ describe('resolveAterraProcessingOptionsFromVariables', () => {
       ['enableGitMetadata', 'yes'],
     ]);
 
-    const resolved = resolveAterraProcessingOptionsFromVariables(
+    const resolved = resolveATerraForgeProcessingOptionsFromVariables(
       variables,
       baseDir
     );
@@ -73,14 +76,14 @@ describe('resolveAterraProcessingOptionsFromVariables', () => {
   });
 });
 
-describe('resolveAterraConfigPathFromDir', () => {
+describe('resolveATerraForgeConfigPathFromDir', () => {
   it('prefers atr.json5 over other config names.', async (fn) => {
     const root = await createTempDir(fn, 'prefer-json5');
     await writeFile(resolve(root, 'atr.json'), '{}', 'utf8');
     await writeFile(resolve(root, 'atr.jsonc'), '{}', 'utf8');
     await writeFile(resolve(root, 'atr.json5'), '{}', 'utf8');
 
-    const resolved = resolveAterraConfigPathFromDir(root);
+    const resolved = resolveATerraForgeConfigPathFromDir(root);
 
     expect(resolved).toBe(resolve(root, 'atr.json5'));
   });
@@ -90,7 +93,7 @@ describe('resolveAterraConfigPathFromDir', () => {
     await writeFile(resolve(root, 'atr.json'), '{}', 'utf8');
     await writeFile(resolve(root, 'atr.jsonc'), '{}', 'utf8');
 
-    const resolved = resolveAterraConfigPathFromDir(root);
+    const resolved = resolveATerraForgeConfigPathFromDir(root);
 
     expect(resolved).toBe(resolve(root, 'atr.jsonc'));
   });
@@ -99,7 +102,7 @@ describe('resolveAterraConfigPathFromDir', () => {
     const root = await createTempDir(fn, 'fallback-json');
     await writeFile(resolve(root, 'atr.json'), '{}', 'utf8');
 
-    const resolved = resolveAterraConfigPathFromDir(root);
+    const resolved = resolveATerraForgeConfigPathFromDir(root);
 
     expect(resolved).toBe(resolve(root, 'atr.json'));
   });
@@ -107,15 +110,15 @@ describe('resolveAterraConfigPathFromDir', () => {
   it('defaults to atr.json when no config file exists.', async (fn) => {
     const root = await createTempDir(fn, 'fallback-none');
 
-    const resolved = resolveAterraConfigPathFromDir(root);
+    const resolved = resolveATerraForgeConfigPathFromDir(root);
 
     expect(resolved).toBe(resolve(root, 'atr.json'));
   });
 });
 
-describe('mergeAterraConfig', () => {
+describe('mergeATerraForgeConfig', () => {
   it('merges variables but replaces other config blocks.', () => {
-    const baseConfig: AterraConfig = {
+    const baseConfig: ATerraForgeConfig = {
       variables: new Map([
         ['siteName', 'Base'],
         ['docsDir', 'docs'],
@@ -127,12 +130,12 @@ describe('mergeAterraConfig', () => {
       categoriesAfter: [],
     };
 
-    const overrides: AterraConfigOverrides = {
+    const overrides: ATerraForgeConfigOverrides = {
       variables: new Map([['siteName', 'Override']]),
       messages: new Map([['', new Map([['hello', 'override']])]]),
     };
 
-    const merged = mergeAterraConfig(baseConfig, overrides);
+    const merged = mergeATerraForgeConfig(baseConfig, overrides);
 
     expect(merged.variables.get('siteName')).toBe('Override');
     expect(merged.variables.get('docsDir')).toBe('docs');

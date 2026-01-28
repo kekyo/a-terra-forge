@@ -1,7 +1,7 @@
-// a-terra-gorge - Universal document-oriented markdown site generator
+// a-terra-forge - Universal document-oriented markdown site generator
 // Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
 // Under MIT.
-// https://github.com/kekyo/a-terra-gorge
+// https://github.com/kekyo/a-terra-forge
 
 import { sep } from 'path';
 import dayjs from 'dayjs';
@@ -12,7 +12,10 @@ import {
 } from 'funcity';
 
 import { bootstrapIcons } from '../generated/bootstrapIcons';
-import type { AterraMessageList, AterraMessageListByLocale } from '../types';
+import type {
+  ATerraForgeMessageList,
+  ATerraForgeMessageListByLocale,
+} from '../types';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -41,9 +44,9 @@ const escapeXml = (arg0: unknown): string => {
  * Resolve message list by locale from configured messages.
  */
 const resolveMessageList = (
-  messagesByLocale: AterraMessageListByLocale | undefined,
+  messagesByLocale: ATerraForgeMessageListByLocale | undefined,
   locale: unknown
-): AterraMessageList | undefined => {
+): ATerraForgeMessageList | undefined => {
   if (!(messagesByLocale instanceof Map)) {
     return undefined;
   }
@@ -73,7 +76,7 @@ async function getMessage(
   const message = String(arg0);
   const defaultValue = arg1 === undefined ? undefined : String(arg1);
   const messages = this.getValue('$$messages$$').value as
-    | AterraMessageListByLocale
+    | ATerraForgeMessageListByLocale
     | undefined;
   const locale = this.getValue('locale').value;
   const messageList = resolveMessageList(messages, locale);
