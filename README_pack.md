@@ -52,7 +52,7 @@ $ atr init
 
 ## Documentation
 
-For detailed documentation and advanced features, please visit our [GitHub repository](https://github.com/kekyo/funcity).
+For detailed documentation and advanced features, please visit our [GitHub repository](https://github.com/kekyo/a-terra-forge/).
 
 ## License
 
