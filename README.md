@@ -43,7 +43,7 @@ Documents can be written in Markdown, and it also supports rich expressions such
 
 ![Responsive design](./images/responsive.png)
 
-It has the following features:
+Features:
 
 - As a static site generator, no server is required. You can deploy and publish to any web server, such as GitHub Pages.
 - The timeline page also statically generates the latest documents, while older articles use infinite scroll (on-demand loading).
