@@ -9,6 +9,7 @@ import { describe, expect, it, type TestContext } from 'vitest';
 
 import {
   mergeATerraForgeConfig,
+  loadATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
   resolveATerraForgeProcessingOptionsFromVariables,
 } from '../src/utils';
@@ -150,5 +151,17 @@ describe('mergeATerraForgeConfig', () => {
     expect(merged.contentFiles).toEqual(['a.txt']);
     expect(merged.categories).toEqual(['beta']);
     expect(merged.categoriesAfter).toEqual(['omega']);
+  });
+});
+
+describe('loadATerraForgeConfig', () => {
+  it('defaults locale to en when missing.', async (fn) => {
+    const root = await createTempDir(fn, 'default-locale');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(configPath, '{}', 'utf8');
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.variables.get('locale')).toBe('en');
   });
 });

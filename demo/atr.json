@@ -3,22 +3,14 @@
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",
     "siteDescription": "Sample a-terra-forge site",
-    "locale": "en",
     "frontPage": "timeline",
-    "headerIcon": "activity", // https://icons.getbootstrap.com/
+    "headerIcon": "activity",
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "siteTemplates": [
-      "site-style.css",
-      "site-script.js",
-      "feed.xml",
-      "atom.xml",
-      "sitemap.xml"
-    ],
-    "contentFiles": ["./**/*.png", "./**/*.jpg"],
     "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"]
+    "categoriesAfter": ["about"],
+    "locale": "en"
   },
   "messages": {
     "en": {
@@ -47,7 +39,6 @@
   "codeHighlight": {
     "lineNumbers": true,
     "theme": {
-      // https://shiki.style/themes
       "light": "light-plus",
       "dark": "dark-plus"
     }
