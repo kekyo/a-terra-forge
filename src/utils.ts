@@ -649,6 +649,10 @@ const normalizeVariablesWithLists = (
   'variables' | 'contentFiles' | 'categories' | 'categoriesAfter'
 > => {
   const normalized = new Map(variables);
+  const localeValue = normalized.get('locale');
+  if (typeof localeValue !== 'string' || localeValue.trim().length === 0) {
+    normalized.set('locale', 'en');
+  }
   const contentFiles = resolveVariableStringList(
     normalized,
     configPath,
