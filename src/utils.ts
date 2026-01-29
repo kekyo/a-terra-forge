@@ -646,7 +646,7 @@ const normalizeVariablesWithLists = (
   configPath: string
 ): Pick<
   ATerraForgeConfig,
-  'variables' | 'contentFiles' | 'categories' | 'categoriesAfter'
+  'variables' | 'contentFiles' | 'menuOrder' | 'afterMenuOrder'
 > => {
   const normalized = new Map(variables);
   const localeValue = normalized.get('locale');
@@ -659,33 +659,33 @@ const normalizeVariablesWithLists = (
     'contentFiles',
     defaultTargetContents
   );
-  const categories = resolveVariableStringList(
+  const menuOrder = resolveVariableStringList(
     normalized,
     configPath,
-    'categories',
+    'menuOrder',
     []
   );
-  const categoriesAfter = resolveVariableStringList(
+  const afterMenuOrder = resolveVariableStringList(
     normalized,
     configPath,
-    'categoriesAfter',
+    'afterMenuOrder',
     []
   );
 
   normalized.set('contentFiles', contentFiles);
-  normalized.set('categories', categories);
-  normalized.set('categoriesAfter', categoriesAfter);
+  normalized.set('menuOrder', menuOrder);
+  normalized.set('afterMenuOrder', afterMenuOrder);
 
   return {
     variables: normalized,
     contentFiles,
-    categories,
-    categoriesAfter,
+    menuOrder,
+    afterMenuOrder,
   };
 };
 
 const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
-  const { variables, contentFiles, categories, categoriesAfter } =
+  const { variables, contentFiles, menuOrder, afterMenuOrder } =
     normalizeVariablesWithLists(new Map(), '<defaults>');
 
   return {
@@ -693,8 +693,8 @@ const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
     messages: new Map(),
     codeHighlight: defaultCodeHighlightConfig,
     contentFiles,
-    categories,
-    categoriesAfter,
+    menuOrder,
+    afterMenuOrder,
   };
 };
 
@@ -703,7 +703,7 @@ const parseATerraForgeConfigObject = (
   configPath: string
 ): ATerraForgeConfig => {
   const parsedVariables = parseVariables(parsed.variables, configPath);
-  const { variables, contentFiles, categories, categoriesAfter } =
+  const { variables, contentFiles, menuOrder, afterMenuOrder } =
     normalizeVariablesWithLists(parsedVariables, configPath);
 
   return {
@@ -711,8 +711,8 @@ const parseATerraForgeConfigObject = (
     messages: parseMessages(parsed.messages, configPath),
     codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
     contentFiles,
-    categories,
-    categoriesAfter,
+    menuOrder,
+    afterMenuOrder,
   };
 };
 
@@ -767,8 +767,8 @@ export const mergeATerraForgeConfig = (
     messages: overrides.messages ?? baseConfig.messages,
     codeHighlight: overrides.codeHighlight ?? baseConfig.codeHighlight,
     contentFiles: normalized.contentFiles,
-    categories: normalized.categories,
-    categoriesAfter: normalized.categoriesAfter,
+    menuOrder: normalized.menuOrder,
+    afterMenuOrder: normalized.afterMenuOrder,
   };
 };
 

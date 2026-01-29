@@ -423,8 +423,8 @@ a-terra-forgeは、文書スペースの全体的な管理を `atr.json` とい�
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"]
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["about"]
   }
 }
 ```
@@ -443,8 +443,8 @@ a-terra-forgeは、文書スペースの全体的な管理を `atr.json` とい�
 |`primaryColor`| サイトのプライマリ（優先）アクセントカラーを指定します。雛形が青色のアクセントを多用しているのはこの指定によるものです。この色を変えれば、あなたの好みのアクセントカラーに変更できます。但し、システムテーマのlightとdarkでバランスの取れている色味を試行錯誤することを忘れずに。 |
 |`secondaryColor`| サイトのセカンダリ（補間）アクセントカラーを指定します。セカンダリカラーは今の所、ブロッククオートでのみ使用しています。 |
 |`inlineCodeColor`| サイトのインラインコードカラーを指定します。これは、markdown上でバッククオートで囲まれた文字（インラインコード）の色です。インラインコードの背景色もこの指定から着色されます。 |
-|`categories`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
-|`categoriesAfter`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
+|`menuOrder`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
+|`afterMenuOrder`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
 
 例えば、 `primaryColor` を `#ff4040` に変更すると、以下のようにアクセントカラーが変わります:
 
@@ -552,24 +552,24 @@ New article created: food/index.md
 
 ![Navigation menu order](./images/navigation-order.png)
 
-この順序は、`atr.json` の `categories` 変数で指定できます:
+この順序は、`atr.json` の `menuOrder` 変数で指定できます:
 
 ```json
 {
   "variables": {
-    "categories": ["timeline", "hello", "food", "web", "server"],
+    "menuOrder": ["timeline", "hello", "food", "web", "server"],
   }
 }
 ```
 
-`categories` には、カテゴリのディレクトリ名を指定します。そして、サブカテゴリであっても親カテゴリ名を指定せず、サブカテゴリ名だけで指定してください。
+`menuOrder` には、カテゴリのディレクトリ名を指定します。そして、サブカテゴリであっても親カテゴリ名を指定せず、サブカテゴリ名だけで指定してください。
 このリストの指定通りの順序が維持されるように、ナビゲーションメニュー項目が配置されます。
 
 サブカテゴリ名は、親カテゴリが分割されるような指定を行ったとしても、その通りのメニュー配置にはならず、単に順序だけが反映されることに注意してください。
 つまり、以下の指定は同じ結果となります:
 
-- `"categories": ["timeline", "hello", "web", "food", "server"]`
-- `"categories": ["timeline", "hello", "web", "server", "food"]`
+- `"menuOrder": ["timeline", "hello", "web", "food", "server"]`
+- `"menuOrder": ["timeline", "hello", "web", "server", "food"]`
 
 また、ここに指定されていないカテゴリが存在する場合は、メニューの後端に追加されます。
 
@@ -578,21 +578,21 @@ New article created: food/index.md
 
 ![Navigation menu (after)](./images/navigation-after.png)
 
-これは、`categoriesAfter` 変数で指定できます:
+これは、`afterMenuOrder` 変数で指定できます:
 
 ```json
 {
   "variables": {
-    "categoriesAfter": ["about"],
+    "afterMenuOrder": ["about"],
   }
 }
 ```
 
-`categoriesAfter` は常に `categories` の指定の後で評価されることに注意してください。
-`categoriesAfter` に指定したカテゴリが、 `categories` に含まれていると、左側のグループに配置されてしまいます。
+`afterMenuOrder` は常に `menuOrder` の指定の後で評価されることに注意してください。
+`afterMenuOrder` に指定したカテゴリが、 `menuOrder` に含まれていると、左側のグループに配置されてしまいます。
 
 タイムラインカテゴリは特殊なカテゴリと説明しましたが、カテゴリ名 `timeline` を使うことで、ナビゲーションメニューでのタイムラインの位置を調整することも出来ます。
-敢えてタイムラインを右端（`categoriesAfter`）に配置して、校正済みのドキュメントを全面に押し出したサイトにすることも出来ます。
+敢えてタイムラインを右端（`afterMenuOrder`）に配置して、校正済みのドキュメントを全面に押し出したサイトにすることも出来ます。
 
 ### フロントページ
 
@@ -873,8 +873,8 @@ a-terra-forgeの雛形にはこのコードが含まれているため、すぐ�
 |`feedTitle`| RSS/Atomのタイトルです。`siteName` が空の場合は `"feed"` が使われます。 |
 |`feedDescription`| RSS/Atomの説明文です。デフォルトは `siteDescription` の値です。 |
 |`timelinePrerenderCount`| タイムラインページに事前描画する件数です。デフォルトは `5` です。 |
-|`categories`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
-|`categoriesAfter`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
+|`menuOrder`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
+|`afterMenuOrder`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
 
 ここに示した変数以外にも、 [funcityで標準的に使用可能な変数群](https://github.com/kekyo/funcity/blob/main/README_ja.md#%E6%A8%99%E6%BA%96%E9%96%A2%E6%95%B0) も使用できます。
 

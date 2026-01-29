@@ -405,40 +405,40 @@ export const generateDocs = async (
   let outputSwapped = false;
   try {
     const articleDirs = [...filteredGroupedArticleFiles.keys()].sort();
-    const navCategoryNames = new Set<string>();
+    const navMenuNames = new Set<string>();
     for (const category of categoriesWithSubcategories) {
-      navCategoryNames.add(category);
+      navMenuNames.add(category);
     }
     for (const directory of filteredGroupedArticleFiles.keys()) {
       const segments = splitDirectory(directory);
       if (segments.length === 1) {
-        navCategoryNames.add(segments[0]!);
+        navMenuNames.add(segments[0]!);
       }
     }
-    const categoryOrder = config.categories;
-    const categoryAfterOrder = config.categoriesAfter;
-    const combinedOrder = [...categoryOrder, ...categoryAfterOrder];
+    const menuOrder = config.menuOrder;
+    const afterMenuOrder = config.afterMenuOrder;
+    const combinedOrder = [...menuOrder, ...afterMenuOrder];
     const includeTimeline = true;
-    const timelineInBefore = categoryOrder.includes(timelineKey);
-    const timelineInAfter = categoryAfterOrder.includes(timelineKey);
+    const timelineInBefore = menuOrder.includes(timelineKey);
+    const timelineInAfter = afterMenuOrder.includes(timelineKey);
     const includeTimelineInAfter =
       includeTimeline && !timelineInBefore && timelineInAfter;
     const includeTimelineInBefore = includeTimeline && !includeTimelineInAfter;
-    const afterSet = new Set(categoryAfterOrder);
-    const leftCategoryNames = [...navCategoryNames].filter(
-      (category) => !afterSet.has(category)
+    const afterMenuSet = new Set(afterMenuOrder);
+    const leftMenuNames = [...navMenuNames].filter(
+      (navMenuName) => !afterMenuSet.has(navMenuName)
     );
-    const rightCategoryNames = [...navCategoryNames].filter((category) =>
-      afterSet.has(category)
+    const rightCategoryNames = [...navMenuNames].filter((navMenuName) =>
+      afterMenuSet.has(navMenuName)
     );
 
-    const navCategories: NavCategory[] = [...navCategoryNames]
+    const navCategoryList: NavCategory[] = [...navMenuNames]
       .sort((a, b) => a.localeCompare(b))
-      .map((category) => {
-        const subcategories = subcategoryLookup.get(category);
+      .map((navMenuName) => {
+        const subcategories = subcategoryLookup.get(navMenuName);
         if (!subcategories) {
           return {
-            category,
+            category: navMenuName,
             subcategories: [],
           };
         }
@@ -450,21 +450,21 @@ export const generateDocs = async (
           path: subcategories.get(label)!,
         }));
         return {
-          category,
+          category: navMenuName,
           subcategories: orderedSubcategories,
         };
       });
     const navCategoryMap = new Map(
-      navCategories.map((navCategory) => [navCategory.category, navCategory])
+      navCategoryList.map((navCategory) => [navCategory.category, navCategory])
     );
     const navOrderBefore = buildNavOrderBefore(
-      leftCategoryNames,
-      categoryOrder,
+      leftMenuNames,
+      menuOrder,
       includeTimelineInBefore
     );
     const navOrderAfter = buildNavOrderAfter(
       rightCategoryNames,
-      categoryAfterOrder,
+      afterMenuOrder,
       includeTimelineInAfter
     );
 

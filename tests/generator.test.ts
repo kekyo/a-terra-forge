@@ -1962,7 +1962,7 @@ title: Reference
     ).toBe(true);
   });
 
-  it('Orders navigation items using the categories lists, including timeline.', async (fn) => {
+  it('Orders navigation items using the menu order lists, including timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-nav-order');
     const docsDir = join(siteRoot, 'docs');
     const templatesDir = join(siteRoot, 'templates');
@@ -2020,8 +2020,8 @@ title: ${title}
 
     const config = {
       variables: {
-        categories: ['beta', 'topics', 'two', 'one'],
-        categoriesAfter: ['alpha', 'timeline'],
+        menuOrder: ['beta', 'topics', 'two', 'one'],
+        afterMenuOrder: ['alpha', 'timeline'],
       },
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');

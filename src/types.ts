@@ -72,10 +72,10 @@ export interface ATerraForgeVariablesInput {
   siteTemplates?: readonly string[];
   /** Glob patterns for static content files to copy. */
   contentFiles?: readonly string[];
-  /** Category ordering for primary navigation. */
-  categories?: readonly string[];
-  /** Category ordering for secondary navigation. */
-  categoriesAfter?: readonly string[];
+  /** Menu ordering for primary navigation. */
+  menuOrder?: readonly string[];
+  /** Menu ordering for secondary navigation. */
+  afterMenuOrder?: readonly string[];
   /** Additional variable entries. */
   [key: string]: unknown;
 }
@@ -112,10 +112,10 @@ export interface ATerraForgeConfig {
   codeHighlight: CodeHighlightOptions;
   /** Glob patterns for static content files to copy. */
   contentFiles: readonly string[];
-  /** Category ordering for primary navigation. */
-  categories: readonly string[];
-  /** Category ordering for secondary navigation. */
-  categoriesAfter: readonly string[];
+  /** Menu ordering for primary navigation. */
+  menuOrder: readonly string[];
+  /** Menu ordering for secondary navigation. */
+  afterMenuOrder: readonly string[];
 }
 
 /**

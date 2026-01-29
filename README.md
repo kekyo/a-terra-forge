@@ -423,8 +423,8 @@ Below is a partial excerpt of `atr.json`:
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"]
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["about"]
   }
 }
 ```
@@ -443,8 +443,8 @@ Below is an explanation of these values:
 |`primaryColor`|Specifies the primary accent color for the site. The scaffold uses many blue accents because of this setting. If you change this color, you can use your preferred accent color. However, do not forget to try colors that are well balanced between the system light and dark themes.                                     |
 |`secondaryColor`|Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes. |
 |`inlineCodeColor`|Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting. |
-|`categories`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
-|`categoriesAfter`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
+|`menuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
+|`afterMenuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
 
 For example, changing `primaryColor` to `#ff4040` will alter the accent color as follows:
 
@@ -551,24 +551,24 @@ but you might want to place `food` to the right of `develop`, or change the orde
 
 ![Navigation menu order](./images/navigation-order.png)
 
-This order can be specified by the `categories` variable in `atr.json`:
+This order can be specified by the `menuOrder` variable in `atr.json`:
 
 ```json
 {
   "variables": {
-    "categories": ["timeline", "hello", "food", "web", "server"],
+    "menuOrder": ["timeline", "hello", "food", "web", "server"],
   }
 }
 ```
 
-For `categories`, specify the category directory names. Even for subcategories, do not specify the parent category name; specify only the subcategory name.
+For `menuOrder`, specify the category directory names. Even for subcategories, do not specify the parent category name; specify only the subcategory name.
 Navigation menu items are placed to keep the order specified in this list.
 
 Note that even if you specify subcategory names as if the parent categories were split, the menu arrangement will not follow that structure, and only the order will be reflected.
 In other words, the following settings yield the same result:
 
-- `"categories": ["timeline", "hello", "web", "food", "server"]`
-- `"categories": ["timeline", "hello", "web", "server", "food"]`
+- `"menuOrder": ["timeline", "hello", "web", "food", "server"]`
+- `"menuOrder": ["timeline", "hello", "web", "server", "food"]`
 
 If there are categories not listed here, they are added to the end of the menu.
 
@@ -577,21 +577,21 @@ If you place it on the far left, you can separate it from self-introduction and 
 
 ![Navigation menu (after)](./images/navigation-after.png)
 
-This can be specified by the `categoriesAfter` variable:
+This can be specified by the `afterMenuOrder` variable:
 
 ```json
 {
   "variables": {
-    "categoriesAfter": ["about"],
+    "afterMenuOrder": ["about"],
   }
 }
 ```
 
-Note that `categoriesAfter` is always evaluated after `categories`.
-If a category specified in `categoriesAfter` is included in `categories`, it will be placed in the left group.
+Note that `afterMenuOrder` is always evaluated after `menuOrder`.
+If a category specified in `afterMenuOrder` is included in `menuOrder`, it will be placed in the left group.
 
 The timeline category is special, but by using the category name `timeline`, you can also adjust its position in the navigation menu.
-You can deliberately place the timeline on the far right (`categoriesAfter`) to make a site that highlights proofread documents.
+You can deliberately place the timeline on the far right (`afterMenuOrder`) to make a site that highlights proofread documents.
 
 ### Front page
 
@@ -872,8 +872,8 @@ Below are all values defined in `atr.json`:
 |`feedTitle`|RSS/Atom feed title. Defaults to `siteName` or `"feed"` when `siteName` is empty. |
 |`feedDescription`|RSS/Atom feed description. Defaults to `siteDescription`. |
 |`timelinePrerenderCount`|Number of timeline entries pre-rendered into the timeline page. Use a positive integer; when omitted, default is `5`. |
-|`categories`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
-|`categoriesAfter`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
+|`menuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
+|`afterMenuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
 
 In addition to the variables shown here, you can also use the [standard variables available in funcity](https://github.com/kekyo/funcity#standard-functions).
 

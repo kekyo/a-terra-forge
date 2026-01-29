@@ -8,8 +8,8 @@
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"],
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["about"],
     "locale": "en"
   },
   "messages": {

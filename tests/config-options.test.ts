@@ -124,20 +124,20 @@ describe('mergeATerraForgeConfig', () => {
         ['siteName', 'Base'],
         ['docsDir', 'docs'],
         ['contentFiles', ['a.txt']],
-        ['categories', ['alpha']],
-        ['categoriesAfter', ['omega']],
+        ['menuOrder', ['alpha']],
+        ['afterMenuOrder', ['omega']],
       ]),
       messages: new Map([['', new Map([['hello', 'base']])]]),
       codeHighlight: {},
       contentFiles: ['a.txt'],
-      categories: ['alpha'],
-      categoriesAfter: ['omega'],
+      menuOrder: ['alpha'],
+      afterMenuOrder: ['omega'],
     };
 
     const overrides: ATerraForgeConfigOverrides = {
       variables: new Map<string, unknown>([
         ['siteName', 'Override'],
-        ['categories', ['beta']],
+        ['menuOrder', ['beta']],
       ]),
       messages: new Map([['', new Map([['hello', 'override']])]]),
     };
@@ -146,11 +146,11 @@ describe('mergeATerraForgeConfig', () => {
 
     expect(merged.variables.get('siteName')).toBe('Override');
     expect(merged.variables.get('docsDir')).toBe('docs');
-    expect(merged.variables.get('categories')).toEqual(['beta']);
+    expect(merged.variables.get('menuOrder')).toEqual(['beta']);
     expect(merged.messages.get('')?.get('hello')).toBe('override');
     expect(merged.contentFiles).toEqual(['a.txt']);
-    expect(merged.categories).toEqual(['beta']);
-    expect(merged.categoriesAfter).toEqual(['omega']);
+    expect(merged.menuOrder).toEqual(['beta']);
+    expect(merged.afterMenuOrder).toEqual(['omega']);
   });
 });
 
