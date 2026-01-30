@@ -93,7 +93,33 @@ describe('template style', () => {
     );
     expect(dialogMatch).not.toBeNull();
     expect(dialogMatch?.[1]).toMatch(/max-width:\s*calc\(100vw\s*-\s*2rem\);/);
-    expect(dialogMatch?.[1]).toMatch(/width:\s*calc\(100vw\s*-\s*2rem\);/);
+    const mediaDialogMatch = css.match(
+      /\.image-modal\.image-modal--media\s+\.image-modal-dialog\s*\{([^}]*)\}/
+    );
+    expect(mediaDialogMatch).not.toBeNull();
+    expect(mediaDialogMatch?.[1]).toMatch(/width:\s*calc\(100vw\s*-\s*2rem\);/);
+  });
+
+  it('clips image modal content to the rounded border', async () => {
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
+    const contentMatch = css.match(
+      /\.image-modal\s+\.modal-content\s*\{([^}]*)\}/
+    );
+
+    expect(contentMatch).not.toBeNull();
+    expect(contentMatch?.[1]).toMatch(/overflow:\s*hidden;/);
+  });
+
+  it('removes image modal padding at the smartphone breakpoint', async () => {
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
+    const mediaBlocks = extractMediaBlocks(css, '@media (max-width: 575.98px)');
+
+    expect(mediaBlocks.length).toBeGreaterThan(0);
+    expect(
+      mediaBlocks.some((block) =>
+        /\.image-modal\s+\.modal-body\s*\{[^}]*padding:\s*0;/.test(block)
+      )
+    ).toBe(true);
   });
 
   it('renders blockquotes with the bootstrap quote icon', async () => {

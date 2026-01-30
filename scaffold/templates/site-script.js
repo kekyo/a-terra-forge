@@ -13,6 +13,7 @@
   const copiedClass = 'code-copy-button-copied';
   const imageModalId = 'imageModal';
   const imageModalImageClass = 'image-modal-image';
+  const imageModalContentClass = 'image-modal-content-body';
   const endOfTimeline = "{{getMessage 'endOfTimeline' 'End of timeline.'}}";
   const noArticlesYet = "{{getMessage 'noArticlesYet' 'No articles yet.'}}";
   let mermaidInitialized = false;
@@ -185,7 +186,7 @@
     modal.innerHTML = `<div class="modal-dialog modal-dialog-centered image-modal-dialog">
   <div class="modal-content image-modal-content">
     <div class="modal-body image-modal-body">
-      <img class="img-fluid ${imageModalImageClass}" alt="" />
+      <div class="${imageModalContentClass}"></div>
     </div>
   </div>
 </div>`;
@@ -193,23 +194,48 @@
     return modal;
   };
 
-  const openImageModal = (image) => {
+  const setModalVariant = (modal, variant) => {
+    const variants = ['image-modal--image', 'image-modal--media'];
+    variants.forEach((name) => modal.classList.remove(name));
+    if (variant === 'image') {
+      modal.classList.add('image-modal--image');
+    } else if (variant === 'media') {
+      modal.classList.add('image-modal--media');
+    }
+  };
+
+  const openModalWithContent = (content, onShown, variant) => {
     const bootstrapApi = window.bootstrap;
     if (!bootstrapApi || typeof bootstrapApi.Modal !== 'function') {
       return;
     }
     const modal = ensureImageModal();
-    const modalImage = modal.querySelector(`.${imageModalImageClass}`);
-    if (!(modalImage instanceof HTMLImageElement)) {
+    setModalVariant(modal, variant);
+    const modalContent = modal.querySelector(`.${imageModalContentClass}`);
+    if (!(modalContent instanceof HTMLElement)) {
       return;
     }
-    modalImage.src = image.currentSrc || image.src;
-    modalImage.alt = image.alt || '';
+    modalContent.replaceChildren(content);
+    if (typeof onShown === 'function') {
+      const handler = () => {
+        modal.removeEventListener('shown.bs.modal', handler);
+        onShown(modal);
+      };
+      modal.addEventListener('shown.bs.modal', handler);
+    }
     bootstrapApi.Modal.getOrCreateInstance(modal, {
       backdrop: true,
       focus: true,
       keyboard: true,
     }).show();
+  };
+
+  const openImageModal = (image) => {
+    const img = document.createElement('img');
+    img.className = `img-fluid ${imageModalImageClass}`;
+    img.src = image.currentSrc || image.src;
+    img.alt = image.alt || '';
+    openModalWithContent(img, undefined, 'image');
   };
 
   const addCopyButtons = (root) => {
@@ -373,10 +399,51 @@
     openImageModal(image);
   };
 
+  const handleMermaidModalClick = (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    let container = target?.closest(
+      '.beautiful-mermaid-wrapper, .mermaid-wrapper'
+    );
+    if (!container && typeof event.clientX === 'number') {
+      const stacked = document.elementsFromPoint(event.clientX, event.clientY);
+      container =
+        stacked.find(
+          (element) =>
+            element instanceof HTMLElement &&
+            (element.classList.contains('beautiful-mermaid-wrapper') ||
+              element.classList.contains('mermaid-wrapper'))
+        ) ?? null;
+    }
+    if (!(container instanceof HTMLElement)) {
+      return;
+    }
+    event.preventDefault();
+    const cloned = container.cloneNode(true);
+    if (!(cloned instanceof HTMLElement)) {
+      return;
+    }
+    cloned.classList.add('modal-media-panel');
+    openModalWithContent(
+      cloned,
+      () => {
+      renderMermaid(cloned);
+      },
+      'media'
+    );
+  };
+
   document.addEventListener(
     'click',
     (event) => {
       handleImageModalClick(event);
+    },
+    { capture: true }
+  );
+
+  document.addEventListener(
+    'click',
+    (event) => {
+      handleMermaidModalClick(event);
     },
     { capture: true }
   );
