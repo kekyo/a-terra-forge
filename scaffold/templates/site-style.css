@@ -577,31 +577,31 @@ h6 {
 }
 
 /* -------------------------------------------------------------------- */
-/* Timeline structures */
+/* Stream structures */
 
-.timeline-list {
+.stream-list {
   display: flex;
   flex-direction: column;
   gap: 2em;
 }
 
-.timeline-entry {
+.stream-entry {
   padding-bottom: 2em;
   border-bottom: 2px solid var(--primary-alpha-75);
 }
 
-.timeline-entry-error {
+.stream-entry-error {
   color: var(--bs-danger);
 }
 
-.timeline-status {
+.stream-status {
   padding: 1rem 0;
   text-align: center;
   color: var(--bs-secondary-color);
 }
 
-/* Continuous timeline loader detection */
-.timeline-sentinel {
+/* Continuous stream loader detection */
+.stream-sentinel {
   height: 1px;
 }
 

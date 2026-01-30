@@ -646,7 +646,11 @@ const normalizeVariablesWithLists = (
   configPath: string
 ): Pick<
   ATerraForgeConfig,
-  'variables' | 'contentFiles' | 'menuOrder' | 'afterMenuOrder'
+  | 'variables'
+  | 'contentFiles'
+  | 'menuOrder'
+  | 'afterMenuOrder'
+  | 'blogCategories'
 > => {
   const normalized = new Map(variables);
   const localeValue = normalized.get('locale');
@@ -671,21 +675,29 @@ const normalizeVariablesWithLists = (
     'afterMenuOrder',
     []
   );
+  const blogCategories = resolveVariableStringList(
+    normalized,
+    configPath,
+    'blogCategories',
+    []
+  );
 
   normalized.set('contentFiles', contentFiles);
   normalized.set('menuOrder', menuOrder);
   normalized.set('afterMenuOrder', afterMenuOrder);
+  normalized.set('blogCategories', blogCategories);
 
   return {
     variables: normalized,
     contentFiles,
     menuOrder,
     afterMenuOrder,
+    blogCategories,
   };
 };
 
 const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
-  const { variables, contentFiles, menuOrder, afterMenuOrder } =
+  const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
     normalizeVariablesWithLists(new Map(), '<defaults>');
 
   return {
@@ -695,6 +707,7 @@ const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
     contentFiles,
     menuOrder,
     afterMenuOrder,
+    blogCategories,
   };
 };
 
@@ -703,7 +716,7 @@ const parseATerraForgeConfigObject = (
   configPath: string
 ): ATerraForgeConfig => {
   const parsedVariables = parseVariables(parsed.variables, configPath);
-  const { variables, contentFiles, menuOrder, afterMenuOrder } =
+  const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
     normalizeVariablesWithLists(parsedVariables, configPath);
 
   return {
@@ -713,6 +726,7 @@ const parseATerraForgeConfigObject = (
     contentFiles,
     menuOrder,
     afterMenuOrder,
+    blogCategories,
   };
 };
 
@@ -769,6 +783,7 @@ export const mergeATerraForgeConfig = (
     contentFiles: normalized.contentFiles,
     menuOrder: normalized.menuOrder,
     afterMenuOrder: normalized.afterMenuOrder,
+    blogCategories: normalized.blogCategories,
   };
 };
 

@@ -385,10 +385,50 @@
     void handleCopyClick(event);
   });
 
-  const initTimeline = async () => {
-    const listElement = document.getElementById('timeline-list');
-    const statusElement = document.getElementById('timeline-status');
-    const sentinel = document.getElementById('timeline-sentinel');
+  const createTemplateFragment = (html) => {
+    const template = document.createElement('template');
+    template.innerHTML = html.trim();
+    return template.content.childNodes.length > 0 ? template.content : null;
+  };
+
+  const buildErrorEntry = (message = 'Failed to load content.') => {
+    const article = document.createElement('article');
+    article.className = 'article-entry stream-entry stream-entry-error';
+    article.textContent = message;
+    return article;
+  };
+
+  const buildEntry = async (entry) => {
+    const entryPath =
+      entry && typeof entry.entryPath === 'string' ? entry.entryPath : '';
+    if (!entryPath) {
+      return buildErrorEntry();
+    }
+    try {
+      const response = await fetch(entryPath, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${entryPath}`);
+      }
+      const html = await response.text();
+      const fragment = createTemplateFragment(html);
+      return fragment ?? buildErrorEntry();
+    } catch (error) {
+      return buildErrorEntry();
+    }
+  };
+
+  const initInfiniteListLoader = async ({
+    listId,
+    statusId,
+    sentinelId,
+    indexKey,
+    prerenderKey,
+    defaultIndexPath,
+    indexErrorMessage,
+  }) => {
+    const listElement = document.getElementById(listId);
+    const statusElement = document.getElementById(statusId);
+    const sentinel = document.getElementById(sentinelId);
     if (
       !(listElement instanceof HTMLElement) ||
       !(statusElement instanceof HTMLElement) ||
@@ -399,10 +439,10 @@
 
     const rootElement = listElement.closest('.docs');
     const indexPath =
-      rootElement instanceof HTMLElement && rootElement.dataset.timelineIndex
-        ? rootElement.dataset.timelineIndex
-        : 'timeline.json';
-    const prerenderCountRaw = listElement.dataset.timelinePrerender;
+      rootElement instanceof HTMLElement && rootElement.dataset[indexKey]
+        ? rootElement.dataset[indexKey]
+        : defaultIndexPath;
+    const prerenderCountRaw = listElement.dataset[prerenderKey];
     const prerenderCount = prerenderCountRaw
       ? Number.parseInt(prerenderCountRaw, 10)
       : 0;
@@ -432,40 +472,8 @@
         return Array.isArray(data) ? data : [];
       } catch (error) {
         indexFailed = true;
-        updateStatus('Failed to load timeline index.');
+        updateStatus(indexErrorMessage);
         return [];
-      }
-    };
-
-    const createTemplateFragment = (html) => {
-      const template = document.createElement('template');
-      template.innerHTML = html.trim();
-      return template.content.childNodes.length > 0 ? template.content : null;
-    };
-
-    const buildErrorEntry = (message = 'Failed to load content.') => {
-      const article = document.createElement('article');
-      article.className = 'article-entry timeline-entry timeline-entry-error';
-      article.textContent = message;
-      return article;
-    };
-
-    const buildEntry = async (entry) => {
-      const entryPath =
-        entry && typeof entry.entryPath === 'string' ? entry.entryPath : '';
-      if (!entryPath) {
-        return buildErrorEntry();
-      }
-      try {
-        const response = await fetch(entryPath, { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${entryPath}`);
-        }
-        const html = await response.text();
-        const fragment = createTemplateFragment(html);
-        return fragment ?? buildErrorEntry();
-      } catch (error) {
-        return buildErrorEntry();
       }
     };
 
@@ -552,7 +560,24 @@
     }
     addCopyButtons(document);
     renderMermaid(document);
-    void initTimeline();
+    void initInfiniteListLoader({
+      listId: 'timeline-list',
+      statusId: 'timeline-status',
+      sentinelId: 'timeline-sentinel',
+      indexKey: 'timelineIndex',
+      prerenderKey: 'timelinePrerender',
+      defaultIndexPath: 'timeline.json',
+      indexErrorMessage: 'Failed to load timeline index.',
+    });
+    void initInfiniteListLoader({
+      listId: 'blog-list',
+      statusId: 'blog-status',
+      sentinelId: 'blog-sentinel',
+      indexKey: 'blogIndex',
+      prerenderKey: 'blogPrerender',
+      defaultIndexPath: 'blog.json',
+      indexErrorMessage: 'Failed to load blog index.',
+    });
   });
 
   mediaQuery.addEventListener('change', (event) => {

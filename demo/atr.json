@@ -9,7 +9,8 @@
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
     "menuOrder": ["timeline", "hello"],
-    "afterMenuOrder": ["about"],
+    "afterMenuOrder": ["blog", "about"],
+    "blogCategories": ["blog"],
     "locale": "en"
   },
   "messages": {

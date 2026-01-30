@@ -132,6 +132,7 @@ describe('mergeATerraForgeConfig', () => {
       contentFiles: ['a.txt'],
       menuOrder: ['alpha'],
       afterMenuOrder: ['omega'],
+      blogCategories: [],
     };
 
     const overrides: ATerraForgeConfigOverrides = {

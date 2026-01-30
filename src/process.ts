@@ -45,6 +45,7 @@ import {
   buildNavOrderAfter,
   buildNavOrderBefore,
   buildOrderedNames,
+  getDirectoryLabel,
   resolveCategoryDestinationPath,
   resolveTimelineDestinationPath,
   splitDirectory,
@@ -56,6 +57,7 @@ import {
   type PageTemplateInfo,
   type RenderedArticleInfo,
 } from './process/directory';
+import { generateBlogDocument } from './process/blog';
 import { generateTimelineDocument } from './process/timeline';
 import { buildSitemapUrls } from './process/sitemap';
 import { buildFeedTemplateData } from './process/feed';
@@ -467,11 +469,15 @@ export const generateDocs = async (
       afterMenuOrder,
       includeTimelineInAfter
     );
+    const blogCategoryNames = new Set(config.blogCategories);
+    const hasBlogCategories = blogCategoryNames.size > 0;
 
     const categoryIndexTemplatePath = join(templatesDir, 'index-category.html');
     const categoryEntryTemplatePath = join(templatesDir, 'category-entry.html');
     const timelineIndexTemplatePath = join(templatesDir, 'index-timeline.html');
     const timelineEntryTemplatePath = join(templatesDir, 'timeline-entry.html');
+    const blogIndexTemplatePath = join(templatesDir, 'index-blog.html');
+    const blogEntryTemplatePath = join(templatesDir, 'blog-entry.html');
 
     const frontPagePrefix =
       frontPage !== timelineKey ? `${frontPage.replaceAll('\\', '/')}/` : '';
@@ -490,11 +496,19 @@ export const generateDocs = async (
       indexTemplateScript,
       timelineEntryTemplateScript,
       categoryEntryTemplateScript,
+      blogIndexTemplateScript,
+      blogEntryTemplateScript,
     ] = await Promise.all([
       readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
       readFile(timelineIndexTemplatePath, { encoding: 'utf-8' }),
       readFile(timelineEntryTemplatePath, { encoding: 'utf-8' }),
       readFileIfExists(categoryEntryTemplatePath),
+      hasBlogCategories
+        ? readFile(blogIndexTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
+      hasBlogCategories
+        ? readFile(blogEntryTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
       copyTargetContentFiles(docsDir, config.contentFiles, outDir, {
         rewritePath: rewriteContentPath,
         detectDuplicates: frontPage !== timelineKey,
@@ -519,6 +533,20 @@ export const generateDocs = async (
         ? {
             script: categoryEntryTemplateScript,
             path: categoryEntryTemplatePath,
+          }
+        : undefined;
+    const blogIndexTemplate: PageTemplateInfo | undefined =
+      blogIndexTemplateScript
+        ? {
+            script: blogIndexTemplateScript,
+            path: blogIndexTemplatePath,
+          }
+        : undefined;
+    const blogEntryTemplate: PageTemplateInfo | undefined =
+      blogEntryTemplateScript
+        ? {
+            script: blogEntryTemplateScript,
+            path: blogEntryTemplatePath,
           }
         : undefined;
 
@@ -636,6 +664,34 @@ export const generateDocs = async (
         documentPaths.add(
           resolveCategoryDestinationPath(outDir, articleDir, frontPage)
         );
+        const isBlogCategory = blogCategoryNames.has(
+          getDirectoryLabel(articleDir)
+        );
+        if (isBlogCategory) {
+          if (!blogIndexTemplate || !blogEntryTemplate) {
+            throw new Error(
+              'Blog templates are missing: index-blog.html or blog-entry.html'
+            );
+          }
+          return generateBlogDocument(
+            logger,
+            configDir,
+            outDir,
+            finalOutDir,
+            articleDir,
+            renderedArticles,
+            blogIndexTemplate,
+            blogEntryTemplate,
+            configVariables,
+            navOrderBefore,
+            navOrderAfter,
+            navCategoryMap,
+            frontPage,
+            includeTimeline,
+            siteTemplateOutputMap,
+            signal
+          );
+        }
         return generateDirectoryDocument(
           logger,
           configDir,

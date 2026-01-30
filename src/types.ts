@@ -76,6 +76,8 @@ export interface ATerraForgeVariablesInput {
   menuOrder?: readonly string[];
   /** Menu ordering for secondary navigation. */
   afterMenuOrder?: readonly string[];
+  /** Categories rendered with blog-style ordering and templates. */
+  blogCategories?: readonly string[];
   /** Additional variable entries. */
   [key: string]: unknown;
 }
@@ -116,6 +118,8 @@ export interface ATerraForgeConfig {
   menuOrder: readonly string[];
   /** Menu ordering for secondary navigation. */
   afterMenuOrder: readonly string[];
+  /** Categories rendered with blog-style ordering and templates. */
+  blogCategories: readonly string[];
 }
 
 /**

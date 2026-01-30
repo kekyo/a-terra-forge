@@ -232,12 +232,12 @@ describe('template style', () => {
     );
   });
 
-  it('applies primary palette to headings and timeline accents', async () => {
+  it('applies primary palette to headings and stream accents', async () => {
     const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const h1Match = css.match(/h1\s*\{([^}]*)\}/);
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
     const h2Match = css.match(/h2\s*\{[^}]*border-left:[^}]*\}/);
-    const timelineMatch = css.match(/\.timeline-entry\s*\{([^}]*)\}/);
+    const streamMatch = css.match(/\.stream-entry\s*\{([^}]*)\}/);
 
     expect(h1Match).not.toBeNull();
     expect(h1Match?.[1]).toMatch(
@@ -252,8 +252,8 @@ describe('template style', () => {
     expect(h2Match?.[0]).toMatch(
       /border-left:\s*0\.7rem\s+solid\s+var\(--primary-alpha-75\);/
     );
-    expect(timelineMatch).not.toBeNull();
-    expect(timelineMatch?.[1]).toMatch(
+    expect(streamMatch).not.toBeNull();
+    expect(streamMatch?.[1]).toMatch(
       /border-bottom:\s*2px\s+solid\s+var\(--primary-alpha-75\);/
     );
   });

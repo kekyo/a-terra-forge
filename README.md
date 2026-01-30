@@ -696,10 +696,34 @@ the author name can be replaced automatically:
 
 This is implemented by the `getMessage` function in the funcity script. If you want to apply `messages` to places that do not reference it in the existing template, or even in your own customized HTML, refer to “Customize templates” below.
 
-With this, the basic writing workflow for a-terra-forge is covered.
-From here on, we will explain how to insert content other than documents.
+### Blog Categories
+
+a-terra-forge also includes functionality for writing blogs.
+However, since this is an optional feature, you must enable it using the following method:
+
+- The blog feature displays posts from specified categories in a blog-like format, sorted in reverse chronological order.
+- Specify the categories to use as blogs in `variables.blogCategories` within `atr.json`.
+  Since this method repurposes existing categories, you can display any category (or multiple categories) as a blog.
+- The blog page renders very similarly to a timeline. The latest document is statically generated, while older articles use infinite scroll (demand loading).
+  Therefore, even as the blog accumulates content over time, the physical HTML size of a single page can be constrained within a certain range.
+
+Specify the category names to repurpose as blogs as follows:
+
+```json
+{
+  "variables": {
+    "blogCategories": ["blog"]
+  },
+}
+```
+
+The placement of menus within the navigation menu is determined by specifications such as `menuOrder` mentioned earlier, so the placement flexibility is the same as for regular categories.
+Similar to the timeline, dynamically loaded HTML is placed in `blog-bodies/`.
 
 ---
+
+With this, the basic writing workflow for a-terra-forge is covered.
+From here on, we will explain how to insert content other than documents.
 
 ### Insert images
 
@@ -871,7 +895,7 @@ Below are all values defined in `atr.json`:
 |`feedSummaryLength`|Maximum length for RSS/Atom entry summaries. Default is `200`. |
 |`feedTitle`|RSS/Atom feed title. Defaults to `siteName` or `"feed"` when `siteName` is empty. |
 |`feedDescription`|RSS/Atom feed description. Defaults to `siteDescription`. |
-|`timelinePrerenderCount`|Number of timeline entries pre-rendered into the timeline page. Use a positive integer; when omitted, default is `5`. |
+|`prerenderCount`|Number of entries pre-rendered into the page. Use a positive integer; when omitted, default is `5`. |
 |`menuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
 |`afterMenuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
 

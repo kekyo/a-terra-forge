@@ -19,15 +19,16 @@ import {
   applyHeaderIconCode,
   buildArticleAnchorId,
   scriptVariables,
+  toPosixPath,
 } from './helpers';
 import { resolvePrerenderCount } from './paging';
 import { renderTemplateWithImportHandler } from './templates';
 import {
   buildNavItems,
   getDirectoryLabel,
+  isIndexMarkdown,
   resolveCategoryDestinationPath,
-  resolveTimelineDestinationPath,
-  resolveTimelineOutputDir,
+  resolveOrderValue,
   type NavCategory,
 } from './navigation';
 import type { PageTemplateInfo, RenderedArticleInfo } from './directory';
@@ -35,53 +36,60 @@ import type { PageTemplateInfo, RenderedArticleInfo } from './directory';
 //////////////////////////////////////////////////////////////////////////////
 
 /**
- * Timeline entry metadata stored in timeline.json.
+ * Blog entry metadata stored in blog.json.
  */
-export interface TimelineEntry {
+export interface BlogEntry {
   readonly title: string;
   readonly date: string;
-  readonly category: string;
-  readonly categoryPath?: string;
   readonly anchorId?: string;
   readonly entryPath: string;
 }
 
 /**
- * Generate timeline index and entry pages.
+ * Generate a blog category page using blog.json and entry fragments.
  */
-export const generateTimelineDocument = async (
+export const generateBlogDocument = async (
   logger: Logger,
   configDir: string,
   outDir: string,
   finalOutDir: string,
+  directory: string,
   renderedResults: readonly RenderedArticleInfo[],
-  indexTemplate: PageTemplateInfo,
+  pageTemplate: PageTemplateInfo,
+  blogEntryTemplate: PageTemplateInfo,
   configVariables: FunCityVariables,
   navOrderBefore: readonly string[],
   navOrderAfter: readonly string[],
   navCategories: ReadonlyMap<string, NavCategory>,
-  timelineEntryTemplate: PageTemplateInfo,
   frontPage: string,
+  includeTimeline: boolean,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
   signal: AbortSignal
 ): Promise<void> => {
-  const destinationPath = resolveTimelineDestinationPath(outDir, frontPage);
-  const timelineOutputDir = resolveTimelineOutputDir(outDir, frontPage);
-  const articleBodiesDir = join(timelineOutputDir, 'article-bodies');
+  const destinationPath = resolveCategoryDestinationPath(
+    outDir,
+    directory,
+    frontPage
+  );
+  const blogOutputDir = dirname(destinationPath);
+  const blogBodiesDir = join(blogOutputDir, 'blog-bodies');
   const prerenderCount = resolvePrerenderCount(configVariables);
 
-  await mkdir(articleBodiesDir, { recursive: true });
+  await mkdir(blogBodiesDir, { recursive: true });
 
-  const timelineEntries: {
-    entry: TimelineEntry;
+  const entryCandidates: {
+    entry: BlogEntry;
     dateValue: number;
     hasDate: boolean;
     idValue: number;
     dirtyRank: number;
+    isIndex: boolean;
+    orderValue: number;
+    pathValue: string;
   }[] = [];
 
   const bodyWrites = renderedResults.map(
-    async ({ articleFile, result, timelineHtml, git }) => {
+    async ({ articleFile, result, git }) => {
       const title =
         typeof result.frontmatter.title === 'string'
           ? result.frontmatter.title
@@ -91,45 +99,35 @@ export const generateTimelineDocument = async (
       const isMissingGit = !git;
       const isDirty = git?.dirty === true;
       const dirtyRank = isMissingGit ? 0 : isDirty ? 1 : 2;
-      const categoryDirectory = articleFile.directory;
-      const categoryLabel = getDirectoryLabel(categoryDirectory);
       const idValue =
         typeof result.frontmatter.id === 'number' &&
         Number.isFinite(result.frontmatter.id)
           ? result.frontmatter.id
           : 0;
       const dateValue = hasDate ? dayjs(date).valueOf() : 0;
-      const hasCategory = categoryLabel.length > 0;
-      const categoryPath = hasCategory
-        ? toPosixRelativePath(
-            dirname(destinationPath),
-            resolveCategoryDestinationPath(outDir, categoryDirectory, frontPage)
-          )
-        : undefined;
       const anchorId = buildArticleAnchorId(result.frontmatter.id);
       const entryId =
         typeof result.frontmatter.id === 'number'
           ? result.frontmatter.id
           : undefined;
       const entryDate = hasDate ? date : undefined;
-      const entryCategory = hasCategory ? categoryLabel : undefined;
       const entryFileName = `${idValue}.html`;
-      const entryFilePath = join(articleBodiesDir, entryFileName);
+      const entryFilePath = join(blogBodiesDir, entryFileName);
       const entryPath = toPosixRelativePath(
         dirname(destinationPath),
         entryFilePath
       );
-
+      const entryBody = result.html;
+      const entryFrontmatter = result.frontmatter as Record<string, unknown>;
       const entryVariables = {
         title,
         date: entryDate,
-        category: entryCategory,
-        categoryPath,
         anchorId,
         id: entryId,
         git,
-        headerIcon: (result.frontmatter as Record<string, unknown>)?.headerIcon,
-        body: timelineHtml,
+        headerIcon: entryFrontmatter?.headerIcon,
+        body: entryBody,
+        ...entryFrontmatter,
       };
 
       const entryTemplateVariables = applyHeaderIconCode(
@@ -143,49 +141,44 @@ export const generateTimelineDocument = async (
 
       const entryErrors: FunCityLogEntry[] = [];
       const entryRendered = await renderTemplateWithImportHandler(
-        timelineEntryTemplate.path,
-        timelineEntryTemplate.script,
+        blogEntryTemplate.path,
+        blogEntryTemplate.script,
         entryTemplateVariables,
         entryErrors,
-        [timelineEntryTemplate.path],
+        [blogEntryTemplate.path],
         signal
       );
-      const entryHasError = outputErrors(
-        timelineEntryTemplate.path,
-        entryErrors
-      );
+      const entryHasError = outputErrors(blogEntryTemplate.path, entryErrors);
       if (!entryHasError) {
         await writeContentFile(entryFilePath, entryRendered);
       }
 
-      timelineEntries.push({
+      const isIndex = isIndexMarkdown(articleFile.relativePath);
+      const orderValue =
+        resolveOrderValue(entryFrontmatter) ?? Number.POSITIVE_INFINITY;
+      const pathValue = toPosixPath(articleFile.relativePath);
+
+      entryCandidates.push({
         entry: {
           title,
           date,
-          category: entryCategory ?? '',
-          ...(categoryPath
-            ? {
-                categoryPath,
-              }
-            : {}),
-          ...(categoryPath && anchorId
-            ? {
-                anchorId,
-              }
-            : {}),
+          ...(anchorId ? { anchorId } : {}),
           entryPath,
         },
         dateValue,
         hasDate,
         idValue,
         dirtyRank,
+        isIndex,
+        orderValue,
+        pathValue,
       });
     }
   );
 
   await Promise.all(bodyWrites);
 
-  const sortedEntries = timelineEntries
+  const sortedEntries = entryCandidates
     .sort((a, b) => {
       const dirtyDiff = a.dirtyRank - b.dirtyRank;
       if (dirtyDiff !== 0) {
@@ -200,24 +193,26 @@ export const generateTimelineDocument = async (
           return dateDiff;
         }
       }
-      const idDiff = b.idValue - a.idValue;
-      if (idDiff !== 0) {
-        return idDiff;
+      if (a.isIndex !== b.isIndex) {
+        return a.isIndex ? -1 : 1;
       }
-      return a.entry.title.localeCompare(b.entry.title);
+      if (a.orderValue !== b.orderValue) {
+        return a.orderValue - b.orderValue;
+      }
+      return a.pathValue.localeCompare(b.pathValue);
     })
     .map((item) => item.entry);
 
-  const timelineIndexPath = join(timelineOutputDir, 'timeline.json');
-  const timelineIndexRelativePath = toPosixRelativePath(
+  const blogIndexPath = join(blogOutputDir, 'blog.json');
+  const blogIndexRelativePath = toPosixRelativePath(
     dirname(destinationPath),
-    timelineIndexPath
+    blogIndexPath
   );
 
-  const timelineIndexContent = JSON.stringify(sortedEntries);
-  await writeContentFile(timelineIndexPath, timelineIndexContent);
+  const blogIndexContent = JSON.stringify(sortedEntries);
+  await writeContentFile(blogIndexPath, blogIndexContent);
 
-  const getTimelineEntry = async (arg0: unknown) => {
+  const getBlogEntry = async (arg0: unknown) => {
     const entryPath =
       typeof arg0 === 'string'
         ? arg0
@@ -251,37 +246,38 @@ export const generateTimelineDocument = async (
   const navItems = buildNavItems(
     destinationPath,
     outDir,
-    'timeline',
+    directory,
     navOrderBefore,
     navCategories,
     frontPage,
-    true
+    includeTimeline
   );
   const navItemsAfter = buildNavItems(
     destinationPath,
     outDir,
-    'timeline',
+    directory,
     navOrderAfter,
     navCategories,
     frontPage,
-    true
+    includeTimeline
   );
 
   const latestDate =
     sortedEntries.find((entry) => entry.date.length > 0)?.date ??
     dayjs().format();
+  const categoryLabel = getDirectoryLabel(directory);
 
   const contentVariables = {
-    title: 'timeline',
+    title: categoryLabel,
     description: '',
     date: latestDate,
     getSiteTemplatePath,
     navItems,
     ...(navItemsAfter.length > 0 ? { navItemsAfter } : {}),
-    timelineIndexPath: timelineIndexRelativePath,
-    timelineCount: sortedEntries.length,
-    timelineEntries: sortedEntries,
-    getTimelineEntry,
+    blogIndexPath: blogIndexRelativePath,
+    blogCount: sortedEntries.length,
+    blogEntries: sortedEntries,
+    getBlogEntry,
     ...(prerenderCount !== undefined ? { prerenderCount } : {}),
   };
 
@@ -292,15 +288,15 @@ export const generateTimelineDocument = async (
 
   const logs: FunCityLogEntry[] = [];
   const rendered = await renderTemplateWithImportHandler(
-    indexTemplate.path,
-    indexTemplate.script,
+    pageTemplate.path,
+    pageTemplate.script,
     templateVariables,
     logs,
-    [indexTemplate.path],
+    [pageTemplate.path],
     signal
   );
 
-  const isError = outputErrors(indexTemplate.path, logs);
+  const isError = outputErrors(pageTemplate.path, logs);
 
   if (!isError) {
     await writeContentFile(destinationPath, rendered);
