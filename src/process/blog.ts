@@ -14,7 +14,11 @@ import {
 } from 'funcity';
 import type { Logger } from 'mark-deco';
 
-import { adjustPath, toPosixRelativePath, writeContentFile } from '../utils';
+import {
+  resolveBuiltLogPath,
+  toPosixRelativePath,
+  writeContentFile,
+} from '../utils';
 import {
   applyHeaderIconCode,
   buildArticleAnchorId,
@@ -300,9 +304,11 @@ export const generateBlogDocument = async (
 
   if (!isError) {
     await writeContentFile(destinationPath, rendered);
-    const builtPath = toPosixRelativePath(
+    const builtPath = resolveBuiltLogPath(
       configDir,
-      adjustPath(destinationPath, outDir, finalOutDir)
+      destinationPath,
+      outDir,
+      finalOutDir
     );
     logger.info(`built: ${builtPath}`);
   }

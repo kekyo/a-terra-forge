@@ -67,7 +67,6 @@ export default defineConfig(async ({ command }): Promise<UserConfig> => {
   if (command === 'serve') {
     const demoRoot = resolve('demo');
     return {
-      root: join(demoRoot, 'dist'),
       publicDir: false,
       plugins: [
         atrPreview({

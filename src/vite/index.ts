@@ -4,6 +4,8 @@
 // https://github.com/kekyo/a-terra-forge
 
 import { watch, type FSWatcher } from 'fs';
+import { mkdir, mkdtemp, rm } from 'fs/promises';
+import { tmpdir } from 'os';
 import { dirname, isAbsolute, join, relative, resolve } from 'path';
 import type { Plugin, ViteDevServer } from 'vite';
 
@@ -30,7 +32,10 @@ import {
   resolveATerraForgeConfigPathFromDir,
   resolveATerraForgeProcessingOptionsFromVariables,
 } from '../utils';
-import { createPreviewHtmlNotFoundMiddleware } from './previewMiddleware';
+import {
+  createPreviewHtmlNotFoundMiddleware,
+  createPreviewPathRewriteMiddleware,
+} from './previewMiddleware';
 import { collectGitWatchTargets, resolveGitDir } from './gitWatch';
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -43,6 +48,12 @@ export interface ATerraForgeVitePluginOptions extends ATerraForgeConfigInput {
   configPath?: string;
   /** Temporary working directory base (defaults to /tmp when omitted). */
   tmpDir?: string;
+  /** Enable temporary preview root for dev output. */
+  useTempPreviewRoot?: boolean;
+  /** Base directory for temporary preview root (defaults to os.tmpdir()). */
+  previewRootBaseDir?: string;
+  /** Output directory name under preview root (defaults to dist). */
+  previewOutDirName?: string;
 }
 
 const resolveConfigPath = (
@@ -78,13 +89,24 @@ export const atrPreview = (
   const defaultTemplatesDir = resolve('templates');
   const defaultOutDir = resolve('dist');
   const defaultTmpDir = resolve('/tmp');
+  const defaultPreviewRootBaseDir = tmpdir();
+  const useTempPreviewRoot = options.useTempPreviewRoot ?? true;
+  const resolvePreviewOutDirName = (value: string | undefined): string => {
+    const trimmed = value?.trim() ?? '';
+    const normalized = trimmed.replace(/^\/+/, '').replace(/\/+$/, '');
+    return normalized.length > 0 ? normalized : 'dist';
+  };
+  const previewOutDirName = resolvePreviewOutDirName(options.previewOutDirName);
   const defaultCacheDirResolved = resolve(defaultCacheDir);
   let configPath = resolveConfigPath(options.configPath, process.cwd());
   const configOverrides: ATerraForgeConfigOverrides =
     parseATerraForgeConfigOverrides(options, configPath);
   let docsDir = defaultDocsDir;
   let templatesDir = defaultTemplatesDir;
-  const pluginName = `atr-vite-plugin`;
+  let previewRoot: string | undefined;
+  let previewOutDir: string | undefined;
+  let previewRootCreated = false;
+  const pluginName = `atr-vite`;
   const abortController = new AbortController();
   const debugNamespace = `vite:plugin:${pluginName}`;
 
@@ -93,9 +115,26 @@ export const atrPreview = (
   let queued = false;
   let timer: NodeJS.Timeout | undefined;
   let logger: Logger = createConsoleLogger(pluginName, debugNamespace);
+  let pendingOpen: boolean | string | undefined;
   const watchedPaths = new Set<string>();
   let gitWatchers: FSWatcher[] = [];
   let watchedGitDir: string | undefined;
+
+  const withTrailingSlash = (value: string): string =>
+    value.endsWith('/') ? value : `${value}/`;
+
+  const ensurePreviewRoot = async (): Promise<void> => {
+    if (!useTempPreviewRoot || previewRoot) {
+      return;
+    }
+    const baseDir = options.previewRootBaseDir
+      ? resolve(options.previewRootBaseDir)
+      : defaultPreviewRootBaseDir;
+    await mkdir(baseDir, { recursive: true });
+    previewRoot = await mkdtemp(join(baseDir, 'atr-preview-'));
+    previewRootCreated = true;
+    previewOutDir = join(previewRoot, previewOutDirName);
+  };
 
   const shouldHandle = (filePath: string): boolean => {
     const resolved = resolve(filePath);
@@ -165,6 +204,7 @@ export const atrPreview = (
 
   const resolveRuntimeOptions =
     async (): Promise<ATerraForgeProcessingOptions> => {
+      await ensurePreviewRoot();
       const baseConfig = await loadATerraForgeConfig(configPath);
       const resolvedConfig = mergeATerraForgeConfig(
         baseConfig,
@@ -179,7 +219,7 @@ export const atrPreview = (
       docsDir = variableOptions.docsDir ?? defaultDocsDir;
       templatesDir = variableOptions.templatesDir ?? defaultTemplatesDir;
 
-      const outDir = variableOptions.outDir ?? defaultOutDir;
+      const outDir = previewOutDir ?? variableOptions.outDir ?? defaultOutDir;
       const cacheDir = variableOptions.cacheDir ?? defaultCacheDirResolved;
       const tmpDir = options.tmpDir
         ? resolve(options.tmpDir)
@@ -202,6 +242,22 @@ export const atrPreview = (
         configPath,
       };
     };
+
+  const openWhenReady = (): void => {
+    const activeServer = server;
+    if (!activeServer || pendingOpen === undefined) {
+      return;
+    }
+    if (!activeServer.resolvedUrls) {
+      setTimeout(openWhenReady, 50);
+      return;
+    }
+    const openValue = pendingOpen;
+    pendingOpen = undefined;
+    activeServer.config.server.open = openValue;
+    activeServer.openBrowser();
+    activeServer.config.server.open = false;
+  };
 
   const runGenerate = async (): Promise<void> => {
     if (running) {
@@ -239,8 +295,11 @@ export const atrPreview = (
     }
 
     const activeServer = server;
-    if (!failed && activeServer && activeServer.config.server.hmr !== false) {
-      activeServer.ws.send({ type: 'full-reload' });
+    if (!failed && activeServer) {
+      if (activeServer.config.server.hmr !== false) {
+        activeServer.ws.send({ type: 'full-reload' });
+      }
+      openWhenReady();
     }
   };
 
@@ -257,13 +316,26 @@ export const atrPreview = (
   return {
     name: pluginName,
     apply: 'serve',
-    configureServer(devServer) {
+    async config(_config, env) {
+      if (env.command !== 'serve' || !useTempPreviewRoot) {
+        return;
+      }
+      await ensurePreviewRoot();
+      if (!previewRoot) {
+        return;
+      }
+      return {
+        root: previewRoot,
+      };
+    },
+    async configureServer(devServer) {
       server = devServer;
-      if (!options.configPath) {
+      if (!options.configPath && !useTempPreviewRoot) {
         configPath = resolveATerraForgeConfigPathFromDir(devServer.config.root);
       }
       const viteLogger =
         devServer.config.customLogger ?? devServer.config.logger;
+      await ensurePreviewRoot();
       logger = createViteLoggerAdapter(
         viteLogger,
         devServer.config.logLevel ?? 'info',
@@ -275,13 +347,28 @@ export const atrPreview = (
       logger.info(`License under ${license}`);
       logger.info(repository_url);
       logger.info(`[${version}-${git_commit_hash}] Started.`);
+      if (useTempPreviewRoot && previewRoot) {
+        logger.info(`Served on: ${withTrailingSlash(previewRoot)}`);
+      }
+      if (devServer.config.server.open) {
+        pendingOpen = devServer.config.server.open;
+        devServer.config.server.open = false;
+      }
 
+      if (useTempPreviewRoot) {
+        devServer.middlewares.use(
+          createPreviewPathRewriteMiddleware(previewOutDirName)
+        );
+      }
       devServer.middlewares.use(
         createPreviewHtmlNotFoundMiddleware(devServer.config.root)
       );
       updateWatchTargets([docsDir, templatesDir, configPath]);
       devServer.httpServer?.on('close', () => {
         closeGitWatchers();
+        if (previewRootCreated && previewRoot) {
+          void rm(previewRoot, { recursive: true, force: true });
+        }
       });
       devServer.watcher.on('all', (_event, filePath) => {
         if (shouldHandle(filePath)) {

@@ -6,7 +6,7 @@
 import { join, resolve } from 'path';
 import { describe, expect, it } from 'vitest';
 
-import { adjustPath } from '../src/utils';
+import { adjustPath, resolveBuiltLogPath } from '../src/utils';
 
 describe('adjustPath', () => {
   it('adjusts absolute paths between base directories.', () => {
@@ -31,5 +31,40 @@ describe('adjustPath', () => {
     const adjusted = adjustPath(relativePath, fromBasePath, toBasePath);
 
     expect(adjusted).toBe(join(toBasePath, 'guide', 'index.html'));
+  });
+});
+
+describe('resolveBuiltLogPath', () => {
+  it('uses the config directory as the base when output is within it.', () => {
+    const configDir = resolve('test_results', 'built-log', 'site');
+    const outDir = join(configDir, 'dist');
+    const finalOutDir = outDir;
+    const outputPath = join(outDir, 'about', 'index.html');
+
+    const builtPath = resolveBuiltLogPath(
+      configDir,
+      outputPath,
+      outDir,
+      finalOutDir
+    );
+
+    expect(builtPath).toBe('dist/about/index.html');
+  });
+
+  it('uses the output parent as the base when output is outside config.', () => {
+    const configDir = resolve('test_results', 'built-log', 'site');
+    const previewRoot = resolve('test_results', 'built-log', 'preview-root');
+    const outDir = join(previewRoot, 'dist');
+    const finalOutDir = outDir;
+    const outputPath = join(outDir, 'about', 'index.html');
+
+    const builtPath = resolveBuiltLogPath(
+      configDir,
+      outputPath,
+      outDir,
+      finalOutDir
+    );
+
+    expect(builtPath).toBe('dist/about/index.html');
   });
 });

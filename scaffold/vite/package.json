@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "atr build && vite",
+    "dev": "vite",
     "build": "atr build"
   },
   "devDependencies": {

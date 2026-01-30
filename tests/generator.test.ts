@@ -11,7 +11,7 @@ import simpleGit from 'simple-git';
 import { defaultProviderList } from 'mark-deco/misc';
 
 import { generateDocs } from '../src/process';
-import { copyTargetContentFiles, toPosixRelativePath } from '../src/utils';
+import { copyTargetContentFiles, resolveBuiltLogPath } from '../src/utils';
 import type { ATerraForgeProcessingOptions } from '../src/types';
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -263,13 +263,17 @@ Details here`,
     const htmlFiles = generatedFiles.filter((f) => f.endsWith('.html'));
     expect(htmlFiles).toEqual(['index.html']);
 
-    const expectedCssPath = toPosixRelativePath(
-      resolve(configDir),
-      resolve(outDir, 'site-style.css')
+    const expectedCssPath = resolveBuiltLogPath(
+      configDir,
+      resolve(outDir, 'site-style.css'),
+      outDir,
+      outDir
     );
-    const expectedScriptPath = toPosixRelativePath(
-      resolve(configDir),
-      resolve(outDir, 'site-script.js')
+    const expectedScriptPath = resolveBuiltLogPath(
+      configDir,
+      resolve(outDir, 'site-script.js'),
+      outDir,
+      outDir
     );
     expect(infoMessages).toContain(`built: ${expectedCssPath}`);
     expect(infoMessages).toContain(`built: ${expectedScriptPath}`);

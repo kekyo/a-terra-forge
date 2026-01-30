@@ -29,9 +29,8 @@ import {
   loadATerraForgeConfig,
   mergeATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
-  adjustPath,
+  resolveBuiltLogPath,
   toRgbString,
-  toPosixRelativePath,
   writeContentFile,
   type ArticleFileInfo,
 } from './utils';
@@ -202,9 +201,11 @@ const renderSiteTemplates = async (
       const isError = outputErrors(entry.templatePath, logs);
       if (!isError) {
         await writeContentFile(entry.outputPath, rendered);
-        const builtPath = toPosixRelativePath(
+        const builtPath = resolveBuiltLogPath(
           configDir,
-          adjustPath(entry.outputPath, outDir, finalOutDir)
+          entry.outputPath,
+          outDir,
+          finalOutDir
         );
         logger.info(`built: ${builtPath}`);
       }

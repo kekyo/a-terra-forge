@@ -160,30 +160,30 @@ found 0 vulnerabilities
 
 ```bash
 $ npm run dev
-[atr-vite-plugin] a-terra-forge - Universal document-oriented markdown site generator
-[atr-vite-plugin] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
-[atr-vite-plugin] License under MIT
-[atr-vite-plugin] https://github.com/kekyo/a-terra-forge
-[atr-vite-plugin] [0.0.3-c3878308d52ba4d64b67d2aeb59436eb86953241] Started.
+[atr-vite] a-terra-forge - Universal document-oriented markdown site generator
+[atr-vite] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
+[atr-vite] License under MIT
+[atr-vite] https://github.com/kekyo/a-terra-forge
+[atr-vite] [0.0.3-c3878308d52ba4d64b67d2aeb59436eb86953241] Started.
 
   VITE v7.3.1  ready in 597 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
-[atr-vite-plugin] Preparing...
-[atr-vite-plugin] Render each articles [4]...
-[atr-vite-plugin] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
-[atr-vite-plugin] renderer: total time 2493.13ms
-[atr-vite-plugin] Finalizing now...
-[atr-vite-plugin] built: dist/about/index.html
-[atr-vite-plugin] built: dist/hello/index.html
-[atr-vite-plugin] built: dist/index.html
-[atr-vite-plugin] built: dist/site-script.js
-[atr-vite-plugin] built: dist/sitemap.xml
-[atr-vite-plugin] built: dist/atom.xml
-[atr-vite-plugin] built: dist/feed.xml
-[atr-vite-plugin] built: dist/site-style.css
+[atr-vite] Preparing...
+[atr-vite] Render each articles [4]...
+[atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
+[atr-vite] renderer: total time 2493.13ms
+[atr-vite] Finalizing now...
+[atr-vite] built: dist/about/index.html
+[atr-vite] built: dist/hello/index.html
+[atr-vite] built: dist/index.html
+[atr-vite] built: dist/site-script.js
+[atr-vite] built: dist/sitemap.xml
+[atr-vite] built: dist/atom.xml
+[atr-vite] built: dist/feed.xml
+[atr-vite] built: dist/site-style.css
 ```
 
 ![Preview](images/preview.png)

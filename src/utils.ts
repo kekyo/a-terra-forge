@@ -111,6 +111,29 @@ export const adjustPath = (
   return resolve(toBasePath, relativePath);
 };
 
+const isWithinDir = (filePath: string, dirPath: string): boolean => {
+  const relativePath = relative(dirPath, filePath);
+  return (
+    relativePath === '' ||
+    (!relativePath.startsWith('..') && !isAbsolute(relativePath))
+  );
+};
+
+export const resolveBuiltLogPath = (
+  configDir: string,
+  outputPath: string,
+  outDir: string,
+  finalOutDir: string
+): string => {
+  const resolvedConfigDir = resolve(configDir);
+  const resolvedFinalOutDir = resolve(finalOutDir);
+  const baseDir = isWithinDir(resolvedFinalOutDir, resolvedConfigDir)
+    ? resolvedConfigDir
+    : dirname(resolvedFinalOutDir);
+  const adjustedPath = adjustPath(outputPath, outDir, finalOutDir);
+  return toPosixRelativePath(baseDir, adjustedPath);
+};
+
 const clampRgbValue = (value: number): number =>
   Math.max(0, Math.min(255, Math.round(value)));
 
