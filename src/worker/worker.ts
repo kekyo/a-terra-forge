@@ -46,7 +46,7 @@ const run = async () => {
     userAgent: payload.userAgent,
     logger: processorLogger,
     mermaidRenderer: payload.mermaidRenderer,
-    codeHighlight: payload.codeHighlight,
+    beautifulMermaid: payload.beautifulMermaid,
   });
 
   for (const entry of payload.entries) {

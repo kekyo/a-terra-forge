@@ -49,7 +49,8 @@ graph TD
 
 const writeConfig = async (
   configDir: string,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  extraConfig: Record<string, unknown> = {}
 ) => {
   const configPath = join(configDir, 'atr.json');
   await writeFile(
@@ -57,6 +58,7 @@ const writeConfig = async (
     JSON.stringify(
       {
         variables,
+        ...extraConfig,
       },
       null,
       2
@@ -128,5 +130,48 @@ describe('mermaid renderer', () => {
     expect(html).toContain('class="mermaid-wrapper"');
     expect(html).not.toContain('beautiful-mermaid-wrapper');
     expect(html).toContain('mermaid-runtime');
+  });
+
+  it('forces css-vars for beautiful-mermaid', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, 'templates');
+    const outDir = await createTempDir(fn, 'out');
+    const configDir = await createTempDir(fn, 'config');
+
+    await writeCategoryTemplate(templatesDir);
+    await writeMermaidMarkdown(docsDir);
+
+    const configPath = await writeConfig(
+      configDir,
+      {
+        frontPage: 'guide',
+      },
+      {
+        'beautiful-mermaid': {
+          theme: {
+            light: 'github-light',
+            dark: 'github-dark',
+          },
+          themeMode: 'light',
+          themeStrategy: 'inline',
+        },
+      }
+    );
+
+    const abortController = new AbortController();
+    await generateDocs(
+      {
+        docsDir: resolve(docsDir),
+        templatesDir: resolve(templatesDir),
+        outDir: resolve(outDir),
+        configPath: resolve(configPath),
+      },
+      abortController.signal
+    );
+
+    const html = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(html).toContain('beautiful-mermaid-wrapper');
+    expect(html).toContain('--mdc-bm-bg:');
+    expect(html).toContain('--mdc-bm-fg:');
   });
 });

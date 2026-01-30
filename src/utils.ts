@@ -27,6 +27,7 @@ import JSON5 from 'json5';
 import { glob } from 'glob';
 import {
   getConsoleLogger,
+  type BeautifulMermaidPluginOptions,
   type CodeHighlightOptions,
   type CodeHighlightThemeConfig,
 } from 'mark-deco';
@@ -651,6 +652,58 @@ const parseCodeHighlightOverrides = (
   return parseCodeHighlightConfig(value, configPath);
 };
 
+const parseBeautifulMermaidOptions = (
+  value: unknown,
+  configPath: string
+): BeautifulMermaidPluginOptions | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    throw new Error(
+      `"beautiful-mermaid" in atr.json must be an object: ${configPath}`
+    );
+  }
+  return value as BeautifulMermaidPluginOptions;
+};
+
+const parseBeautifulMermaidOverrides = (
+  value: unknown,
+  configPath: string
+): BeautifulMermaidPluginOptions | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    throw new Error(
+      `"beautiful-mermaid" in atr.json must be an object: ${configPath}`
+    );
+  }
+  return value as BeautifulMermaidPluginOptions;
+};
+
+export const normalizeBeautifulMermaidOptions = (
+  options: BeautifulMermaidPluginOptions | undefined
+): BeautifulMermaidPluginOptions => {
+  const { theme, themeMode, themeStrategy, cssVarPrefix, svgOptions, ...rest } =
+    options ?? {};
+  const normalizedSvgOptions = {
+    ...(svgOptions ?? {}),
+    padding: svgOptions?.padding ?? 2,
+  };
+  return {
+    ...rest,
+    theme: {
+      light: 'github-light',
+      dark: 'github-dark',
+    },
+    themeMode: 'auto',
+    themeStrategy: 'css-vars',
+    cssVarPrefix: '--mdc-bm',
+    svgOptions: normalizedSvgOptions,
+  };
+};
+
 const resolveVariableStringList = (
   variables: FunCityVariables,
   configPath: string,
@@ -727,6 +780,7 @@ const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
     variables,
     messages: new Map(),
     codeHighlight: defaultCodeHighlightConfig,
+    beautifulMermaid: undefined,
     contentFiles,
     menuOrder,
     afterMenuOrder,
@@ -746,6 +800,10 @@ const parseATerraForgeConfigObject = (
     variables,
     messages: parseMessages(parsed.messages, configPath),
     codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
+    beautifulMermaid: parseBeautifulMermaidOptions(
+      parsed['beautiful-mermaid'],
+      configPath
+    ),
     contentFiles,
     menuOrder,
     afterMenuOrder,
@@ -778,6 +836,13 @@ export const parseATerraForgeConfigOverrides = (
     );
   }
 
+  if (input['beautiful-mermaid'] !== undefined) {
+    overrides.beautifulMermaid = parseBeautifulMermaidOverrides(
+      input['beautiful-mermaid'],
+      configPath
+    );
+  }
+
   return overrides;
 };
 
@@ -803,6 +868,7 @@ export const mergeATerraForgeConfig = (
     variables: normalized.variables,
     messages: overrides.messages ?? baseConfig.messages,
     codeHighlight: overrides.codeHighlight ?? baseConfig.codeHighlight,
+    beautifulMermaid: overrides.beautifulMermaid ?? baseConfig.beautifulMermaid,
     contentFiles: normalized.contentFiles,
     menuOrder: normalized.menuOrder,
     afterMenuOrder: normalized.afterMenuOrder,

@@ -47,6 +47,7 @@
   --panel-link: {{cond panelLink? panelLink 'var(--panel-link-base)'}};
   --panel-preview-bg: var(--panel-preview-bg-base);
   --panel-preview-border: var(--panel-border);
+  --panel-padding: 0.9rem 1.2rem;
 }
 
 @supports (color: oklch(from black l c h)) {
@@ -674,7 +675,7 @@ h6 {
 .oembed-header {
   display: flex;
   flex-direction: column;
-  padding: 0.9rem 1.2rem;
+  padding: var(--panel-padding);
   gap: 0.35rem;
   min-width: 0;
   align-self: start;
@@ -845,7 +846,7 @@ h6 {
 .card-body {
   display: flex;
   flex-direction: column;
-  padding: 0.9rem 1.2rem;
+  padding: var(--panel-padding);
   gap: 0.35rem;
   min-width: 0;
   order: 1;
@@ -944,6 +945,26 @@ h6 {
 /* -------------------------------------------------------------------- */
 /* Mermaid diagrams */
 
+:root[data-bs-theme="light"] .beautiful-mermaid-wrapper {
+  --mdc-bm-bg: var(--panel-preview-bg) !important;
+  --mdc-bm-fg: var(--panel-ink) !important;
+  --mdc-bm-line: var(--primary-shade-69) !important;
+  --mdc-bm-accent: var(--primary) !important;
+  --mdc-bm-muted: var(--primary-tint-69) !important;
+  --mdc-bm-surface: var(--primary-tint-30) !important;
+  --mdc-bm-border: var(--primary-tint-38) !important;
+}
+
+:root[data-bs-theme="dark"] .beautiful-mermaid-wrapper {
+  --mdc-bm-bg: var(--panel-preview-bg) !important;
+  --mdc-bm-fg: var(--panel-ink) !important;
+  --mdc-bm-line: var(--primary-tint-38) !important;
+  --mdc-bm-accent: var(--primary-tint-30) !important;
+  --mdc-bm-muted: var(--primary-tint-69) !important;
+  --mdc-bm-surface: var(--primary-alpha-50) !important;
+  --mdc-bm-border: var(--primary-tint-38) !important;
+}
+
 .mermaid-wrapper,
 .beautiful-mermaid-wrapper {
   max-width: 700px;
@@ -973,7 +994,7 @@ h6 {
 }
 
 .beautiful-mermaid-wrapper {
-  padding: 0;
+  padding: var(--panel-padding);
 }
 
 .beautiful-mermaid-wrapper > svg {
@@ -982,7 +1003,7 @@ h6 {
   height: auto !important;
   max-width: 100% !important;
   background: var(--panel-preview-bg);
-  box-shadow: 0 0 0 0.1rem var(--panel-preview-border);  /* overlapped border */
+  box-shadow: none;
   box-sizing: border-box;
 }
 

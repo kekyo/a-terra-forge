@@ -6,7 +6,11 @@
 import { readFile } from 'fs/promises';
 import { cpus } from 'os';
 import { Worker } from 'worker_threads';
-import type { CodeHighlightOptions, Logger } from 'mark-deco';
+import type {
+  BeautifulMermaidPluginOptions,
+  CodeHighlightOptions,
+  Logger,
+} from 'mark-deco';
 
 import { createProcessorLogger } from '../logger';
 import type { MermaidRenderer } from '../types';
@@ -157,6 +161,7 @@ const renderPlanInProcess = async (
   cacheDir: string | undefined,
   userAgent: string,
   codeHighlight: CodeHighlightOptions,
+  beautifulMermaid: BeautifulMermaidPluginOptions | undefined,
   mermaidRenderer: MermaidRenderer,
   linkTarget?: string,
   onEntryRendered?: (durationMs: number) => void
@@ -167,7 +172,7 @@ const renderPlanInProcess = async (
     userAgent,
     logger: processorLogger,
     mermaidRenderer,
-    codeHighlight,
+    beautifulMermaid,
   });
 
   for (const entry of plan.files) {
@@ -196,6 +201,7 @@ export const runRenderWorkers = async ({
   cacheDir,
   userAgent,
   codeHighlight,
+  beautifulMermaid,
   mermaidRenderer,
   linkTarget,
   signal,
@@ -206,6 +212,7 @@ export const runRenderWorkers = async ({
   cacheDir: string | undefined;
   userAgent: string;
   codeHighlight: CodeHighlightOptions;
+  beautifulMermaid: BeautifulMermaidPluginOptions | undefined;
   mermaidRenderer: MermaidRenderer;
   linkTarget?: string;
   signal: AbortSignal;
@@ -275,6 +282,7 @@ export const runRenderWorkers = async ({
       cacheDir,
       userAgent,
       codeHighlight,
+      beautifulMermaid,
       mermaidRenderer,
       linkTarget,
       recordEntryDuration
@@ -296,6 +304,7 @@ export const runRenderWorkers = async ({
       cacheDir,
       userAgent,
       codeHighlight,
+      beautifulMermaid,
       mermaidRenderer,
       linkTarget,
       recordEntryDuration
@@ -340,6 +349,7 @@ export const runRenderWorkers = async ({
               cacheDir,
               userAgent,
               codeHighlight,
+              beautifulMermaid,
               mermaidRenderer,
               linkTarget,
             };

@@ -150,7 +150,6 @@ const normalizeSiteTemplates = (raw: unknown): string[] => {
 };
 
 const defaultMermaidRenderer: MermaidRenderer = 'beautiful';
-
 const resolveMermaidRenderer = (
   value: unknown,
   configPath: string
@@ -608,6 +607,7 @@ export const generateDocs = async (
       filteredGroupedArticleFiles.values()
     ).flat();
     const codeHighlight = config.codeHighlight;
+    const beautifulMermaid = config.beautifulMermaid;
     const enableGitMetadata = options.enableGitMetadata ?? true;
     let renderedResults: RenderedArticleInfo[] = [];
 
@@ -640,6 +640,7 @@ export const generateDocs = async (
           cacheDir: options.cacheDir,
           userAgent,
           codeHighlight,
+          beautifulMermaid,
           mermaidRenderer,
           linkTarget,
           signal,

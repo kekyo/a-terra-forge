@@ -4,7 +4,10 @@
 // https://github.com/kekyo/a-terra-forge
 
 import type { FunCityVariables } from 'funcity';
-import type { CodeHighlightOptions } from 'mark-deco';
+import type {
+  BeautifulMermaidPluginOptions,
+  CodeHighlightOptions,
+} from 'mark-deco';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -99,6 +102,8 @@ export interface ATerraForgeConfigInput {
   messages?: Record<string, unknown>;
   /** Code highlighting configuration values. */
   codeHighlight?: Record<string, unknown>;
+  /** Beautiful Mermaid configuration values. */
+  'beautiful-mermaid'?: Record<string, unknown>;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -119,6 +124,8 @@ export interface ATerraForgeConfig {
   messages: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration. */
   codeHighlight: CodeHighlightOptions;
+  /** Beautiful Mermaid configuration. */
+  beautifulMermaid?: BeautifulMermaidPluginOptions;
   /** Glob patterns for static content files to copy. */
   contentFiles: readonly string[];
   /** Menu ordering for primary navigation. */
@@ -139,6 +146,8 @@ export interface ATerraForgeConfigOverrides {
   messages?: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration to replace base config values. */
   codeHighlight?: CodeHighlightOptions;
+  /** Beautiful Mermaid configuration to replace base config values. */
+  beautifulMermaid?: BeautifulMermaidPluginOptions;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
