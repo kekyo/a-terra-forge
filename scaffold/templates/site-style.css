@@ -48,6 +48,7 @@
   --panel-preview-bg: var(--panel-preview-bg-base);
   --panel-preview-border: var(--panel-border);
   --panel-padding: 0.9rem 1.2rem;
+  --panel-media-max-height: 5rem;
 }
 
 @supports (color: oklch(from black l c h)) {
@@ -968,6 +969,7 @@ h6 {
 .mermaid-wrapper,
 .beautiful-mermaid-wrapper {
   max-width: 700px;
+  max-height: var(--panel-media-max-height);
   margin: 0.75rem 0 0.75rem 0.5rem;
   position: relative;
   border-top-right-radius: 1.5rem;
@@ -1037,6 +1039,7 @@ h6 {
 
 p.article-image-outer {
   max-width: 700px;
+  max-height: var(--panel-media-max-height);
   margin: 0.75rem 0 0.75rem 0.5rem;
   position: relative;
   border-top-right-radius: 1.5rem;
