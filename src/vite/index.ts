@@ -269,6 +269,9 @@ export const atrPreview = (
 
     try {
       const atrOptions = await resolveRuntimeOptions();
+      if (previewRoot) {
+        logger.debug(`Served on: ${withTrailingSlash(previewRoot)}`);
+      }
       atrOptions.logger = logger;
       await generateDocs(atrOptions, abortController.signal, configOverrides);
     } catch (error) {
@@ -347,9 +350,6 @@ export const atrPreview = (
       logger.info(`License under ${license}`);
       logger.info(repository_url);
       logger.info(`[${version}-${git_commit_hash}] Started.`);
-      if (useTempPreviewRoot && previewRoot) {
-        logger.info(`Served on: ${withTrailingSlash(previewRoot)}`);
-      }
       if (devServer.config.server.open) {
         pendingOpen = devServer.config.server.open;
         devServer.config.server.open = false;

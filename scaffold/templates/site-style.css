@@ -944,7 +944,8 @@ h6 {
 /* -------------------------------------------------------------------- */
 /* Mermaid diagrams */
 
-.mermaid-wrapper {
+.mermaid-wrapper,
+.beautiful-mermaid-wrapper {
   max-width: 700px;
   margin: 0.75rem 0 0.75rem 0.5rem;
   position: relative;
@@ -971,6 +972,30 @@ h6 {
   box-sizing: border-box;
 }
 
+.beautiful-mermaid-wrapper {
+  padding: 0;
+}
+
+.beautiful-mermaid-wrapper > svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  background: var(--panel-preview-bg);
+  box-shadow: 0 0 0 0.1rem var(--panel-preview-border);  /* overlapped border */
+  box-sizing: border-box;
+}
+
+.beautiful-mermaid-wrapper.beautiful-mermaid-ascii {
+  overflow: auto;
+  background: var(--panel-preview-bg);
+  box-shadow: 0 0 0 0.1rem var(--panel-preview-border);  /* overlapped border */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 .entry-body .mermaid-wrapper .mermaid > svg {
   width: 100% !important;
   height: auto !important;
@@ -978,7 +1003,8 @@ h6 {
 }
 
 @media (min-width: 920px) {
-  .entry-body .mermaid-wrapper {
+  .entry-body .mermaid-wrapper,
+  .entry-body .beautiful-mermaid-wrapper {
     float: right;
     width: 60%;
     margin-left: 1.3rem;

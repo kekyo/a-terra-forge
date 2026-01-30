@@ -65,6 +65,7 @@ describe('runRenderWorkers', () => {
       cacheDir: resolve(cacheDir),
       userAgent: 'atr-test',
       codeHighlight,
+      mermaidRenderer: 'beautiful',
       linkTarget: '_blank',
       signal: abortController.signal,
     });

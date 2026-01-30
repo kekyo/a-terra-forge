@@ -119,10 +119,12 @@ if locale?
       integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
       crossorigin="anonymous"
     ></script>
+    {{if (eq mermaidRenderer 'mermaid')}}
     <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
       crossorigin="anonymous"
     ></script>
     {{
+    end
     set scriptPath (getSiteTemplatePath 'site-script.js')
     if scriptPath?
     }}

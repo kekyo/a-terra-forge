@@ -9,6 +9,7 @@ import {
   createCachedFetcher,
   createCardPlugin,
   createMarkdownProcessor,
+  createBeautifulMermaidPlugin,
   createMermaidPlugin,
   type CodeHighlightOptions,
   type MarkdownProcessor,
@@ -17,7 +18,7 @@ import { createFileSystemCacheStorage } from 'mark-deco/node';
 import { createCardOEmbedFallback } from 'mark-deco/card-oembed-fallback';
 import { amazonRules, defaultProviderList } from 'mark-deco/misc';
 
-import type { Logger } from '../types';
+import type { Logger, MermaidRenderer } from '../types';
 import { toSafeId, writeContentFile } from '../utils';
 
 //////////////////////////////////////////////////////////////////////////////
@@ -55,6 +56,7 @@ export interface RenderWorkerPayload {
   readonly cacheDir?: string;
   readonly userAgent: string;
   readonly codeHighlight: CodeHighlightOptions;
+  readonly mermaidRenderer: MermaidRenderer;
   readonly linkTarget?: string;
 }
 
@@ -64,10 +66,14 @@ export const createDefaultMarkdownProcessor = ({
   cacheDir,
   userAgent,
   logger,
+  mermaidRenderer,
+  codeHighlight,
 }: {
   cacheDir?: string;
   userAgent: string;
   logger: Logger;
+  mermaidRenderer: MermaidRenderer;
+  codeHighlight: CodeHighlightOptions;
 }): MarkdownProcessor => {
   const fetcher = createCachedFetcher(
     userAgent,
@@ -83,7 +89,12 @@ export const createDefaultMarkdownProcessor = ({
     scrapingRules: [...amazonRules],
     oembedFallback: cardOEmbedFallback,
   });
-  const mermaidPlugin = createMermaidPlugin();
+  const mermaidPlugin =
+    mermaidRenderer === 'mermaid'
+      ? createMermaidPlugin()
+      : createBeautifulMermaidPlugin({
+          theme: codeHighlight.theme,
+        });
 
   return createMarkdownProcessor({
     plugins: [cardPlugin, mermaidPlugin],

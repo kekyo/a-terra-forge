@@ -18,6 +18,7 @@ import type {
   GitCommitMetadata,
   ATerraForgeConfigOverrides,
   ATerraForgeProcessingOptions,
+  MermaidRenderer,
 } from './types';
 import { collectGitMetadata } from './gitMetadata';
 import {
@@ -148,6 +149,39 @@ const normalizeSiteTemplates = (raw: unknown): string[] => {
   });
 };
 
+const defaultMermaidRenderer: MermaidRenderer = 'beautiful';
+
+const resolveMermaidRenderer = (
+  value: unknown,
+  configPath: string
+): MermaidRenderer => {
+  if (value === undefined || value === null) {
+    return defaultMermaidRenderer;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(
+      `"mermaidRenderer" in variables must be a string: ${configPath}`
+    );
+  }
+  const normalized = value.trim().toLowerCase();
+  if (normalized.length === 0) {
+    return defaultMermaidRenderer;
+  }
+  if (normalized === 'mermaid') {
+    return 'mermaid';
+  }
+  if (
+    normalized === 'beautiful' ||
+    normalized === 'beautiful-mermaid' ||
+    normalized === 'beautifulmermaid'
+  ) {
+    return 'beautiful';
+  }
+  throw new Error(
+    `"mermaidRenderer" in variables must be "beautiful" or "mermaid": ${configPath}`
+  );
+};
+
 type SiteTemplateEntry = {
   name: string;
   templatePath: string;
@@ -263,6 +297,12 @@ export const generateDocs = async (
     configVariablesRaw.set('inlineCodeColorRgb', inlineCodeColorRgb);
   }
   configVariablesRaw.delete('inlineCodeColor');
+
+  const mermaidRenderer = resolveMermaidRenderer(
+    configVariablesRaw.get('mermaidRenderer'),
+    configPath
+  );
+  configVariablesRaw.set('mermaidRenderer', mermaidRenderer);
 
   const siteTemplatesRaw = configVariablesRaw.get('siteTemplates');
   const hasSiteTemplates = configVariablesRaw.has('siteTemplates');
@@ -600,6 +640,7 @@ export const generateDocs = async (
           cacheDir: options.cacheDir,
           userAgent,
           codeHighlight,
+          mermaidRenderer,
           linkTarget,
           signal,
         });

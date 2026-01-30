@@ -25,6 +25,11 @@ export interface Logger {
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Mermaid renderer selection.
+ */
+export type MermaidRenderer = 'beautiful' | 'mermaid';
+
+/**
  * a-terra-forge processing options.
  */
 export interface ATerraForgeProcessingOptions {
@@ -64,6 +69,8 @@ export interface ATerraForgeVariablesInput {
   tmpDir?: string;
   /** Enable Git metadata (defaults to true). */
   enableGitMetadata?: boolean;
+  /** Mermaid renderer selection. */
+  mermaidRenderer?: MermaidRenderer;
   /** Cache directory. */
   cacheDir?: string;
   /** User agent string for fetchers. */
