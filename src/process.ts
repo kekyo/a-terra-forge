@@ -421,7 +421,10 @@ export const generateDocs = async (
     const menuOrder = config.menuOrder;
     const afterMenuOrder = config.afterMenuOrder;
     const combinedOrder = [...menuOrder, ...afterMenuOrder];
-    const includeTimeline = true;
+    const includeTimeline =
+      frontPage === timelineKey ||
+      menuOrder.includes(timelineKey) ||
+      afterMenuOrder.includes(timelineKey);
     const timelineInBefore = menuOrder.includes(timelineKey);
     const timelineInAfter = afterMenuOrder.includes(timelineKey);
     const includeTimelineInAfter =
@@ -494,15 +497,19 @@ export const generateDocs = async (
 
     const [
       pageTemplateScript,
-      indexTemplateScript,
+      timelineIndexTemplateScript,
       timelineEntryTemplateScript,
       categoryEntryTemplateScript,
       blogIndexTemplateScript,
       blogEntryTemplateScript,
     ] = await Promise.all([
       readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
-      readFile(timelineIndexTemplatePath, { encoding: 'utf-8' }),
-      readFile(timelineEntryTemplatePath, { encoding: 'utf-8' }),
+      includeTimeline
+        ? readFile(timelineIndexTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
+      includeTimeline
+        ? readFile(timelineEntryTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
       readFileIfExists(categoryEntryTemplatePath),
       hasBlogCategories
         ? readFile(blogIndexTemplatePath, { encoding: 'utf-8' })
@@ -521,14 +528,20 @@ export const generateDocs = async (
       path: categoryIndexTemplatePath,
     };
 
-    const indexTemplate: PageTemplateInfo = {
-      script: indexTemplateScript,
-      path: timelineIndexTemplatePath,
-    };
-    const timelineEntryTemplate: PageTemplateInfo = {
-      script: timelineEntryTemplateScript,
-      path: timelineEntryTemplatePath,
-    };
+    const timelineIndexTemplate: PageTemplateInfo | undefined =
+      timelineIndexTemplateScript
+        ? {
+            script: timelineIndexTemplateScript,
+            path: timelineIndexTemplatePath,
+          }
+        : undefined;
+    const timelineEntryTemplate: PageTemplateInfo | undefined =
+      timelineEntryTemplateScript
+        ? {
+            script: timelineEntryTemplateScript,
+            path: timelineEntryTemplatePath,
+          }
+        : undefined;
     const categoryEntryTemplate: PageTemplateInfo | undefined =
       categoryEntryTemplateScript
         ? {
@@ -714,22 +727,29 @@ export const generateDocs = async (
       })
     );
 
-    await generateTimelineDocument(
-      logger,
-      configDir,
-      outDir,
-      finalOutDir,
-      renderedResults,
-      indexTemplate,
-      configVariables,
-      navOrderBefore,
-      navOrderAfter,
-      navCategoryMap,
-      timelineEntryTemplate,
-      frontPage,
-      siteTemplateOutputMap,
-      signal
-    );
+    if (includeTimeline) {
+      if (!timelineIndexTemplate || !timelineEntryTemplate) {
+        throw new Error(
+          'Timeline templates are missing: index-timeline.html or timeline-entry.html'
+        );
+      }
+      await generateTimelineDocument(
+        logger,
+        configDir,
+        outDir,
+        finalOutDir,
+        renderedResults,
+        timelineIndexTemplate,
+        configVariables,
+        navOrderBefore,
+        navOrderAfter,
+        navCategoryMap,
+        timelineEntryTemplate,
+        frontPage,
+        siteTemplateOutputMap,
+        signal
+      );
+    }
 
     const siteTemplateData: Record<string, unknown> = {};
     const hasFeedTemplates = filteredSiteTemplateEntries.some(

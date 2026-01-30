@@ -406,7 +406,11 @@ Details here`,
     await writeFile(
       join(siteRoot, 'atr.json'),
       JSON.stringify({
-        variables: { frontPage: 'guide', contentFiles: ['**/*.png'] },
+        variables: {
+          frontPage: 'guide',
+          contentFiles: ['**/*.png'],
+          menuOrder: ['timeline'],
+        },
       }),
       'utf8'
     );
@@ -460,6 +464,53 @@ Details here`,
       'utf8'
     );
     expect(referenceAsset).toBe('ref-logo');
+  });
+
+  it('Skips timeline output when timeline is not selected.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'front-page-no-timeline');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, 'templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+
+    const guideDir = join(docsDir, 'guide');
+    await mkdir(guideDir, { recursive: true });
+    await writeFile(join(guideDir, 'index.md'), '# Guide', 'utf8');
+
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html><body>{{title}}</body></html>',
+      'utf8'
+    );
+
+    await writeFile(
+      join(siteRoot, 'atr.json'),
+      JSON.stringify({ variables: { frontPage: 'guide' } }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: resolve(docsDir),
+      templatesDir: resolve(templatesDir),
+      outDir: resolve(outDir),
+      cacheDir: '.cache',
+      configPath: join(siteRoot, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const rootHtml = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(rootHtml).toContain('Guide');
+
+    await expect(
+      readFile(join(outDir, 'timeline.json'), 'utf8')
+    ).rejects.toThrow();
+    await expect(
+      readFile(join(outDir, 'timeline', 'index.html'), 'utf8')
+    ).rejects.toThrow();
   });
 
   it('Throws when front page category has subcategories.', async (fn) => {

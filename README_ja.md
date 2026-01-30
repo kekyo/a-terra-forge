@@ -166,7 +166,6 @@ $ npm run dev
 [atr-vite] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
 [atr-vite] License under MIT
 [atr-vite] https://github.com/kekyo/a-terra-forge
-[atr-vite] [0.0.3-c3878308d52ba4d64b67d2aeb59436eb86953241] Started.
 
   VITE v7.3.1  ready in 597 ms
 
@@ -599,7 +598,7 @@ New article created: food/index.md
 タイムラインカテゴリは特殊なカテゴリと説明しましたが、カテゴリ名 `timeline` を使うことで、ナビゲーションメニューでのタイムラインの位置を調整することも出来ます。
 敢えてタイムラインを右端（`afterMenuOrder`）に配置して、校正済みのドキュメントを全面に押し出したサイトにすることも出来ます。
 
-### フロントページ
+### フロントページとタイムライン
 
 フロントページとは、そのサイトの先頭のページです。 `http://foobar.github.io/foobar/` のようなURLで公開された場合に、 `http://foobar.github.io/foobar/index.html` として配信されるページです。
 
@@ -622,6 +621,16 @@ New article created: food/index.md
 つまり、ページに訪問するユーザーから見えるURLのパスが変化することになります。
 ページ構造はサイトマップにも反映されるので、検索エンジンのクローラーなどはその変化を検知できると思われますが、頻繁に変更すると恐らくペナルティを課せられると思われます。
 （検索エンジンの都合であなたの歩みを止めるのは本末転倒かもしれませんが...）
+
+タイムラインについての補足:
+
+- `frontPage` に `timeline` と指定するか、 `frontPage` を省略した場合
+- または、 `menuOrder` や `afterMenuOrder` のどこかに `timeline` を配置した場合
+
+は、タイムラインページが生成されます。
+しかし、`timeline`指定が存在しない場合は、タイムラインページは生成されません。
+
+タイムラインページの描画は、a-terra-forgeの特徴的な機能の一つなので使ってほしいところですが、どうしても不要な場合は、このようにしてタイムラインページを省くことが出来ます。
 
 ### メッセージ置換と言語
 

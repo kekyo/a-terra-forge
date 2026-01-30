@@ -165,7 +165,6 @@ $ npm run dev
 [atr-vite] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
 [atr-vite] License under MIT
 [atr-vite] https://github.com/kekyo/a-terra-forge
-[atr-vite] [0.0.3-c3878308d52ba4d64b67d2aeb59436eb86953241] Started.
 
   VITE v7.3.1  ready in 597 ms
 
@@ -597,7 +596,7 @@ If a category specified in `afterMenuOrder` is included in `menuOrder`, it will 
 The timeline category is special, but by using the category name `timeline`, you can also adjust its position in the navigation menu.
 You can deliberately place the timeline on the far right (`afterMenuOrder`) to make a site that highlights proofread documents.
 
-### Front page
+### Front page and Timeline
 
 The front page is the top page of the site. When published at a URL like `http://foobar.github.io/foobar/`, it is served as `http://foobar.github.io/foobar/index.html`.
 
@@ -620,6 +619,17 @@ If you change the front page to `food`, the `food` asset files are placed direct
 In other words, the URL paths visible to visitors change.
 The page structure is also reflected in the sitemap, so search engine crawlers can detect the change, but frequent changes will likely incur a penalty.
 (It might be putting the cart before the horse to let search engines stop you in your tracks.)
+
+Additional Notes on the timeline:
+
+- Specifying `timeline` in `frontPage`, omitting `frontPage`
+- Or placing `timeline` anywhere in `menuOrder` or `afterMenuOrder`
+
+Will generate a timeline page.
+However, if no `timeline` specification exists, the timeline page will not be generated.
+
+While generating the timeline page is one of a-terra-forge's distinctive features and we encourage its use,
+if it is absolutely unnecessary, you can omit the timeline page in this manner.
 
 ### Message replacement
 
