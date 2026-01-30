@@ -126,14 +126,16 @@ my-page
 ├── package.json
 ├── templates
 │   ├── atom.xml
+│   ├── blog-entry.html
 │   ├── category-entry.html
 │   ├── feed.xml
+│   ├── index-blog.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
 │   ├── sitemap.xml
 │   ├── site-script.js
-│   ├── site-site-style.css
+│   ├── site-style.css
 │   └── timeline-entry.html
 ├── vite.config.ts
 ├── .github
@@ -260,14 +262,16 @@ my-page
 │       └── rich-demo.md
 ├── templates
 │   ├── atom.xml
+│   ├── blog-entry.html
 │   ├── category-entry.html
 │   ├── feed.xml
+│   ├── index-blog.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
 │   ├── sitemap.xml
 │   ├── site-script.js
-│   ├── style.css
+│   ├── site-style.css
 │   └── timeline-entry.html
 ├── .github
 │   └── workflows
