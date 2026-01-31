@@ -29,6 +29,11 @@ if locale?
     <meta property="og:site_name" content="{{siteName}}">
     {{
     end
+    if siteImage?
+    }}
+    <meta property="og:image" content="{{siteImage}}">
+    {{
+    end
     if locale?
     }}
     <meta property="og:locale" content="{{locale}}">
