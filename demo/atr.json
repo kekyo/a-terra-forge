@@ -8,6 +8,7 @@
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
+    "maxWidth": "90rem",
     "menuOrder": ["timeline", "hello"],
     "afterMenuOrder": ["blog", "about"],
     "blogCategories": ["blog"],

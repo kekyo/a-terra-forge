@@ -6,7 +6,7 @@
 /* ==================================================================== */
 /* Common color variables */
 
-/* Primary/secondary root accent colors */
+/* Global variables */
 :root {
   /* Primary accent color */
   --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '13, 110, 253'}};
@@ -16,6 +16,8 @@
   --inline-code-rgb: {{cond inlineCodeColorRgb? inlineCodeColorRgb '13, 110, 253'}};
   /* Header (H1) icon (default: activity) */
   --header-icon-default: '{{cond headerIconCode? headerIconCode '\\F66B'}}';
+  /* Max document area width  */
+  --docs-max-width: {{cond maxWidth? maxWidth 'inherit'}};
 }
 
 :root {
@@ -428,7 +430,7 @@ body {
 /* -------------------------------------------------------------------- */
 /* Document root, article structures */
 
-.docs {
+.docs-outer {
   flex: 1 1 auto;
   overflow: auto;
   min-height: 0;
@@ -437,9 +439,14 @@ body {
 
 /* For narrow width (phone) */
 @media (max-width: 575.98px) {
-  .docs {
+  .docs-outer {
     padding: 0.5em 1em 0 1em;
   }
+}
+
+.docs {
+  max-width: var(--docs-max-width);
+  margin-inline: auto;
 }
 
 /* Non-commit article indicator */
