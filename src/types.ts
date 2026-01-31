@@ -36,17 +36,19 @@ export type MermaidRenderer = 'beautiful' | 'mermaid';
  * a-terra-forge processing options.
  */
 export interface ATerraForgeProcessingOptions {
-  /** Markdown document directory. */
-  docsDir: string;
-  /** Template directory. */
-  templatesDir: string;
-  /** Output directory. */
-  outDir: string;
-  /** Temporary working directory base (defaults to /tmp when omitted). */
+  /** Markdown document directory (defaults to "docs" when omitted). */
+  docsDir?: string;
+  /** Template directory (defaults to "templates" when omitted). */
+  templatesDir?: string;
+  /** Asset directory (defaults to "assets" when omitted). */
+  assetsDir?: string;
+  /** Output directory (defaults to "dist" when omitted). */
+  outDir?: string;
+  /** Temporary working directory base (defaults to the system temp directory when omitted). */
   tmpDir?: string;
   /** Enable Git metadata (defaults to true). */
   enableGitMetadata?: boolean;
-  /** Cache directory (defaults to ".cache" when omitted). */
+  /** Cache directory (defaults to "$HOME/.cache/a-terra-forge" when omitted). */
   cacheDir?: string;
   /** User agent string for fetchers (defaults to the built-in UA when omitted). */
   userAgent?: string;
@@ -66,6 +68,8 @@ export interface ATerraForgeVariablesInput {
   docsDir?: string;
   /** Template directory. */
   templatesDir?: string;
+  /** Asset directory. */
+  assetsDir?: string;
   /** Output directory. */
   outDir?: string;
   /** Temporary working directory base. */

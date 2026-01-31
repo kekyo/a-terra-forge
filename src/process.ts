@@ -25,11 +25,18 @@ import {
   assertDirectoryExists,
   collectArticleFiles,
   copyTargetContentFiles,
+  defaultAssetDir,
+  defaultCacheDir,
+  defaultDocsDir,
+  defaultOutDir,
+  defaultTemplatesDir,
+  defaultTmpDir,
   getTrimmingConsoleLogger,
   groupArticleFilesByDirectory,
   loadATerraForgeConfig,
   mergeATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
+  resolveATerraForgeProcessingOptionsFromVariables,
   resolveBuiltLogPath,
   writeContentFile,
   type ArticleFileInfo,
@@ -248,6 +255,28 @@ const renderSiteTemplates = async (
 const ensureTrailingSlash = (value: string): string =>
   value.endsWith('/') ? value : `${value}/`;
 
+const copyAssetFiles = async (
+  assetsDir: string,
+  outDir: string,
+  configPath: string
+): Promise<void> => {
+  try {
+    const result = await stat(assetsDir);
+    if (!result.isDirectory()) {
+      throw new Error(
+        `"assetsDir" in variables must be a directory: ${configPath}`
+      );
+    }
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+      return;
+    }
+    throw error;
+  }
+
+  await copyTargetContentFiles(assetsDir, ['**/*'], outDir);
+};
+
 /**
  * Build documentation site output from markdown sources.
  */
@@ -256,9 +285,6 @@ export const generateDocs = async (
   signal: AbortSignal,
   configOverrides?: ATerraForgeConfigOverrides
 ): Promise<void> => {
-  const docsDir = resolve(options.docsDir);
-  const templatesDir = resolve(options.templatesDir);
-  const finalOutDir = resolve(options.outDir);
   const configPath = options.configPath
     ? resolve(options.configPath)
     : resolveATerraForgeConfigPathFromDir(process.cwd());
@@ -268,6 +294,36 @@ export const generateDocs = async (
     await loadATerraForgeConfig(configPath),
     configOverrides,
     configPath
+  );
+  const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
+    config.variables,
+    configDir
+  );
+  const docsDir = resolve(
+    options.docsDir ??
+      variableOptions.docsDir ??
+      resolve(configDir, defaultDocsDir)
+  );
+  const templatesDir = resolve(
+    options.templatesDir ??
+      variableOptions.templatesDir ??
+      resolve(configDir, defaultTemplatesDir)
+  );
+  const assetsDir = resolve(
+    options.assetsDir ??
+      variableOptions.assetsDir ??
+      resolve(configDir, defaultAssetDir)
+  );
+  const finalOutDir = resolve(
+    options.outDir ??
+      variableOptions.outDir ??
+      resolve(configDir, defaultOutDir)
+  );
+  const tmpDir = resolve(
+    options.tmpDir ?? variableOptions.tmpDir ?? defaultTmpDir
+  );
+  const cacheDir = resolve(
+    options.cacheDir ?? variableOptions.cacheDir ?? defaultCacheDir
   );
 
   logger.info(`Preparing...`);
@@ -292,7 +348,6 @@ export const generateDocs = async (
   await assertDirectoryExists(docsDir, 'docs');
   const linkTarget = '_blank';
   const userAgent = options.userAgent ?? defaultUserAgent;
-  const tmpDir = options.tmpDir ? resolve(options.tmpDir) : resolve('/tmp');
 
   const articleFiles = await collectArticleFiles(docsDir, '.md');
   if (articleFiles.length === 0) {
@@ -537,6 +592,7 @@ export const generateDocs = async (
         rewritePath: rewriteContentPath,
         detectDuplicates: frontPage !== timelineKey,
       }),
+      copyAssetFiles(assetsDir, outDir, configPath),
     ]);
 
     const pageTemplate: PageTemplateInfo = {
@@ -614,7 +670,7 @@ export const generateDocs = async (
           logger,
           plan,
           workDir,
-          cacheDir: options.cacheDir,
+          cacheDir,
           userAgent,
           codeHighlight,
           beautifulMermaid,
@@ -839,7 +895,7 @@ const createOutputStagingDir = async (finalOutDir: string): Promise<string> => {
   const parentDir = dirname(finalOutDir);
   await mkdir(parentDir, { recursive: true });
   const baseName = basename(finalOutDir);
-  const prefix = join(parentDir, `${baseName}.atr-next-`);
+  const prefix = join(parentDir, `${baseName}.tmp-`);
   return mkdtemp(prefix);
 };
 
@@ -851,7 +907,7 @@ const swapOutputDir = async (
   const baseName = basename(finalOutDir);
   const hasOutDir = await pathExists(finalOutDir);
   const backupDir = hasOutDir
-    ? join(parentDir, `${baseName}.atr-prev-${Date.now()}`)
+    ? join(parentDir, `${baseName}.tmp-${Date.now()}`)
     : undefined;
 
   if (hasOutDir && backupDir) {

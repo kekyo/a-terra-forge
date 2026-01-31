@@ -905,6 +905,7 @@ Below are all values defined in `atr.json`:
 |`codeHighlight`|No|Code highlight settings used by Shiki. See "Code highlighting settings" for details. |
 |`siteTemplates`|No|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
 |`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
+|`assetsDir`|No|Asset directory path. Default is `assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `assets/favicon.ico` → `dist/favicon.ico`). |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
 |`templatesDir`|No|Overrides the templates directory. Default is `templates/`. The path is resolved relative to the directory containing `atr.json`. |
 |`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |

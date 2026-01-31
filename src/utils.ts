@@ -14,6 +14,7 @@ import {
   rename,
   readFile,
 } from 'fs/promises';
+import { tmpdir } from 'os';
 import {
   dirname,
   isAbsolute,
@@ -33,6 +34,7 @@ import {
 } from 'mark-deco';
 import type { FunCityVariables } from 'funcity';
 
+import { name } from './generated/packageMetadata';
 import type {
   Logger,
   ATerraForgeConfig,
@@ -383,6 +385,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
+export const defaultDocsDir = 'docs' as const;
+export const defaultTemplatesDir = 'templates' as const;
+export const defaultOutDir = 'dist' as const;
+export const defaultAssetDir = 'assets/' as const;
+export const defaultTmpDir = tmpdir();
+export const defaultCacheDir = process.env.HOME
+  ? join(process.env.HOME, '.cache', name)
+  : join('.cache', name);
 const defaultCodeHighlightConfig: CodeHighlightOptions = {};
 
 const recordToMap = (value: Record<string, unknown>): Map<string, unknown> => {
@@ -739,6 +749,28 @@ const normalizeVariablesWithLists = (
   if (typeof localeValue !== 'string' || localeValue.trim().length === 0) {
     normalized.set('locale', 'en');
   }
+  const normalizeDirectoryVariable = (
+    key: string,
+    defaultValue: string
+  ): void => {
+    const rawValue = normalized.get(key);
+    if (rawValue === undefined || rawValue === null) {
+      normalized.set(key, defaultValue);
+      return;
+    }
+    if (typeof rawValue !== 'string') {
+      throw new Error(`"${key}" in variables must be a string: ${configPath}`);
+    }
+    const trimmed = rawValue.trim();
+    normalized.set(key, trimmed.length > 0 ? trimmed : defaultValue);
+  };
+
+  normalizeDirectoryVariable('docsDir', defaultDocsDir);
+  normalizeDirectoryVariable('templatesDir', defaultTemplatesDir);
+  normalizeDirectoryVariable('assetsDir', defaultAssetDir);
+  normalizeDirectoryVariable('outDir', defaultOutDir);
+  normalizeDirectoryVariable('tmpDir', defaultTmpDir);
+  normalizeDirectoryVariable('cacheDir', defaultCacheDir);
   const contentFiles = resolveVariableStringList(
     normalized,
     configPath,
@@ -956,36 +988,38 @@ const resolveVariablePath = (
   return trimmed ? resolve(baseDir, trimmed) : undefined;
 };
 
+type ProcessingDirKey =
+  | 'docsDir'
+  | 'templatesDir'
+  | 'assetsDir'
+  | 'outDir'
+  | 'tmpDir'
+  | 'cacheDir';
+
+const applyResolvedDirOption = (
+  target: Partial<ATerraForgeProcessingOptions>,
+  variables: FunCityVariables,
+  baseDir: string,
+  key: ProcessingDirKey
+): void => {
+  const resolvedPath = resolveVariablePath(variables, baseDir, key);
+  if (resolvedPath) {
+    target[key] = resolvedPath;
+  }
+};
+
 export const resolveATerraForgeProcessingOptionsFromVariables = (
   variables: FunCityVariables,
   baseDir: string
 ): Partial<ATerraForgeProcessingOptions> => {
   const resolved: Partial<ATerraForgeProcessingOptions> = {};
 
-  const docsDir = resolveVariablePath(variables, baseDir, 'docsDir');
-  if (docsDir) {
-    resolved.docsDir = docsDir;
-  }
-
-  const templatesDir = resolveVariablePath(variables, baseDir, 'templatesDir');
-  if (templatesDir) {
-    resolved.templatesDir = templatesDir;
-  }
-
-  const outDir = resolveVariablePath(variables, baseDir, 'outDir');
-  if (outDir) {
-    resolved.outDir = outDir;
-  }
-
-  const tmpDir = resolveVariablePath(variables, baseDir, 'tmpDir');
-  if (tmpDir) {
-    resolved.tmpDir = tmpDir;
-  }
-
-  const cacheDir = resolveVariablePath(variables, baseDir, 'cacheDir');
-  if (cacheDir) {
-    resolved.cacheDir = cacheDir;
-  }
+  applyResolvedDirOption(resolved, variables, baseDir, 'docsDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'templatesDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'assetsDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'outDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'tmpDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'cacheDir');
 
   const userAgent = getTrimmedStringValue(variables.get('userAgent'));
   if (userAgent) {

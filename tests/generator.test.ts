@@ -372,6 +372,58 @@ Details here`,
     expect(copiedTxt).toBe(textContent);
   });
 
+  it('Copies assetsDir contents into the output root.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, 'templates');
+    const outDir = await createTempDir(fn, 'out');
+    const configDir = await createTempDir(fn, 'config');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html></html>',
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const assetsDir = join(configDir, 'assets');
+    const imagesDir = join(assetsDir, 'images');
+    await mkdir(imagesDir, { recursive: true });
+    await writeFile(join(assetsDir, 'favicon.ico'), 'icon', 'utf8');
+    await writeFile(join(imagesDir, 'logo.png'), 'logo', 'utf8');
+
+    await writeFile(
+      join(configDir, 'atr.json'),
+      JSON.stringify({ variables: { siteName: 'Asset test' } }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: resolve(docsDir),
+      templatesDir: resolve(templatesDir),
+      outDir: resolve(outDir),
+      cacheDir: '.cache',
+      configPath: join(configDir, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const copiedIcon = await readFile(join(outDir, 'favicon.ico'), 'utf8');
+    expect(copiedIcon).toBe('icon');
+
+    const copiedLogo = await readFile(
+      join(outDir, 'images', 'logo.png'),
+      'utf8'
+    );
+    expect(copiedLogo).toBe('logo');
+
+    await expect(
+      readFile(join(outDir, 'assets', 'favicon.ico'), 'utf8')
+    ).rejects.toThrow();
+  });
+
   it('Moves a category front page to root and relocates timeline assets.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-category');
     const docsDir = join(siteRoot, 'docs');
