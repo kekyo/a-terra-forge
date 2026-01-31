@@ -151,6 +151,22 @@ describe('createPreviewPathRewriteMiddleware', () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it('resolves the output directory name dynamically.', () => {
+    let currentOutDir = 'dist-a';
+    const middleware = createPreviewPathRewriteMiddleware(() => currentOutDir);
+    const res = createResponse();
+    const next = vi.fn();
+
+    const firstReq = createRequest('/');
+    middleware(firstReq, res as any, next);
+    expect(firstReq.url).toBe('/dist-a/');
+
+    currentOutDir = 'dist-b';
+    const secondReq = createRequest('/guide');
+    middleware(secondReq, res as any, next);
+    expect(secondReq.url).toBe('/dist-b/guide');
+  });
+
   it('ignores internal Vite paths.', () => {
     const middleware = createPreviewPathRewriteMiddleware('dist');
     const req = createRequest('/@vite/client');

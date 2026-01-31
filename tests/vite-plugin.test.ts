@@ -5,7 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { afterEach, describe, expect, it, vi, type TestContext } from 'vitest';
 import dayjs from 'dayjs';
 import type { ViteDevServer } from 'vite';
@@ -49,6 +49,7 @@ describe('atrPreview', () => {
     await mkdir(templatesDir, { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
+    const previewRootBaseDir = resolve(join(rootDir, 'preview-root'));
     await writeFile(
       configPath,
       JSON.stringify(
@@ -126,6 +127,14 @@ describe('atrPreview', () => {
 
     await new Promise((resolve) => setTimeout(resolve, 200));
     expect(mockState.generateDocsMock).toHaveBeenCalledTimes(1);
+    if (useTempPreviewRoot) {
+      const [options] = mockState.generateDocsMock.mock.calls[0] ?? [];
+      expect(options).toBeDefined();
+      const outDir = options.outDir as string;
+      expect(typeof outDir).toBe('string');
+      expect(outDir.startsWith(previewRootBaseDir)).toBe(true);
+      expect(outDir).toMatch(/dist-\d+-\d+$/);
+    }
     expect(openBrowser).not.toHaveBeenCalled();
 
     devServer.resolvedUrls = { local: ['http://localhost:5173/'] } as any;

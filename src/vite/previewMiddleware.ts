@@ -124,11 +124,15 @@ export const createPreviewHtmlNotFoundMiddleware = (rootDir: string) => {
   };
 };
 
+type PreviewOutDirNameResolver = string | (() => string);
+
 export const createPreviewPathRewriteMiddleware = (
-  outDirName: string = 'dist'
+  outDirName: PreviewOutDirNameResolver = 'dist'
 ) => {
-  const normalizedOutDir = normalizeOutDirName(outDirName);
-  const prefix = normalizedOutDir ? `/${normalizedOutDir}` : '';
+  const resolveOutDirName = (): string => {
+    const raw = typeof outDirName === 'function' ? outDirName() : outDirName;
+    return normalizeOutDirName(raw);
+  };
 
   return (req: IncomingMessage, _res: ServerResponse, next: NextFunction) => {
     if (!req.url) {
@@ -144,6 +148,8 @@ export const createPreviewPathRewriteMiddleware = (
       next();
       return;
     }
+    const normalizedOutDir = resolveOutDirName();
+    const prefix = normalizedOutDir ? `/${normalizedOutDir}` : '';
     if (!prefix || isInternalPath(pathPart)) {
       next();
       return;

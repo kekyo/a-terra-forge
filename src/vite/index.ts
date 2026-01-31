@@ -37,6 +37,7 @@ import {
   createPreviewPathRewriteMiddleware,
 } from './previewMiddleware';
 import { collectGitWatchTargets, resolveGitDir } from './gitWatch';
+import { delay } from 'async-primitives';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -96,7 +97,9 @@ export const atrPreview = (
     const normalized = trimmed.replace(/^\/+/, '').replace(/\/+$/, '');
     return normalized.length > 0 ? normalized : 'dist';
   };
-  const previewOutDirName = resolvePreviewOutDirName(options.previewOutDirName);
+  const previewOutDirBaseName = resolvePreviewOutDirName(
+    options.previewOutDirName
+  );
   const defaultCacheDirResolved = resolve(defaultCacheDir);
   let configPath = resolveConfigPath(options.configPath, process.cwd());
   const configOverrides: ATerraForgeConfigOverrides =
@@ -104,8 +107,10 @@ export const atrPreview = (
   let docsDir = defaultDocsDir;
   let templatesDir = defaultTemplatesDir;
   let previewRoot: string | undefined;
-  let previewOutDir: string | undefined;
+  let activePreviewOutDirName = previewOutDirBaseName;
+  let activePreviewOutDirPath: string | undefined;
   let previewRootCreated = false;
+  let previewOutDirSequence = 0;
   const pluginName = `atr-vite`;
   const abortController = new AbortController();
   const debugNamespace = `vite:plugin:${pluginName}`;
@@ -123,6 +128,20 @@ export const atrPreview = (
   const withTrailingSlash = (value: string): string =>
     value.endsWith('/') ? value : `${value}/`;
 
+  const createPreviewOutDirName = (): string => {
+    const seq = previewOutDirSequence++;
+    return `${previewOutDirBaseName}-${Date.now()}-${seq}`;
+  };
+
+  const disposePreviewOutDir = (targetPath: string | undefined): void => {
+    if (!targetPath) {
+      return;
+    }
+    void rm(targetPath, { recursive: true, force: true }).catch(() => {
+      logger.debug(`Failed to remove preview output: ${targetPath}`);
+    });
+  };
+
   const ensurePreviewRoot = async (): Promise<void> => {
     if (!useTempPreviewRoot || previewRoot) {
       return;
@@ -133,7 +152,8 @@ export const atrPreview = (
     await mkdir(baseDir, { recursive: true });
     previewRoot = await mkdtemp(join(baseDir, 'atr-preview-'));
     previewRootCreated = true;
-    previewOutDir = join(previewRoot, previewOutDirName);
+    activePreviewOutDirName = previewOutDirBaseName;
+    activePreviewOutDirPath = join(previewRoot, activePreviewOutDirName);
   };
 
   const shouldHandle = (filePath: string): boolean => {
@@ -202,46 +222,51 @@ export const atrPreview = (
     watchedGitDir = gitDir;
   };
 
-  const resolveRuntimeOptions =
-    async (): Promise<ATerraForgeProcessingOptions> => {
-      await ensurePreviewRoot();
-      const baseConfig = await loadATerraForgeConfig(configPath);
-      const resolvedConfig = mergeATerraForgeConfig(
-        baseConfig,
-        configOverrides,
-        configPath
-      );
-      const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
-        resolvedConfig.variables,
-        dirname(configPath)
-      );
+  const resolveRuntimeOptions = async (
+    outDirOverride?: string
+  ): Promise<ATerraForgeProcessingOptions> => {
+    await ensurePreviewRoot();
+    const baseConfig = await loadATerraForgeConfig(configPath);
+    const resolvedConfig = mergeATerraForgeConfig(
+      baseConfig,
+      configOverrides,
+      configPath
+    );
+    const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
+      resolvedConfig.variables,
+      dirname(configPath)
+    );
 
-      docsDir = variableOptions.docsDir ?? defaultDocsDir;
-      templatesDir = variableOptions.templatesDir ?? defaultTemplatesDir;
+    docsDir = variableOptions.docsDir ?? defaultDocsDir;
+    templatesDir = variableOptions.templatesDir ?? defaultTemplatesDir;
 
-      const outDir = previewOutDir ?? variableOptions.outDir ?? defaultOutDir;
-      const cacheDir = variableOptions.cacheDir ?? defaultCacheDirResolved;
-      const tmpDir = options.tmpDir
-        ? resolve(options.tmpDir)
-        : (variableOptions.tmpDir ?? defaultTmpDir);
+    const outDir =
+      outDirOverride ??
+      variableOptions.outDir ??
+      activePreviewOutDirPath ??
+      defaultOutDir;
+    const cacheDir = variableOptions.cacheDir ?? defaultCacheDirResolved;
+    const tmpDir = options.tmpDir
+      ? resolve(options.tmpDir)
+      : (variableOptions.tmpDir ?? defaultTmpDir);
 
-      updateWatchTargets([docsDir, templatesDir, configPath]);
-      await updateGitWatchTargets(
-        docsDir,
-        variableOptions.enableGitMetadata ?? true
-      );
+    updateWatchTargets([docsDir, templatesDir, configPath]);
+    await updateGitWatchTargets(
+      docsDir,
+      variableOptions.enableGitMetadata ?? true
+    );
 
-      return {
-        docsDir,
-        templatesDir,
-        outDir,
-        tmpDir,
-        cacheDir,
-        enableGitMetadata: variableOptions.enableGitMetadata ?? true,
-        userAgent: variableOptions.userAgent,
-        configPath,
-      };
+    return {
+      docsDir,
+      templatesDir,
+      outDir,
+      tmpDir,
+      cacheDir,
+      enableGitMetadata: variableOptions.enableGitMetadata ?? true,
+      userAgent: variableOptions.userAgent,
+      configPath,
     };
+  };
 
   const openWhenReady = (): void => {
     const activeServer = server;
@@ -266,9 +291,18 @@ export const atrPreview = (
     }
     running = true;
     let failed = false;
+    let nextPreviewOutDirName: string | undefined;
+    let nextPreviewOutDirPath: string | undefined;
 
     try {
-      const atrOptions = await resolveRuntimeOptions();
+      if (useTempPreviewRoot) {
+        await ensurePreviewRoot();
+        if (previewRoot) {
+          nextPreviewOutDirName = createPreviewOutDirName();
+          nextPreviewOutDirPath = join(previewRoot, nextPreviewOutDirName);
+        }
+      }
+      const atrOptions = await resolveRuntimeOptions(nextPreviewOutDirPath);
       if (previewRoot) {
         logger.debug(`Served on: ${withTrailingSlash(previewRoot)}`);
       }
@@ -299,6 +333,25 @@ export const atrPreview = (
 
     const activeServer = server;
     if (!failed && activeServer) {
+      if (
+        useTempPreviewRoot &&
+        nextPreviewOutDirName &&
+        nextPreviewOutDirPath
+      ) {
+        const previousPreviewOutDirPath = activePreviewOutDirPath;
+        activePreviewOutDirName = nextPreviewOutDirName;
+        activePreviewOutDirPath = nextPreviewOutDirPath;
+        if (
+          previousPreviewOutDirPath &&
+          previousPreviewOutDirPath !== nextPreviewOutDirPath
+        ) {
+          disposePreviewOutDir(previousPreviewOutDirPath);
+        }
+      }
+
+      // Wait for stable.
+      await delay(500);
+
       if (activeServer.config.server.hmr !== false) {
         activeServer.ws.send({ type: 'full-reload' });
       }
@@ -357,7 +410,7 @@ export const atrPreview = (
 
       if (useTempPreviewRoot) {
         devServer.middlewares.use(
-          createPreviewPathRewriteMiddleware(previewOutDirName)
+          createPreviewPathRewriteMiddleware(() => activePreviewOutDirName)
         );
       }
       devServer.middlewares.use(
