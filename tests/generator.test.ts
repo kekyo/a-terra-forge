@@ -11,7 +11,7 @@ import simpleGit from 'simple-git';
 import { defaultProviderList } from 'mark-deco/misc';
 
 import { generateDocs } from '../src/process';
-import { copyTargetContentFiles, toPosixRelativePath } from '../src/utils';
+import { copyTargetContentFiles, resolveBuiltLogPath } from '../src/utils';
 import type { ATerraForgeProcessingOptions } from '../src/types';
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -41,6 +41,16 @@ const writeRequiredTemplates = async (
   await writeFile(
     join(templatesDir, 'timeline-entry.html'),
     entryTemplate,
+    'utf8'
+  );
+  await writeFile(
+    join(templatesDir, 'index-blog.html'),
+    '<html><body>{{blogIndexPath}}</body></html>',
+    'utf8'
+  );
+  await writeFile(
+    join(templatesDir, 'blog-entry.html'),
+    '<article><header>{{title}}</header><section>{{body}}</section></article>',
     'utf8'
   );
 };
@@ -253,13 +263,17 @@ Details here`,
     const htmlFiles = generatedFiles.filter((f) => f.endsWith('.html'));
     expect(htmlFiles).toEqual(['index.html']);
 
-    const expectedCssPath = toPosixRelativePath(
-      resolve(configDir),
-      resolve(outDir, 'site-style.css')
+    const expectedCssPath = resolveBuiltLogPath(
+      configDir,
+      resolve(outDir, 'site-style.css'),
+      outDir,
+      outDir
     );
-    const expectedScriptPath = toPosixRelativePath(
-      resolve(configDir),
-      resolve(outDir, 'site-script.js')
+    const expectedScriptPath = resolveBuiltLogPath(
+      configDir,
+      resolve(outDir, 'site-script.js'),
+      outDir,
+      outDir
     );
     expect(infoMessages).toContain(`built: ${expectedCssPath}`);
     expect(infoMessages).toContain(`built: ${expectedScriptPath}`);
@@ -290,7 +304,7 @@ Details here`,
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -358,6 +372,58 @@ Details here`,
     expect(copiedTxt).toBe(textContent);
   });
 
+  it('Copies assetsDir contents into the output root.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, 'templates');
+    const outDir = await createTempDir(fn, 'out');
+    const configDir = await createTempDir(fn, 'config');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html></html>',
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const assetsDir = join(configDir, 'assets');
+    const imagesDir = join(assetsDir, 'images');
+    await mkdir(imagesDir, { recursive: true });
+    await writeFile(join(assetsDir, 'favicon.ico'), 'icon', 'utf8');
+    await writeFile(join(imagesDir, 'logo.png'), 'logo', 'utf8');
+
+    await writeFile(
+      join(configDir, 'atr.json'),
+      JSON.stringify({ variables: { siteName: 'Asset test' } }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: resolve(docsDir),
+      templatesDir: resolve(templatesDir),
+      outDir: resolve(outDir),
+      cacheDir: '.cache',
+      configPath: join(configDir, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const copiedIcon = await readFile(join(outDir, 'favicon.ico'), 'utf8');
+    expect(copiedIcon).toBe('icon');
+
+    const copiedLogo = await readFile(
+      join(outDir, 'images', 'logo.png'),
+      'utf8'
+    );
+    expect(copiedLogo).toBe('logo');
+
+    await expect(
+      readFile(join(outDir, 'assets', 'favicon.ico'), 'utf8')
+    ).rejects.toThrow();
+  });
+
   it('Moves a category front page to root and relocates timeline assets.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-category');
     const docsDir = join(siteRoot, 'docs');
@@ -392,7 +458,11 @@ Details here`,
     await writeFile(
       join(siteRoot, 'atr.json'),
       JSON.stringify({
-        variables: { frontPage: 'guide', contentFiles: ['**/*.png'] },
+        variables: {
+          frontPage: 'guide',
+          contentFiles: ['**/*.png'],
+          menuOrder: ['timeline'],
+        },
       }),
       'utf8'
     );
@@ -446,6 +516,53 @@ Details here`,
       'utf8'
     );
     expect(referenceAsset).toBe('ref-logo');
+  });
+
+  it('Skips timeline output when timeline is not selected.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'front-page-no-timeline');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, 'templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+
+    const guideDir = join(docsDir, 'guide');
+    await mkdir(guideDir, { recursive: true });
+    await writeFile(join(guideDir, 'index.md'), '# Guide', 'utf8');
+
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html><body>{{title}}</body></html>',
+      'utf8'
+    );
+
+    await writeFile(
+      join(siteRoot, 'atr.json'),
+      JSON.stringify({ variables: { frontPage: 'guide' } }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: resolve(docsDir),
+      templatesDir: resolve(templatesDir),
+      outDir: resolve(outDir),
+      cacheDir: '.cache',
+      configPath: join(siteRoot, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const rootHtml = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(rootHtml).toContain('Guide');
+
+    await expect(
+      readFile(join(outDir, 'timeline.json'), 'utf8')
+    ).rejects.toThrow();
+    await expect(
+      readFile(join(outDir, 'timeline', 'index.html'), 'utf8')
+    ).rejects.toThrow();
   });
 
   it('Throws when front page category has subcategories.', async (fn) => {
@@ -938,7 +1055,7 @@ title: Beta
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1483,7 +1600,7 @@ Details here
     );
   });
 
-  it('Prerenders timeline entries when timelinePrerenderCount is set.', async (fn) => {
+  it('Prerenders timeline entries when prerenderCount is set.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-prerender');
     const docsDir = join(siteRoot, 'docs');
     const templatesDir = join(siteRoot, 'templates');
@@ -1511,12 +1628,12 @@ Details here
       'utf8'
     );
     const indexTemplate =
-      '<html><body><div id="timeline-list" class="timeline-list"{{if timelinePrerenderCount?}} data-timeline-prerender="{{timelinePrerenderCount}}"{{end}}>{{if timelinePrerenderCount?}}{{for entry (slice 0 timelinePrerenderCount timelineEntries)}}{{getTimelineEntry entry.entryPath}}{{end}}{{end}}</div></body></html>';
+      '<html><body><div id="timeline-list" class="stream-list"{{if prerenderCount?}} data-timeline-prerender="{{prerenderCount}}"{{end}}>{{if prerenderCount?}}{{for entry (slice 0 prerenderCount timelineEntries)}}{{getTimelineEntry entry.entryPath}}{{end}}{{end}}</div></body></html>';
     await writeRequiredTemplates(templatesDir, { indexTemplate });
 
     const config = {
       variables: {
-        timelinePrerenderCount: 1,
+        prerenderCount: 1,
       },
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
@@ -1576,7 +1693,7 @@ title: Second
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1777,6 +1894,140 @@ title: Uncommitted
     expect(titles[1]).toBe('Committed');
   });
 
+  it('Renders blog categories with blog.json ordering by git date.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-blog-category');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, 'templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+
+    const blogDir = join(docsDir, 'blog');
+    await mkdir(blogDir, { recursive: true });
+
+    const oldPath = join(blogDir, 'index.md');
+    const newPath = join(blogDir, 'new.md');
+    const draftPath = join(blogDir, 'draft.md');
+
+    await writeFile(
+      oldPath,
+      `---
+title: Old
+---
+
+# Old`,
+      'utf8'
+    );
+    await writeFile(
+      newPath,
+      `---
+title: New
+---
+
+# New`,
+      'utf8'
+    );
+    await writeFile(
+      draftPath,
+      `---
+title: Draft
+---
+
+# Draft`,
+      'utf8'
+    );
+
+    const fallbackTemplate =
+      '<html><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      fallbackTemplate,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+    const blogIndexTemplate = [
+      '<html><body>',
+      'BLOG_INDEX {{blogIndexPath}}',
+      '<div class="docs" data-blog-index="{{blogIndexPath}}">',
+      '<div id="blog-list" class="stream-list"{{if prerenderCount?}} data-blog-prerender="{{prerenderCount}}"{{end}}>',
+      '{{for entry (slice 0 prerenderCount blogEntries)}}{{getBlogEntry entry.entryPath}}{{end}}',
+      '</div>',
+      '<div id="blog-status"></div>',
+      '<div id="blog-sentinel"></div>',
+      '</div>',
+      '</body></html>',
+    ].join('\n');
+    await writeFile(
+      join(templatesDir, 'index-blog.html'),
+      blogIndexTemplate,
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'blog-entry.html'),
+      '<article>BLOG_ENTRY:{{title}}</article>',
+      'utf8'
+    );
+
+    const git = simpleGit(siteRoot);
+    await git.init();
+    await git.addConfig('user.name', 'Committer Name');
+    await git.addConfig('user.email', 'committer@example.com');
+
+    const commitWithDate = async (filePath: string, date: string) => {
+      const relPath = relative(siteRoot, filePath);
+      await git.add(relPath);
+      await git
+        .env({
+          ...process.env,
+          GIT_AUTHOR_DATE: date,
+          GIT_COMMITTER_DATE: date,
+        })
+        .commit(`Commit ${relPath}`, relPath);
+    };
+
+    await commitWithDate(oldPath, '2024-01-01T00:00:00Z');
+    await commitWithDate(newPath, '2024-02-01T00:00:00Z');
+
+    const config = {
+      variables: {
+        blogCategories: ['blog'],
+        prerenderCount: 1,
+      },
+    };
+    await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath: join(siteRoot, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const blogIndex = JSON.parse(
+      await readFile(join(outDir, 'blog', 'blog.json'), 'utf8')
+    ) as { title: string; entryPath: string }[];
+    const titles = blogIndex.map((entry) => entry.title);
+    expect(blogIndex).toHaveLength(3);
+    expect(titles[0]).toBe('Draft');
+    expect(titles[1]).toBe('New');
+    expect(titles[2]).toBe('Old');
+
+    const blogHtml = await readFile(join(outDir, 'blog', 'index.html'), 'utf8');
+    expect(blogHtml).toContain('BLOG_INDEX');
+
+    const [firstEntry] = blogIndex;
+    const entryHtml = await readFile(
+      join(outDir, 'blog', firstEntry!.entryPath),
+      'utf8'
+    );
+    expect(entryHtml).toContain('BLOG_ENTRY:Draft');
+  });
+
   it('Resolves relative URLs for timeline article-bodies.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, 'templates');
@@ -1962,7 +2213,7 @@ title: Reference
     ).toBe(true);
   });
 
-  it('Orders navigation items using the categories lists, including timeline.', async (fn) => {
+  it('Orders navigation items using the menu order lists, including timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-nav-order');
     const docsDir = join(siteRoot, 'docs');
     const templatesDir = join(siteRoot, 'templates');
@@ -2020,8 +2271,8 @@ title: ${title}
 
     const config = {
       variables: {
-        categories: ['beta', 'topics', 'two', 'one'],
-        categoriesAfter: ['alpha', 'timeline'],
+        menuOrder: ['beta', 'topics', 'two', 'one'],
+        afterMenuOrder: ['alpha', 'timeline'],
       },
     };
     await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
@@ -2653,7 +2904,7 @@ ${sampleUrl}
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);

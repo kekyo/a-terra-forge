@@ -14,6 +14,7 @@ import {
   rename,
   readFile,
 } from 'fs/promises';
+import { tmpdir } from 'os';
 import {
   dirname,
   isAbsolute,
@@ -27,11 +28,13 @@ import JSON5 from 'json5';
 import { glob } from 'glob';
 import {
   getConsoleLogger,
+  type BeautifulMermaidPluginOptions,
   type CodeHighlightOptions,
   type CodeHighlightThemeConfig,
 } from 'mark-deco';
 import type { FunCityVariables } from 'funcity';
 
+import { name } from './generated/packageMetadata';
 import type {
   Logger,
   ATerraForgeConfig,
@@ -109,6 +112,29 @@ export const adjustPath = (
   const resolvedPath = isAbsolute(path) ? path : resolve(fromBasePath, path);
   const relativePath = relative(fromBasePath, resolvedPath);
   return resolve(toBasePath, relativePath);
+};
+
+const isWithinDir = (filePath: string, dirPath: string): boolean => {
+  const relativePath = relative(dirPath, filePath);
+  return (
+    relativePath === '' ||
+    (!relativePath.startsWith('..') && !isAbsolute(relativePath))
+  );
+};
+
+export const resolveBuiltLogPath = (
+  configDir: string,
+  outputPath: string,
+  outDir: string,
+  finalOutDir: string
+): string => {
+  const resolvedConfigDir = resolve(configDir);
+  const resolvedFinalOutDir = resolve(finalOutDir);
+  const baseDir = isWithinDir(resolvedFinalOutDir, resolvedConfigDir)
+    ? resolvedConfigDir
+    : dirname(resolvedFinalOutDir);
+  const adjustedPath = adjustPath(outputPath, outDir, finalOutDir);
+  return toPosixRelativePath(baseDir, adjustedPath);
 };
 
 const clampRgbValue = (value: number): number =>
@@ -359,6 +385,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
+export const defaultDocsDir = 'docs' as const;
+export const defaultTemplatesDir = 'templates' as const;
+export const defaultOutDir = 'dist' as const;
+export const defaultAssetDir = 'assets/' as const;
+export const defaultTmpDir = tmpdir();
+export const defaultCacheDir = process.env.HOME
+  ? join(process.env.HOME, '.cache', name)
+  : join('.cache', name);
 const defaultCodeHighlightConfig: CodeHighlightOptions = {};
 
 const recordToMap = (value: Record<string, unknown>): Map<string, unknown> => {
@@ -613,6 +647,12 @@ const parseCodeHighlight = (
   return parseCodeHighlightConfig(value, configPath);
 };
 
+const resolveCodeHighlightInput = (
+  explicitValue: unknown,
+  variables: FunCityVariables | undefined
+): unknown =>
+  explicitValue !== undefined ? explicitValue : variables?.get('codeHighlight');
+
 const parseCodeHighlightOverrides = (
   value: unknown,
   configPath: string
@@ -626,6 +666,58 @@ const parseCodeHighlightOverrides = (
     );
   }
   return parseCodeHighlightConfig(value, configPath);
+};
+
+const parseBeautifulMermaidOptions = (
+  value: unknown,
+  configPath: string
+): BeautifulMermaidPluginOptions | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    throw new Error(
+      `"beautiful-mermaid" in atr.json must be an object: ${configPath}`
+    );
+  }
+  return value as BeautifulMermaidPluginOptions;
+};
+
+const parseBeautifulMermaidOverrides = (
+  value: unknown,
+  configPath: string
+): BeautifulMermaidPluginOptions | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!isRecord(value)) {
+    throw new Error(
+      `"beautiful-mermaid" in atr.json must be an object: ${configPath}`
+    );
+  }
+  return value as BeautifulMermaidPluginOptions;
+};
+
+export const normalizeBeautifulMermaidOptions = (
+  options: BeautifulMermaidPluginOptions | undefined
+): BeautifulMermaidPluginOptions => {
+  const { theme, themeMode, themeStrategy, cssVarPrefix, svgOptions, ...rest } =
+    options ?? {};
+  const normalizedSvgOptions = {
+    ...(svgOptions ?? {}),
+    padding: svgOptions?.padding ?? 2,
+  };
+  return {
+    ...rest,
+    theme: {
+      light: 'github-light',
+      dark: 'github-dark',
+    },
+    themeMode: 'auto',
+    themeStrategy: 'css-vars',
+    cssVarPrefix: '--mdc-bm',
+    svgOptions: normalizedSvgOptions,
+  };
 };
 
 const resolveVariableStringList = (
@@ -646,55 +738,91 @@ const normalizeVariablesWithLists = (
   configPath: string
 ): Pick<
   ATerraForgeConfig,
-  'variables' | 'contentFiles' | 'categories' | 'categoriesAfter'
+  | 'variables'
+  | 'contentFiles'
+  | 'menuOrder'
+  | 'afterMenuOrder'
+  | 'blogCategories'
 > => {
   const normalized = new Map(variables);
   const localeValue = normalized.get('locale');
   if (typeof localeValue !== 'string' || localeValue.trim().length === 0) {
     normalized.set('locale', 'en');
   }
+  const normalizeDirectoryVariable = (
+    key: string,
+    defaultValue: string
+  ): void => {
+    const rawValue = normalized.get(key);
+    if (rawValue === undefined || rawValue === null) {
+      normalized.set(key, defaultValue);
+      return;
+    }
+    if (typeof rawValue !== 'string') {
+      throw new Error(`"${key}" in variables must be a string: ${configPath}`);
+    }
+    const trimmed = rawValue.trim();
+    normalized.set(key, trimmed.length > 0 ? trimmed : defaultValue);
+  };
+
+  normalizeDirectoryVariable('docsDir', defaultDocsDir);
+  normalizeDirectoryVariable('templatesDir', defaultTemplatesDir);
+  normalizeDirectoryVariable('assetsDir', defaultAssetDir);
+  normalizeDirectoryVariable('outDir', defaultOutDir);
+  normalizeDirectoryVariable('tmpDir', defaultTmpDir);
+  normalizeDirectoryVariable('cacheDir', defaultCacheDir);
   const contentFiles = resolveVariableStringList(
     normalized,
     configPath,
     'contentFiles',
     defaultTargetContents
   );
-  const categories = resolveVariableStringList(
+  const menuOrder = resolveVariableStringList(
     normalized,
     configPath,
-    'categories',
+    'menuOrder',
     []
   );
-  const categoriesAfter = resolveVariableStringList(
+  const afterMenuOrder = resolveVariableStringList(
     normalized,
     configPath,
-    'categoriesAfter',
+    'afterMenuOrder',
+    []
+  );
+  const blogCategories = resolveVariableStringList(
+    normalized,
+    configPath,
+    'blogCategories',
     []
   );
 
   normalized.set('contentFiles', contentFiles);
-  normalized.set('categories', categories);
-  normalized.set('categoriesAfter', categoriesAfter);
+  normalized.set('menuOrder', menuOrder);
+  normalized.set('afterMenuOrder', afterMenuOrder);
+  normalized.set('blogCategories', blogCategories);
 
   return {
     variables: normalized,
     contentFiles,
-    categories,
-    categoriesAfter,
+    menuOrder,
+    afterMenuOrder,
+    blogCategories,
   };
 };
 
 const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
-  const { variables, contentFiles, categories, categoriesAfter } =
+  const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
     normalizeVariablesWithLists(new Map(), '<defaults>');
 
   return {
     variables,
     messages: new Map(),
     codeHighlight: defaultCodeHighlightConfig,
+    beautifulMermaid: undefined,
     contentFiles,
-    categories,
-    categoriesAfter,
+    menuOrder,
+    afterMenuOrder,
+    blogCategories,
   };
 };
 
@@ -703,16 +831,25 @@ const parseATerraForgeConfigObject = (
   configPath: string
 ): ATerraForgeConfig => {
   const parsedVariables = parseVariables(parsed.variables, configPath);
-  const { variables, contentFiles, categories, categoriesAfter } =
+  const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
     normalizeVariablesWithLists(parsedVariables, configPath);
+  const codeHighlightInput = resolveCodeHighlightInput(
+    parsed.codeHighlight,
+    parsedVariables
+  );
 
   return {
     variables,
     messages: parseMessages(parsed.messages, configPath),
-    codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
+    codeHighlight: parseCodeHighlight(codeHighlightInput, configPath),
+    beautifulMermaid: parseBeautifulMermaidOptions(
+      parsed['beautiful-mermaid'],
+      configPath
+    ),
     contentFiles,
-    categories,
-    categoriesAfter,
+    menuOrder,
+    afterMenuOrder,
+    blogCategories,
   };
 };
 
@@ -726,17 +863,34 @@ export const parseATerraForgeConfigOverrides = (
 
   const overrides: ATerraForgeConfigOverrides = {};
 
-  if (input.variables !== undefined) {
-    overrides.variables = parseVariablesOverrides(input.variables, configPath);
+  const parsedVariables =
+    input.variables !== undefined
+      ? parseVariablesOverrides(input.variables, configPath)
+      : undefined;
+
+  if (parsedVariables !== undefined) {
+    overrides.variables = parsedVariables;
   }
 
   if (input.messages !== undefined) {
     overrides.messages = parseMessagesOverrides(input.messages, configPath);
   }
 
-  if (input.codeHighlight !== undefined) {
+  const codeHighlightInput = resolveCodeHighlightInput(
+    input.codeHighlight,
+    parsedVariables
+  );
+
+  if (codeHighlightInput !== undefined) {
     overrides.codeHighlight = parseCodeHighlightOverrides(
-      input.codeHighlight,
+      codeHighlightInput,
+      configPath
+    );
+  }
+
+  if (input['beautiful-mermaid'] !== undefined) {
+    overrides.beautifulMermaid = parseBeautifulMermaidOverrides(
+      input['beautiful-mermaid'],
       configPath
     );
   }
@@ -766,9 +920,11 @@ export const mergeATerraForgeConfig = (
     variables: normalized.variables,
     messages: overrides.messages ?? baseConfig.messages,
     codeHighlight: overrides.codeHighlight ?? baseConfig.codeHighlight,
+    beautifulMermaid: overrides.beautifulMermaid ?? baseConfig.beautifulMermaid,
     contentFiles: normalized.contentFiles,
-    categories: normalized.categories,
-    categoriesAfter: normalized.categoriesAfter,
+    menuOrder: normalized.menuOrder,
+    afterMenuOrder: normalized.afterMenuOrder,
+    blogCategories: normalized.blogCategories,
   };
 };
 
@@ -832,36 +988,38 @@ const resolveVariablePath = (
   return trimmed ? resolve(baseDir, trimmed) : undefined;
 };
 
+type ProcessingDirKey =
+  | 'docsDir'
+  | 'templatesDir'
+  | 'assetsDir'
+  | 'outDir'
+  | 'tmpDir'
+  | 'cacheDir';
+
+const applyResolvedDirOption = (
+  target: Partial<ATerraForgeProcessingOptions>,
+  variables: FunCityVariables,
+  baseDir: string,
+  key: ProcessingDirKey
+): void => {
+  const resolvedPath = resolveVariablePath(variables, baseDir, key);
+  if (resolvedPath) {
+    target[key] = resolvedPath;
+  }
+};
+
 export const resolveATerraForgeProcessingOptionsFromVariables = (
   variables: FunCityVariables,
   baseDir: string
 ): Partial<ATerraForgeProcessingOptions> => {
   const resolved: Partial<ATerraForgeProcessingOptions> = {};
 
-  const docsDir = resolveVariablePath(variables, baseDir, 'docsDir');
-  if (docsDir) {
-    resolved.docsDir = docsDir;
-  }
-
-  const templatesDir = resolveVariablePath(variables, baseDir, 'templatesDir');
-  if (templatesDir) {
-    resolved.templatesDir = templatesDir;
-  }
-
-  const outDir = resolveVariablePath(variables, baseDir, 'outDir');
-  if (outDir) {
-    resolved.outDir = outDir;
-  }
-
-  const tmpDir = resolveVariablePath(variables, baseDir, 'tmpDir');
-  if (tmpDir) {
-    resolved.tmpDir = tmpDir;
-  }
-
-  const cacheDir = resolveVariablePath(variables, baseDir, 'cacheDir');
-  if (cacheDir) {
-    resolved.cacheDir = cacheDir;
-  }
+  applyResolvedDirOption(resolved, variables, baseDir, 'docsDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'templatesDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'assetsDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'outDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'tmpDir');
+  applyResolvedDirOption(resolved, variables, baseDir, 'cacheDir');
 
   const userAgent = getTrimmedStringValue(variables.get('userAgent'));
   if (userAgent) {

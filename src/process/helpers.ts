@@ -12,6 +12,7 @@ import {
 } from 'funcity';
 
 import { bootstrapIcons } from '../generated/bootstrapIcons';
+import { toRgbString } from '../utils';
 import type {
   ATerraForgeMessageList,
   ATerraForgeMessageListByLocale,
@@ -38,6 +39,24 @@ const escapeXml = (arg0: unknown): string => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+};
+
+/**
+ * Convert a color value into a CSS RGB triple string.
+ */
+const toCssRgb = (arg0: unknown, arg1: unknown): string | undefined => {
+  const resolved = toRgbString(arg0);
+  if (resolved) {
+    return resolved;
+  }
+  if (arg1 === undefined) {
+    return undefined;
+  }
+  if (typeof arg1 === 'string') {
+    const trimmed = arg1.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+  return String(arg1);
 };
 
 /**
@@ -90,6 +109,7 @@ export const scriptVariables = combineVariables({
   formatDate,
   getMessage,
   escapeXml,
+  toCssRgb,
 });
 
 /**

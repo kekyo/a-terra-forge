@@ -8,7 +8,10 @@ import { join } from 'path';
 import { describe, expect, it, vi, type TestContext } from 'vitest';
 import dayjs from 'dayjs';
 
-import { createPreviewHtmlNotFoundMiddleware } from '../src/vite/previewMiddleware';
+import {
+  createPreviewHtmlNotFoundMiddleware,
+  createPreviewPathRewriteMiddleware,
+} from '../src/vite/previewMiddleware';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -20,9 +23,9 @@ const createTempDir = async (fn: TestContext, name: string) => {
   return basePath;
 };
 
-const createRequest = (url: string, accept = 'text/html') =>
+const createRequest = (url: string, accept = 'text/html', method = 'GET') =>
   ({
-    method: 'GET',
+    method,
     url,
     headers: {
       accept,
@@ -108,5 +111,83 @@ describe('createPreviewHtmlNotFoundMiddleware', () => {
     expect(res.statusCode).toBe(404);
     expect(res.end).toHaveBeenCalled();
     expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe('createPreviewPathRewriteMiddleware', () => {
+  it('rewrites root requests to the preview output directory.', () => {
+    const middleware = createPreviewPathRewriteMiddleware('dist');
+    const req = createRequest('/');
+    const res = createResponse();
+    const next = vi.fn();
+
+    middleware(req, res as any, next);
+
+    expect(req.url).toBe('/dist/');
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('rewrites extensionless paths while preserving query strings.', () => {
+    const middleware = createPreviewPathRewriteMiddleware('dist');
+    const req = createRequest('/guide?lang=ja');
+    const res = createResponse();
+    const next = vi.fn();
+
+    middleware(req, res as any, next);
+
+    expect(req.url).toBe('/dist/guide?lang=ja');
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('keeps already-prefixed paths as-is.', () => {
+    const middleware = createPreviewPathRewriteMiddleware('dist');
+    const req = createRequest('/dist/about/');
+    const res = createResponse();
+    const next = vi.fn();
+
+    middleware(req, res as any, next);
+
+    expect(req.url).toBe('/dist/about/');
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('resolves the output directory name dynamically.', () => {
+    let currentOutDir = 'dist-a';
+    const middleware = createPreviewPathRewriteMiddleware(() => currentOutDir);
+    const res = createResponse();
+    const next = vi.fn();
+
+    const firstReq = createRequest('/');
+    middleware(firstReq, res as any, next);
+    expect(firstReq.url).toBe('/dist-a/');
+
+    currentOutDir = 'dist-b';
+    const secondReq = createRequest('/guide');
+    middleware(secondReq, res as any, next);
+    expect(secondReq.url).toBe('/dist-b/guide');
+  });
+
+  it('ignores internal Vite paths.', () => {
+    const middleware = createPreviewPathRewriteMiddleware('dist');
+    const req = createRequest('/@vite/client');
+    const res = createResponse();
+    const next = vi.fn();
+
+    middleware(req, res as any, next);
+
+    expect(req.url).toBe('/@vite/client');
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('skips non-GET requests.', () => {
+    const middleware = createPreviewPathRewriteMiddleware('dist');
+    const req = createRequest('/guide', 'text/html', 'POST');
+    const res = createResponse();
+    const next = vi.fn();
+
+    middleware(req, res as any, next);
+
+    expect(req.url).toBe('/guide');
+    expect(next).toHaveBeenCalled();
   });
 });

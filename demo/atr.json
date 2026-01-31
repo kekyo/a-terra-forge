@@ -8,9 +8,18 @@
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"],
-    "locale": "en"
+    "maxWidth": "90rem",
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["blog", "about"],
+    "blogCategories": ["blog"],
+    "locale": "en",
+    "codeHighlight": {
+      "lineNumbers": true,
+      "theme": {
+        "light": "light-plus",
+        "dark": "dark-plus"
+      }
+    }
   },
   "messages": {
     "en": {
@@ -34,13 +43,6 @@
       "endOfTimeline": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
-    }
-  },
-  "codeHighlight": {
-    "lineNumbers": true,
-    "theme": {
-      "light": "light-plus",
-      "dark": "dark-plus"
     }
   }
 }

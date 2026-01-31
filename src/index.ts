@@ -4,7 +4,7 @@
 // https://github.com/kekyo/a-terra-forge
 
 import { realpathSync } from 'fs';
-import { dirname, join, resolve } from 'path';
+import { dirname, resolve } from 'path';
 import { pathToFileURL } from 'url';
 import { Command, Option } from 'commander';
 
@@ -23,6 +23,12 @@ import { createNewArticle } from './new';
 import type { ATerraForgeProcessingOptions } from './types';
 import {
   type ConsoleLogLevel,
+  defaultAssetDir,
+  defaultCacheDir,
+  defaultDocsDir,
+  defaultOutDir,
+  defaultTemplatesDir,
+  defaultTmpDir,
   getTrimmingConsoleLogger,
   loadATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
@@ -46,9 +52,6 @@ const resolveCliPath = (value: unknown): string | undefined => {
   }
   return resolve(trimmed);
 };
-
-const getDefaultCacheDir = (): string =>
-  process.env.HOME ? join(process.env.HOME, '.cache', name) : '.cache';
 
 type BuildCliOptions = {
   docs?: string;
@@ -92,27 +95,38 @@ const resolveBuildOptions = async (
     config.variables,
     dirname(configPath)
   );
-
-  const defaultDocsDir = resolve('docs');
-  const defaultTemplatesDir = resolve('templates');
-  const defaultOutDir = resolve('dist');
-  const defaultTmpDir = resolve('/tmp');
-  const defaultCacheDir = resolve(getDefaultCacheDir());
+  const configDir = dirname(configPath);
+  const defaultDocsDirResolved = resolve(configDir, defaultDocsDir);
+  const defaultTemplatesDirResolved = resolve(configDir, defaultTemplatesDir);
+  const defaultOutDirResolved = resolve(configDir, defaultOutDir);
+  const defaultAssetsDirResolved = resolve(configDir, defaultAssetDir);
+  const defaultTmpDirResolved = resolve(configDir, defaultTmpDir);
+  const defaultCacheDirResolved = resolve(configDir, defaultCacheDir);
   const enableGitMetadata =
     opts.git === false ? false : (variableOptions.enableGitMetadata ?? true);
 
   return {
     docsDir:
-      resolveCliPath(opts.docs) ?? variableOptions.docsDir ?? defaultDocsDir,
+      resolveCliPath(opts.docs) ??
+      variableOptions.docsDir ??
+      defaultDocsDirResolved,
     templatesDir:
       resolveCliPath(opts.templates) ??
       variableOptions.templatesDir ??
-      defaultTemplatesDir,
-    outDir: resolveCliPath(opts.out) ?? variableOptions.outDir ?? defaultOutDir,
+      defaultTemplatesDirResolved,
+    assetsDir: variableOptions.assetsDir ?? defaultAssetsDirResolved,
+    outDir:
+      resolveCliPath(opts.out) ??
+      variableOptions.outDir ??
+      defaultOutDirResolved,
     tmpDir:
-      resolveCliPath(opts.tmpDir) ?? variableOptions.tmpDir ?? defaultTmpDir,
+      resolveCliPath(opts.tmpDir) ??
+      variableOptions.tmpDir ??
+      defaultTmpDirResolved,
     cacheDir:
-      resolveCliPath(opts.cache) ?? variableOptions.cacheDir ?? defaultCacheDir,
+      resolveCliPath(opts.cache) ??
+      variableOptions.cacheDir ??
+      defaultCacheDirResolved,
     enableGitMetadata,
     userAgent: variableOptions.userAgent,
     configPath,
@@ -128,7 +142,9 @@ const resolveDocsDir = async (opts: NewCliOptions): Promise<string> => {
     config.variables,
     dirname(configPath)
   );
-  return variableOptions.docsDir ?? resolve('docs');
+  return (
+    variableOptions.docsDir ?? resolve(dirname(configPath), defaultDocsDir)
+  );
 };
 
 const banner = () => {
@@ -168,7 +184,7 @@ if (isDirectExecution) {
     .addOption(
       new Option(
         '-c, --config <path>',
-        'Config file path (atr.json5/atr.jsonc/atr.json)'
+        'Config file path (atr.json5 / atr.jsonc / atr.json)'
       )
     )
     .addOption(new Option('--no-git', 'Disable Git metadata'))

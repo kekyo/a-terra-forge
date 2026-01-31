@@ -9,7 +9,9 @@ import {
   createCachedFetcher,
   createCardPlugin,
   createMarkdownProcessor,
+  createBeautifulMermaidPlugin,
   createMermaidPlugin,
+  type BeautifulMermaidPluginOptions,
   type CodeHighlightOptions,
   type MarkdownProcessor,
 } from 'mark-deco';
@@ -17,8 +19,12 @@ import { createFileSystemCacheStorage } from 'mark-deco/node';
 import { createCardOEmbedFallback } from 'mark-deco/card-oembed-fallback';
 import { amazonRules, defaultProviderList } from 'mark-deco/misc';
 
-import type { Logger } from './types';
-import { toSafeId, writeContentFile } from './utils';
+import type { Logger, MermaidRenderer } from './types';
+import {
+  normalizeBeautifulMermaidOptions,
+  toSafeId,
+  writeContentFile,
+} from './utils';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -55,6 +61,8 @@ export interface RenderWorkerPayload {
   readonly cacheDir?: string;
   readonly userAgent: string;
   readonly codeHighlight: CodeHighlightOptions;
+  readonly beautifulMermaid?: BeautifulMermaidPluginOptions;
+  readonly mermaidRenderer: MermaidRenderer;
   readonly linkTarget?: string;
 }
 
@@ -64,10 +72,14 @@ export const createDefaultMarkdownProcessor = ({
   cacheDir,
   userAgent,
   logger,
+  mermaidRenderer,
+  beautifulMermaid,
 }: {
   cacheDir?: string;
   userAgent: string;
   logger: Logger;
+  mermaidRenderer: MermaidRenderer;
+  beautifulMermaid?: BeautifulMermaidPluginOptions;
 }): MarkdownProcessor => {
   const fetcher = createCachedFetcher(
     userAgent,
@@ -83,7 +95,14 @@ export const createDefaultMarkdownProcessor = ({
     scrapingRules: [...amazonRules],
     oembedFallback: cardOEmbedFallback,
   });
-  const mermaidPlugin = createMermaidPlugin();
+  const normalizedBeautifulMermaid =
+    mermaidRenderer === 'mermaid'
+      ? undefined
+      : normalizeBeautifulMermaidOptions(beautifulMermaid);
+  const mermaidPlugin =
+    mermaidRenderer === 'mermaid'
+      ? createMermaidPlugin()
+      : createBeautifulMermaidPlugin(normalizedBeautifulMermaid);
 
   return createMarkdownProcessor({
     plugins: [cardPlugin, mermaidPlugin],

@@ -13,6 +13,7 @@
   const copiedClass = 'code-copy-button-copied';
   const imageModalId = 'imageModal';
   const imageModalImageClass = 'image-modal-image';
+  const imageModalContentClass = 'image-modal-content-body';
   const endOfTimeline = "{{getMessage 'endOfTimeline' 'End of timeline.'}}";
   const noArticlesYet = "{{getMessage 'noArticlesYet' 'No articles yet.'}}";
   let mermaidInitialized = false;
@@ -185,7 +186,7 @@
     modal.innerHTML = `<div class="modal-dialog modal-dialog-centered image-modal-dialog">
   <div class="modal-content image-modal-content">
     <div class="modal-body image-modal-body">
-      <img class="img-fluid ${imageModalImageClass}" alt="" />
+      <div class="${imageModalContentClass}"></div>
     </div>
   </div>
 </div>`;
@@ -193,23 +194,48 @@
     return modal;
   };
 
-  const openImageModal = (image) => {
+  const setModalVariant = (modal, variant) => {
+    const variants = ['image-modal--image', 'image-modal--media'];
+    variants.forEach((name) => modal.classList.remove(name));
+    if (variant === 'image') {
+      modal.classList.add('image-modal--image');
+    } else if (variant === 'media') {
+      modal.classList.add('image-modal--media');
+    }
+  };
+
+  const openModalWithContent = (content, onShown, variant) => {
     const bootstrapApi = window.bootstrap;
     if (!bootstrapApi || typeof bootstrapApi.Modal !== 'function') {
       return;
     }
     const modal = ensureImageModal();
-    const modalImage = modal.querySelector(`.${imageModalImageClass}`);
-    if (!(modalImage instanceof HTMLImageElement)) {
+    setModalVariant(modal, variant);
+    const modalContent = modal.querySelector(`.${imageModalContentClass}`);
+    if (!(modalContent instanceof HTMLElement)) {
       return;
     }
-    modalImage.src = image.currentSrc || image.src;
-    modalImage.alt = image.alt || '';
+    modalContent.replaceChildren(content);
+    if (typeof onShown === 'function') {
+      const handler = () => {
+        modal.removeEventListener('shown.bs.modal', handler);
+        onShown(modal);
+      };
+      modal.addEventListener('shown.bs.modal', handler);
+    }
     bootstrapApi.Modal.getOrCreateInstance(modal, {
       backdrop: true,
       focus: true,
       keyboard: true,
     }).show();
+  };
+
+  const openImageModal = (image) => {
+    const img = document.createElement('img');
+    img.className = `img-fluid ${imageModalImageClass}`;
+    img.src = image.currentSrc || image.src;
+    img.alt = image.alt || '';
+    openModalWithContent(img, undefined, 'image');
   };
 
   const addCopyButtons = (root) => {
@@ -373,6 +399,39 @@
     openImageModal(image);
   };
 
+  const handleMermaidModalClick = (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    let container = target?.closest(
+      '.beautiful-mermaid-wrapper, .mermaid-wrapper'
+    );
+    if (!container && typeof event.clientX === 'number') {
+      const stacked = document.elementsFromPoint(event.clientX, event.clientY);
+      container =
+        stacked.find(
+          (element) =>
+            element instanceof HTMLElement &&
+            (element.classList.contains('beautiful-mermaid-wrapper') ||
+              element.classList.contains('mermaid-wrapper'))
+        ) ?? null;
+    }
+    if (!(container instanceof HTMLElement)) {
+      return;
+    }
+    event.preventDefault();
+    const cloned = container.cloneNode(true);
+    if (!(cloned instanceof HTMLElement)) {
+      return;
+    }
+    cloned.classList.add('modal-media-panel');
+    openModalWithContent(
+      cloned,
+      () => {
+      renderMermaid(cloned);
+      },
+      'media'
+    );
+  };
+
   document.addEventListener(
     'click',
     (event) => {
@@ -381,14 +440,62 @@
     { capture: true }
   );
 
+  document.addEventListener(
+    'click',
+    (event) => {
+      handleMermaidModalClick(event);
+    },
+    { capture: true }
+  );
+
   document.addEventListener('click', (event) => {
     void handleCopyClick(event);
   });
 
-  const initTimeline = async () => {
-    const listElement = document.getElementById('timeline-list');
-    const statusElement = document.getElementById('timeline-status');
-    const sentinel = document.getElementById('timeline-sentinel');
+  const createTemplateFragment = (html) => {
+    const template = document.createElement('template');
+    template.innerHTML = html.trim();
+    return template.content.childNodes.length > 0 ? template.content : null;
+  };
+
+  const buildErrorEntry = (message = 'Failed to load content.') => {
+    const article = document.createElement('article');
+    article.className = 'article-entry stream-entry stream-entry-error';
+    article.textContent = message;
+    return article;
+  };
+
+  const buildEntry = async (entry) => {
+    const entryPath =
+      entry && typeof entry.entryPath === 'string' ? entry.entryPath : '';
+    if (!entryPath) {
+      return buildErrorEntry();
+    }
+    try {
+      const response = await fetch(entryPath, { cache: 'no-store' });
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${entryPath}`);
+      }
+      const html = await response.text();
+      const fragment = createTemplateFragment(html);
+      return fragment ?? buildErrorEntry();
+    } catch (error) {
+      return buildErrorEntry();
+    }
+  };
+
+  const initInfiniteListLoader = async ({
+    listId,
+    statusId,
+    sentinelId,
+    indexKey,
+    prerenderKey,
+    defaultIndexPath,
+    indexErrorMessage,
+  }) => {
+    const listElement = document.getElementById(listId);
+    const statusElement = document.getElementById(statusId);
+    const sentinel = document.getElementById(sentinelId);
     if (
       !(listElement instanceof HTMLElement) ||
       !(statusElement instanceof HTMLElement) ||
@@ -399,10 +506,10 @@
 
     const rootElement = listElement.closest('.docs');
     const indexPath =
-      rootElement instanceof HTMLElement && rootElement.dataset.timelineIndex
-        ? rootElement.dataset.timelineIndex
-        : 'timeline.json';
-    const prerenderCountRaw = listElement.dataset.timelinePrerender;
+      rootElement instanceof HTMLElement && rootElement.dataset[indexKey]
+        ? rootElement.dataset[indexKey]
+        : defaultIndexPath;
+    const prerenderCountRaw = listElement.dataset[prerenderKey];
     const prerenderCount = prerenderCountRaw
       ? Number.parseInt(prerenderCountRaw, 10)
       : 0;
@@ -432,40 +539,8 @@
         return Array.isArray(data) ? data : [];
       } catch (error) {
         indexFailed = true;
-        updateStatus('Failed to load timeline index.');
+        updateStatus(indexErrorMessage);
         return [];
-      }
-    };
-
-    const createTemplateFragment = (html) => {
-      const template = document.createElement('template');
-      template.innerHTML = html.trim();
-      return template.content.childNodes.length > 0 ? template.content : null;
-    };
-
-    const buildErrorEntry = (message = 'Failed to load content.') => {
-      const article = document.createElement('article');
-      article.className = 'article-entry timeline-entry timeline-entry-error';
-      article.textContent = message;
-      return article;
-    };
-
-    const buildEntry = async (entry) => {
-      const entryPath =
-        entry && typeof entry.entryPath === 'string' ? entry.entryPath : '';
-      if (!entryPath) {
-        return buildErrorEntry();
-      }
-      try {
-        const response = await fetch(entryPath, { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error(`Failed to fetch: ${entryPath}`);
-        }
-        const html = await response.text();
-        const fragment = createTemplateFragment(html);
-        return fragment ?? buildErrorEntry();
-      } catch (error) {
-        return buildErrorEntry();
       }
     };
 
@@ -552,7 +627,24 @@
     }
     addCopyButtons(document);
     renderMermaid(document);
-    void initTimeline();
+    void initInfiniteListLoader({
+      listId: 'timeline-list',
+      statusId: 'timeline-status',
+      sentinelId: 'timeline-sentinel',
+      indexKey: 'timelineIndex',
+      prerenderKey: 'timelinePrerender',
+      defaultIndexPath: 'timeline.json',
+      indexErrorMessage: 'Failed to load timeline index.',
+    });
+    void initInfiniteListLoader({
+      listId: 'blog-list',
+      statusId: 'blog-status',
+      sentinelId: 'blog-sentinel',
+      indexKey: 'blogIndex',
+      prerenderKey: 'blogPrerender',
+      defaultIndexPath: 'blog.json',
+      indexErrorMessage: 'Failed to load blog index.',
+    });
   });
 
   mediaQuery.addEventListener('change', (event) => {

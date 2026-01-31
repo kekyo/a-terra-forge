@@ -6,16 +6,18 @@
 /* ==================================================================== */
 /* Common color variables */
 
-/* Primary/secondary root accent colors */
+/* Global variables */
 :root {
   /* Primary accent color */
-  --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '13, 110, 253'}};
+  --primary-rgb: {{toCssRgb primaryColor? '13, 110, 253'}};
   /* Secondary accent color */
-  --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '108, 117, 125'}};
+  --secondary-rgb: {{toCssRgb secondaryColor? '108, 117, 125'}};
   /* Inline code accent color */
-  --inline-code-rgb: {{cond inlineCodeColorRgb? inlineCodeColorRgb '13, 110, 253'}};
+  --inline-code-rgb: {{toCssRgb inlineCodeColor? '13, 110, 253'}};
   /* Header (H1) icon (default: activity) */
   --header-icon-default: '{{cond headerIconCode? headerIconCode '\\F66B'}}';
+  /* Max document area width  */
+  --docs-max-width: {{cond maxWidth? maxWidth 'inherit'}};
 }
 
 :root {
@@ -47,6 +49,8 @@
   --panel-link: {{cond panelLink? panelLink 'var(--panel-link-base)'}};
   --panel-preview-bg: var(--panel-preview-bg-base);
   --panel-preview-border: var(--panel-border);
+  --panel-padding: 0.9rem 1.2rem;
+  --panel-media-max-height: 20rem;
 }
 
 @supports (color: oklch(from black l c h)) {
@@ -426,7 +430,7 @@ body {
 /* -------------------------------------------------------------------- */
 /* Document root, article structures */
 
-.docs {
+.docs-outer {
   flex: 1 1 auto;
   overflow: auto;
   min-height: 0;
@@ -435,9 +439,14 @@ body {
 
 /* For narrow width (phone) */
 @media (max-width: 575.98px) {
-  .docs {
+  .docs-outer {
     padding: 0.5em 1em 0 1em;
   }
+}
+
+.docs {
+  max-width: var(--docs-max-width);
+  margin-inline: auto;
 }
 
 /* Non-commit article indicator */
@@ -577,31 +586,31 @@ h6 {
 }
 
 /* -------------------------------------------------------------------- */
-/* Timeline structures */
+/* Stream structures */
 
-.timeline-list {
+.stream-list {
   display: flex;
   flex-direction: column;
   gap: 2em;
 }
 
-.timeline-entry {
+.stream-entry {
   padding-bottom: 2em;
   border-bottom: 2px solid var(--primary-alpha-75);
 }
 
-.timeline-entry-error {
+.stream-entry-error {
   color: var(--bs-danger);
 }
 
-.timeline-status {
+.stream-status {
   padding: 1rem 0;
   text-align: center;
   color: var(--bs-secondary-color);
 }
 
-/* Continuous timeline loader detection */
-.timeline-sentinel {
+/* Continuous stream loader detection */
+.stream-sentinel {
   height: 1px;
 }
 
@@ -674,7 +683,7 @@ h6 {
 .oembed-header {
   display: flex;
   flex-direction: column;
-  padding: 0.9rem 1.2rem;
+  padding: var(--panel-padding);
   gap: 0.35rem;
   min-width: 0;
   align-self: start;
@@ -845,7 +854,7 @@ h6 {
 .card-body {
   display: flex;
   flex-direction: column;
-  padding: 0.9rem 1.2rem;
+  padding: var(--panel-padding);
   gap: 0.35rem;
   min-width: 0;
   order: 1;
@@ -944,8 +953,30 @@ h6 {
 /* -------------------------------------------------------------------- */
 /* Mermaid diagrams */
 
-.mermaid-wrapper {
+:root[data-bs-theme="light"] .beautiful-mermaid-wrapper {
+  --mdc-bm-bg: var(--panel-preview-bg) !important;
+  --mdc-bm-fg: var(--panel-ink) !important;
+  --mdc-bm-line: var(--primary-shade-69) !important;
+  --mdc-bm-accent: var(--primary) !important;
+  --mdc-bm-muted: var(--primary-tint-69) !important;
+  --mdc-bm-surface: var(--primary-tint-30) !important;
+  --mdc-bm-border: var(--primary-tint-38) !important;
+}
+
+:root[data-bs-theme="dark"] .beautiful-mermaid-wrapper {
+  --mdc-bm-bg: var(--panel-preview-bg) !important;
+  --mdc-bm-fg: var(--panel-ink) !important;
+  --mdc-bm-line: var(--primary-tint-38) !important;
+  --mdc-bm-accent: var(--primary-tint-30) !important;
+  --mdc-bm-muted: var(--primary-tint-69) !important;
+  --mdc-bm-surface: var(--primary-alpha-50) !important;
+  --mdc-bm-border: var(--primary-tint-38) !important;
+}
+
+.mermaid-wrapper,
+.beautiful-mermaid-wrapper {
   max-width: 700px;
+  max-height: var(--panel-media-max-height);
   margin: 0.75rem 0 0.75rem 0.5rem;
   position: relative;
   border-top-right-radius: 1.5rem;
@@ -971,6 +1002,30 @@ h6 {
   box-sizing: border-box;
 }
 
+.beautiful-mermaid-wrapper {
+  padding: var(--panel-padding);
+}
+
+.beautiful-mermaid-wrapper > svg {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  background: var(--panel-preview-bg);
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+.beautiful-mermaid-wrapper.beautiful-mermaid-ascii {
+  overflow: auto;
+  background: var(--panel-preview-bg);
+  box-shadow: 0 0 0 0.1rem var(--panel-preview-border);  /* overlapped border */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
 .entry-body .mermaid-wrapper .mermaid > svg {
   width: 100% !important;
   height: auto !important;
@@ -978,7 +1033,8 @@ h6 {
 }
 
 @media (min-width: 920px) {
-  .entry-body .mermaid-wrapper {
+  .entry-body .mermaid-wrapper,
+  .entry-body .beautiful-mermaid-wrapper {
     float: right;
     width: 60%;
     margin-left: 1.3rem;
@@ -990,6 +1046,7 @@ h6 {
 
 p.article-image-outer {
   max-width: 700px;
+  max-height: var(--panel-media-max-height);
   margin: 0.75rem 0 0.75rem 0.5rem;
   position: relative;
   border-top-right-radius: 1.5rem;
@@ -1026,13 +1083,13 @@ p.article-image-outer > img {
 }
 
 /* -------------------------------------------------------------------- */
-/* Image modal */
+/* Image/Mermaid graph modal */
 
 .image-modal .image-modal-dialog {
   max-width: calc(100vw - 2rem);
+  width: auto;
   margin-left: auto;
   margin-right: auto;
-  justify-content: center;
 }
 
 @media (min-width: 920px) {
@@ -1042,15 +1099,22 @@ p.article-image-outer > img {
 }
 
 .image-modal .modal-content {
-  width: auto;
+  width: 100%;
   border: 0.1rem solid var(--panel-border);
   background: var(--panel-preview-bg);
   border-radius: 0.5rem;
   box-shadow: var(--panel-shadow);
+  overflow: hidden;
 }
 
 .image-modal .modal-body {
   padding: 1.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .image-modal .modal-body {
+    padding: 0;
+  }
 }
 
 .image-modal .image-modal-image {
@@ -1058,9 +1122,69 @@ p.article-image-outer > img {
   width: 100%;
   height: auto;
   max-width: 100%;
-  max-height: 85vh;
+  max-height: calc(100vh - 8rem);
   object-fit: contain;
   background: var(--panel-preview-bg);
+}
+
+.image-modal.image-modal--image .image-modal-dialog {
+  width: fit-content;
+}
+
+.image-modal.image-modal--image .modal-content {
+  width: fit-content;
+}
+
+.image-modal.image-modal--image .image-modal-image {
+  width: auto;
+}
+
+.image-modal.image-modal--media .image-modal-dialog {
+  width: calc(100vw - 2rem);
+  max-width: calc(100vw - 2rem);
+}
+
+@media (min-width: 920px) {
+  .image-modal.image-modal--media .image-modal-dialog {
+    width: calc(100vw - 10rem);
+    max-width: calc(100vw - 10rem);
+  }
+}
+
+.image-modal.image-modal--media .modal-media-panel {
+  width: 100%;
+}
+
+.image-modal .modal-media-panel {
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  float: none;
+}
+
+.image-modal .modal-media-panel.beautiful-mermaid-wrapper,
+.image-modal .modal-media-panel.mermaid-wrapper {
+  justify-self: stretch;
+  border: 0;
+  box-shadow: none;
+}
+
+.image-modal .modal-media-panel.mermaid-wrapper .mermaid,
+.image-modal .modal-media-panel.beautiful-mermaid-wrapper > svg,
+.image-modal .modal-media-panel.beautiful-mermaid-ascii {
+  box-shadow: none;
+}
+
+.image-modal .modal-media-panel .mermaid,
+.image-modal .modal-media-panel > svg {
+  max-height: calc(100vh - 8rem);
+  height: auto;
+  width: 100%;
+}
+
+.image-modal .modal-media-panel.beautiful-mermaid-ascii {
+  max-height: calc(100vh - 8rem);
+  overflow: hidden;
 }
 
 /* -------------------------------------------------------------------- */

@@ -126,14 +126,16 @@ my-page
 ├── package.json
 ├── templates
 │   ├── atom.xml
+│   ├── blog-entry.html
 │   ├── category-entry.html
 │   ├── feed.xml
+│   ├── index-blog.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
 │   ├── sitemap.xml
 │   ├── site-script.js
-│   ├── site-site-style.css
+│   ├── site-style.css
 │   └── timeline-entry.html
 ├── vite.config.ts
 ├── .github
@@ -159,30 +161,29 @@ Your system's default web browser will open automatically to display a preview o
 
 ```bash
 $ npm run dev
-[atr-vite-plugin] a-terra-forge - Universal document-oriented markdown site generator
-[atr-vite-plugin] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
-[atr-vite-plugin] License under MIT
-[atr-vite-plugin] https://github.com/kekyo/a-terra-forge
-[atr-vite-plugin] [0.0.3-c3878308d52ba4d64b67d2aeb59436eb86953241] Started.
+[atr-vite] a-terra-forge - Universal document-oriented markdown site generator
+[atr-vite] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
+[atr-vite] License under MIT
+[atr-vite] https://github.com/kekyo/a-terra-forge
 
   VITE v7.3.1  ready in 597 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
-[atr-vite-plugin] Preparing...
-[atr-vite-plugin] Render each articles [4]...
-[atr-vite-plugin] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
-[atr-vite-plugin] renderer: total time 2493.13ms
-[atr-vite-plugin] Finalizing now...
-[atr-vite-plugin] built: dist/about/index.html
-[atr-vite-plugin] built: dist/hello/index.html
-[atr-vite-plugin] built: dist/index.html
-[atr-vite-plugin] built: dist/site-script.js
-[atr-vite-plugin] built: dist/sitemap.xml
-[atr-vite-plugin] built: dist/atom.xml
-[atr-vite-plugin] built: dist/feed.xml
-[atr-vite-plugin] built: dist/site-style.css
+[atr-vite] Preparing...
+[atr-vite] Render each articles [4]...
+[atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
+[atr-vite] renderer: total time 2493.13ms
+[atr-vite] Finalizing now...
+[atr-vite] built: dist/about/index.html
+[atr-vite] built: dist/hello/index.html
+[atr-vite] built: dist/index.html
+[atr-vite] built: dist/site-script.js
+[atr-vite] built: dist/sitemap.xml
+[atr-vite] built: dist/atom.xml
+[atr-vite] built: dist/feed.xml
+[atr-vite] built: dist/site-style.css
 ```
 
 ![Preview](images/preview.png)
@@ -260,14 +261,16 @@ my-page
 │       └── rich-demo.md
 ├── templates
 │   ├── atom.xml
+│   ├── blog-entry.html
 │   ├── category-entry.html
 │   ├── feed.xml
+│   ├── index-blog.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
 │   ├── sitemap.xml
 │   ├── site-script.js
-│   ├── style.css
+│   ├── site-style.css
 │   └── timeline-entry.html
 ├── .github
 │   └── workflows
@@ -423,8 +426,8 @@ Below is a partial excerpt of `atr.json`:
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"]
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["about"]
   }
 }
 ```
@@ -443,8 +446,8 @@ Below is an explanation of these values:
 |`primaryColor`|Specifies the primary accent color for the site. The scaffold uses many blue accents because of this setting. If you change this color, you can use your preferred accent color. However, do not forget to try colors that are well balanced between the system light and dark themes.                                     |
 |`secondaryColor`|Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes. |
 |`inlineCodeColor`|Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting. |
-|`categories`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
-|`categoriesAfter`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
+|`menuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
+|`afterMenuOrder`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
 
 For example, changing `primaryColor` to `#ff4040` will alter the accent color as follows:
 
@@ -551,24 +554,24 @@ but you might want to place `food` to the right of `develop`, or change the orde
 
 ![Navigation menu order](./images/navigation-order.png)
 
-This order can be specified by the `categories` variable in `atr.json`:
+This order can be specified by the `menuOrder` variable in `atr.json`:
 
 ```json
 {
   "variables": {
-    "categories": ["timeline", "hello", "food", "web", "server"],
+    "menuOrder": ["timeline", "hello", "food", "web", "server"],
   }
 }
 ```
 
-For `categories`, specify the category directory names. Even for subcategories, do not specify the parent category name; specify only the subcategory name.
+For `menuOrder`, specify the category directory names. Even for subcategories, do not specify the parent category name; specify only the subcategory name.
 Navigation menu items are placed to keep the order specified in this list.
 
 Note that even if you specify subcategory names as if the parent categories were split, the menu arrangement will not follow that structure, and only the order will be reflected.
 In other words, the following settings yield the same result:
 
-- `"categories": ["timeline", "hello", "web", "food", "server"]`
-- `"categories": ["timeline", "hello", "web", "server", "food"]`
+- `"menuOrder": ["timeline", "hello", "web", "food", "server"]`
+- `"menuOrder": ["timeline", "hello", "web", "server", "food"]`
 
 If there are categories not listed here, they are added to the end of the menu.
 
@@ -577,23 +580,23 @@ If you place it on the far left, you can separate it from self-introduction and 
 
 ![Navigation menu (after)](./images/navigation-after.png)
 
-This can be specified by the `categoriesAfter` variable:
+This can be specified by the `afterMenuOrder` variable:
 
 ```json
 {
   "variables": {
-    "categoriesAfter": ["about"],
+    "afterMenuOrder": ["about"],
   }
 }
 ```
 
-Note that `categoriesAfter` is always evaluated after `categories`.
-If a category specified in `categoriesAfter` is included in `categories`, it will be placed in the left group.
+Note that `afterMenuOrder` is always evaluated after `menuOrder`.
+If a category specified in `afterMenuOrder` is included in `menuOrder`, it will be placed in the left group.
 
 The timeline category is special, but by using the category name `timeline`, you can also adjust its position in the navigation menu.
-You can deliberately place the timeline on the far right (`categoriesAfter`) to make a site that highlights proofread documents.
+You can deliberately place the timeline on the far right (`afterMenuOrder`) to make a site that highlights proofread documents.
 
-### Front page
+### Front page and Timeline
 
 The front page is the top page of the site. When published at a URL like `http://foobar.github.io/foobar/`, it is served as `http://foobar.github.io/foobar/index.html`.
 
@@ -616,6 +619,17 @@ If you change the front page to `food`, the `food` asset files are placed direct
 In other words, the URL paths visible to visitors change.
 The page structure is also reflected in the sitemap, so search engine crawlers can detect the change, but frequent changes will likely incur a penalty.
 (It might be putting the cart before the horse to let search engines stop you in your tracks.)
+
+Additional Notes on the timeline:
+
+- Specifying `timeline` in `frontPage`, omitting `frontPage`
+- Or placing `timeline` anywhere in `menuOrder` or `afterMenuOrder`
+
+Will generate a timeline page.
+However, if no `timeline` specification exists, the timeline page will not be generated.
+
+While generating the timeline page is one of a-terra-forge's distinctive features and we encourage its use,
+if it is absolutely unnecessary, you can omit the timeline page in this manner.
 
 ### Message replacement
 
@@ -696,10 +710,34 @@ the author name can be replaced automatically:
 
 This is implemented by the `getMessage` function in the funcity script. If you want to apply `messages` to places that do not reference it in the existing template, or even in your own customized HTML, refer to “Customize templates” below.
 
-With this, the basic writing workflow for a-terra-forge is covered.
-From here on, we will explain how to insert content other than documents.
+### Blog Categories
+
+a-terra-forge also includes functionality for writing blogs.
+However, since this is an optional feature, you must enable it using the following method:
+
+- The blog feature displays posts from specified categories in a blog-like format, sorted in reverse chronological order.
+- Specify the categories to use as blogs in `variables.blogCategories` within `atr.json`.
+  Since this method repurposes existing categories, you can display any category (or multiple categories) as a blog.
+- The blog page renders very similarly to a timeline. The latest document is statically generated, while older articles use infinite scroll (demand loading).
+  Therefore, even as the blog accumulates content over time, the physical HTML size of a single page can be constrained within a certain range.
+
+Specify the category names to repurpose as blogs as follows:
+
+```json
+{
+  "variables": {
+    "blogCategories": ["blog"]
+  },
+}
+```
+
+The placement of menus within the navigation menu is determined by specifications such as `menuOrder` mentioned earlier, so the placement flexibility is the same as for regular categories.
+Similar to the timeline, dynamically loaded HTML is placed in `blog-bodies/`.
 
 ---
+
+With this, the basic writing workflow for a-terra-forge is covered.
+From here on, we will explain how to insert content other than documents.
 
 ### Insert images
 
@@ -761,15 +799,17 @@ When you start with three backticks and an optional language label like ` ```typ
 - Code blocks have a copy button (top right) for copy and paste. Line numbers are not included in copied code, so it is easy to paste and run.
 - Code block rendering is done with [Shiki](https://shiki.style/). See https://shiki.style/languages for supported languages.
 
-The code block border uses the color based on `primaryColor`, but syntax highlighting follows the Shiki theme. Other Shiki settings are configured under `codeHighlight` in `atr.json`:
+The code block border uses the color based on `primaryColor`, but syntax highlighting follows the Shiki theme. Other Shiki settings are configured under `variables.codeHighlight` in `atr.json`:
 
 ```json
 {
-  "codeHighlight": {
-    "lineNumbers": true,
-    "theme": {
-      "light": "light-plus",
-      "dark": "dark-plus"
+  "variables": {
+    "codeHighlight": {
+      "lineNumbers": true,
+      "theme": {
+        "light": "light-plus",
+        "dark": "dark-plus"
+      }
     }
   }
 }
@@ -850,35 +890,53 @@ However, you may want to be aware of this when customizing the template.
 
 Below are all values defined in `atr.json`:
 
-|Variable name|Details|
+|Variable name|Template only|Details|
+|:----|:----|:----|
+|`baseUrl`|No|Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it. |
+|`siteName`|No|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
+|`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them in `assetsDir` or similar directories. |
+|`siteImage`|Yes| The site image path, used for embedding page metadata (OGP). The standard size used is `1200px`x`630px`. |
+|`locale`|No|The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. Even if you make this selection, the content will not be automatically translated. |
+|`frontPage`|No|Specifies which category to display as the site's front page (top page). The default is `timeline`, which is a special category name that shows the timeline. |
+|`headerIcon`|Yes|The icon displayed in document titles. The name is specified using [Bootstrap Icons](https://icons.getbootstrap.com/). You can also specify it per document, but this value is used when omitted.|
+|`primaryColor`|Yes|Specifies the primary accent color for the site. The scaffold uses many blue accents because of this setting. If you change this color, you can use your preferred accent color. However, do not forget to try colors that are well balanced between the system light and dark themes. |
+|`secondaryColor`|Yes|Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes. |
+|`inlineCodeColor`|Yes|Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting. |
+|`maxWidth`|Yes|Specifies the maximum width of the document area. The default is unlimited, allowing it to expand freely to match the viewport's width. If it expands too far horizontally, it can become difficult to follow lines with our eyes. Specifying a value like `90rem` can prevent this. |
+|`codeHighlight`|No|Code highlight settings used by Shiki. See "Code highlighting settings" for details. |
+|`siteTemplates`|No|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
+|`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
+|`assetsDir`|No|Asset directory path. Default is `assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `assets/favicon.ico` → `dist/favicon.ico`). |
+|`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
+|`templatesDir`|No|Overrides the templates directory. Default is `templates/`. The path is resolved relative to the directory containing `atr.json`. |
+|`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
+|`tmpDir`|No|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
+|`cacheDir`|No|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |
+|`feedSummaryLength`|No|Maximum length for RSS/Atom entry summaries. Default is `200`. |
+|`feedTitle`|No|RSS/Atom feed title. Defaults to `siteName` or `"feed"` when `siteName` is empty. |
+|`feedDescription`|No|RSS/Atom feed description. Defaults to `siteDescription`. |
+|`prerenderCount`|No|Number of entries pre-rendered into the page. Use a positive integer; when omitted, default is `5`. |
+|`menuOrder`|No|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
+|`afterMenuOrder`|No|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
+
+- "Template only" means that the a-terra-forge conversion process does not use this value; it is referenced as a variable within the template assets.
+- In addition to the variables shown here, you can also use the [standard variables available in funcity](https://github.com/kekyo/funcity#standard-functions).
+- You can also define your own custom variable values and reference them within your funcity script.
+  This is particularly useful for managing parameters like defined values centrally within your funcity script, allowing you to reuse them repeatedly.
+
+### Code highlighting settings
+
+`variables.codeHighlight` contains the configuration used for Shiki syntax highlighting.
+
+|Key|Details|
 |:----|:----|
-|`baseUrl`|Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it. |
-|`siteName`|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
-|`siteDescription`|The site description, used for embedding page metadata.  |
-|`locale`|The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. Even if you make this selection, the content will not be automatically translated. |
-|`frontPage`|Specifies which category to display as the site's front page (top page). The default is `timeline`, which is a special category name that shows the timeline. |
-|`headerIcon`|The icon displayed in document titles. The name is specified using [Bootstrap Icons](https://icons.getbootstrap.com/). You can also specify it per document, but this value is used when omitted.|
-|`primaryColor`|Specifies the primary accent color for the site. The scaffold uses many blue accents because of this setting. If you change this color, you can use your preferred accent color. However, do not forget to try colors that are well balanced between the system light and dark themes.                                     |
-|`secondaryColor`|Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes. |
-|`inlineCodeColor`|Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting. |
-|`siteTemplates`|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
-|`contentFiles`|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
-|`docsDir`|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
-|`templatesDir`|Overrides the templates directory. Default is `templates/`. The path is resolved relative to the directory containing `atr.json`. |
-|`outDir`|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
-|`tmpDir`|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
-|`cacheDir`|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |
-|`feedSummaryLength`|Maximum length for RSS/Atom entry summaries. Default is `200`. |
-|`feedTitle`|RSS/Atom feed title. Defaults to `siteName` or `"feed"` when `siteName` is empty. |
-|`feedDescription`|RSS/Atom feed description. Defaults to `siteDescription`. |
-|`timelinePrerenderCount`|Number of timeline entries pre-rendered into the timeline page. Use a positive integer; when omitted, default is `5`. |
-|`categories`|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
-|`categoriesAfter`|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
-
-In addition to the variables shown here, you can also use the [standard variables available in funcity](https://github.com/kekyo/funcity#standard-functions).
-
-You can also define your own custom variable values and reference them within your funcity script.
-This is particularly useful for managing parameters like defined values centrally within your funcity script, allowing you to reuse them repeatedly.
+|`lineNumbers`|Shows line numbers when `true`. |
+|`theme`|Specifies the theme to apply. You can set this to a string or an object with light/dark values. |
+|`theme.light`|Light theme name. |
+|`theme.dark`|Dark theme name. |
+|`languages`|A list of languages to register. Each entry is also added to `languageAliases` with the same name. |
+|`languageAliases`|Map of language aliases (`alias`: `language`). |
+|`defaultLanguage`|Default language name used when a code block omits the language label. |
 
 ---
 

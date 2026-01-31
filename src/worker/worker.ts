@@ -45,6 +45,8 @@ const run = async () => {
     cacheDir: payload.cacheDir,
     userAgent: payload.userAgent,
     logger: processorLogger,
+    mermaidRenderer: payload.mermaidRenderer,
+    beautifulMermaid: payload.beautifulMermaid,
   });
 
   for (const entry of payload.entries) {

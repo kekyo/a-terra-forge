@@ -18,20 +18,26 @@ import type {
   GitCommitMetadata,
   ATerraForgeConfigOverrides,
   ATerraForgeProcessingOptions,
+  MermaidRenderer,
 } from './types';
 import { collectGitMetadata } from './gitMetadata';
 import {
   assertDirectoryExists,
   collectArticleFiles,
   copyTargetContentFiles,
+  defaultAssetDir,
+  defaultCacheDir,
+  defaultDocsDir,
+  defaultOutDir,
+  defaultTemplatesDir,
+  defaultTmpDir,
   getTrimmingConsoleLogger,
   groupArticleFilesByDirectory,
   loadATerraForgeConfig,
   mergeATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
-  adjustPath,
-  toRgbString,
-  toPosixRelativePath,
+  resolveATerraForgeProcessingOptionsFromVariables,
+  resolveBuiltLogPath,
   writeContentFile,
   type ArticleFileInfo,
 } from './utils';
@@ -45,6 +51,7 @@ import {
   buildNavOrderAfter,
   buildNavOrderBefore,
   buildOrderedNames,
+  getDirectoryLabel,
   resolveCategoryDestinationPath,
   resolveTimelineDestinationPath,
   splitDirectory,
@@ -56,6 +63,7 @@ import {
   type PageTemplateInfo,
   type RenderedArticleInfo,
 } from './process/directory';
+import { generateBlogDocument } from './process/blog';
 import { generateTimelineDocument } from './process/timeline';
 import { buildSitemapUrls } from './process/sitemap';
 import { buildFeedTemplateData } from './process/feed';
@@ -147,6 +155,38 @@ const normalizeSiteTemplates = (raw: unknown): string[] => {
   });
 };
 
+const defaultMermaidRenderer: MermaidRenderer = 'beautiful';
+const resolveMermaidRenderer = (
+  value: unknown,
+  configPath: string
+): MermaidRenderer => {
+  if (value === undefined || value === null) {
+    return defaultMermaidRenderer;
+  }
+  if (typeof value !== 'string') {
+    throw new Error(
+      `"mermaidRenderer" in variables must be a string: ${configPath}`
+    );
+  }
+  const normalized = value.trim().toLowerCase();
+  if (normalized.length === 0) {
+    return defaultMermaidRenderer;
+  }
+  if (normalized === 'mermaid') {
+    return 'mermaid';
+  }
+  if (
+    normalized === 'beautiful' ||
+    normalized === 'beautiful-mermaid' ||
+    normalized === 'beautifulmermaid'
+  ) {
+    return 'beautiful';
+  }
+  throw new Error(
+    `"mermaidRenderer" in variables must be "beautiful" or "mermaid": ${configPath}`
+  );
+};
+
 type SiteTemplateEntry = {
   name: string;
   templatePath: string;
@@ -200,9 +240,11 @@ const renderSiteTemplates = async (
       const isError = outputErrors(entry.templatePath, logs);
       if (!isError) {
         await writeContentFile(entry.outputPath, rendered);
-        const builtPath = toPosixRelativePath(
+        const builtPath = resolveBuiltLogPath(
           configDir,
-          adjustPath(entry.outputPath, outDir, finalOutDir)
+          entry.outputPath,
+          outDir,
+          finalOutDir
         );
         logger.info(`built: ${builtPath}`);
       }
@@ -213,6 +255,28 @@ const renderSiteTemplates = async (
 const ensureTrailingSlash = (value: string): string =>
   value.endsWith('/') ? value : `${value}/`;
 
+const copyAssetFiles = async (
+  assetsDir: string,
+  outDir: string,
+  configPath: string
+): Promise<void> => {
+  try {
+    const result = await stat(assetsDir);
+    if (!result.isDirectory()) {
+      throw new Error(
+        `"assetsDir" in variables must be a directory: ${configPath}`
+      );
+    }
+  } catch (error: unknown) {
+    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+      return;
+    }
+    throw error;
+  }
+
+  await copyTargetContentFiles(assetsDir, ['**/*'], outDir);
+};
+
 /**
  * Build documentation site output from markdown sources.
  */
@@ -221,9 +285,6 @@ export const generateDocs = async (
   signal: AbortSignal,
   configOverrides?: ATerraForgeConfigOverrides
 ): Promise<void> => {
-  const docsDir = resolve(options.docsDir);
-  const templatesDir = resolve(options.templatesDir);
-  const finalOutDir = resolve(options.outDir);
   const configPath = options.configPath
     ? resolve(options.configPath)
     : resolveATerraForgeConfigPathFromDir(process.cwd());
@@ -234,32 +295,46 @@ export const generateDocs = async (
     configOverrides,
     configPath
   );
+  const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
+    config.variables,
+    configDir
+  );
+  const docsDir = resolve(
+    options.docsDir ??
+      variableOptions.docsDir ??
+      resolve(configDir, defaultDocsDir)
+  );
+  const templatesDir = resolve(
+    options.templatesDir ??
+      variableOptions.templatesDir ??
+      resolve(configDir, defaultTemplatesDir)
+  );
+  const assetsDir = resolve(
+    options.assetsDir ??
+      variableOptions.assetsDir ??
+      resolve(configDir, defaultAssetDir)
+  );
+  const finalOutDir = resolve(
+    options.outDir ??
+      variableOptions.outDir ??
+      resolve(configDir, defaultOutDir)
+  );
+  const tmpDir = resolve(
+    options.tmpDir ?? variableOptions.tmpDir ?? defaultTmpDir
+  );
+  const cacheDir = resolve(
+    options.cacheDir ?? variableOptions.cacheDir ?? defaultCacheDir
+  );
 
   logger.info(`Preparing...`);
 
   const configVariablesRaw = new Map(config.variables);
 
-  const primaryColorRgb = toRgbString(configVariablesRaw.get('primaryColor'));
-  if (primaryColorRgb && !configVariablesRaw.has('primaryColorRgb')) {
-    configVariablesRaw.set('primaryColorRgb', primaryColorRgb);
-  }
-  configVariablesRaw.delete('primaryColor');
-
-  const secondaryColorRgb = toRgbString(
-    configVariablesRaw.get('secondaryColor')
+  const mermaidRenderer = resolveMermaidRenderer(
+    configVariablesRaw.get('mermaidRenderer'),
+    configPath
   );
-  if (secondaryColorRgb && !configVariablesRaw.has('secondaryColorRgb')) {
-    configVariablesRaw.set('secondaryColorRgb', secondaryColorRgb);
-  }
-  configVariablesRaw.delete('secondaryColor');
-
-  const inlineCodeColorRgb = toRgbString(
-    configVariablesRaw.get('inlineCodeColor')
-  );
-  if (inlineCodeColorRgb && !configVariablesRaw.has('inlineCodeColorRgb')) {
-    configVariablesRaw.set('inlineCodeColorRgb', inlineCodeColorRgb);
-  }
-  configVariablesRaw.delete('inlineCodeColor');
+  configVariablesRaw.set('mermaidRenderer', mermaidRenderer);
 
   const siteTemplatesRaw = configVariablesRaw.get('siteTemplates');
   const hasSiteTemplates = configVariablesRaw.has('siteTemplates');
@@ -273,7 +348,6 @@ export const generateDocs = async (
   await assertDirectoryExists(docsDir, 'docs');
   const linkTarget = '_blank';
   const userAgent = options.userAgent ?? defaultUserAgent;
-  const tmpDir = options.tmpDir ? resolve(options.tmpDir) : resolve('/tmp');
 
   const articleFiles = await collectArticleFiles(docsDir, '.md');
   if (articleFiles.length === 0) {
@@ -405,40 +479,43 @@ export const generateDocs = async (
   let outputSwapped = false;
   try {
     const articleDirs = [...filteredGroupedArticleFiles.keys()].sort();
-    const navCategoryNames = new Set<string>();
+    const navMenuNames = new Set<string>();
     for (const category of categoriesWithSubcategories) {
-      navCategoryNames.add(category);
+      navMenuNames.add(category);
     }
     for (const directory of filteredGroupedArticleFiles.keys()) {
       const segments = splitDirectory(directory);
       if (segments.length === 1) {
-        navCategoryNames.add(segments[0]!);
+        navMenuNames.add(segments[0]!);
       }
     }
-    const categoryOrder = config.categories;
-    const categoryAfterOrder = config.categoriesAfter;
-    const combinedOrder = [...categoryOrder, ...categoryAfterOrder];
-    const includeTimeline = true;
-    const timelineInBefore = categoryOrder.includes(timelineKey);
-    const timelineInAfter = categoryAfterOrder.includes(timelineKey);
+    const menuOrder = config.menuOrder;
+    const afterMenuOrder = config.afterMenuOrder;
+    const combinedOrder = [...menuOrder, ...afterMenuOrder];
+    const includeTimeline =
+      frontPage === timelineKey ||
+      menuOrder.includes(timelineKey) ||
+      afterMenuOrder.includes(timelineKey);
+    const timelineInBefore = menuOrder.includes(timelineKey);
+    const timelineInAfter = afterMenuOrder.includes(timelineKey);
     const includeTimelineInAfter =
       includeTimeline && !timelineInBefore && timelineInAfter;
     const includeTimelineInBefore = includeTimeline && !includeTimelineInAfter;
-    const afterSet = new Set(categoryAfterOrder);
-    const leftCategoryNames = [...navCategoryNames].filter(
-      (category) => !afterSet.has(category)
+    const afterMenuSet = new Set(afterMenuOrder);
+    const leftMenuNames = [...navMenuNames].filter(
+      (navMenuName) => !afterMenuSet.has(navMenuName)
     );
-    const rightCategoryNames = [...navCategoryNames].filter((category) =>
-      afterSet.has(category)
+    const rightCategoryNames = [...navMenuNames].filter((navMenuName) =>
+      afterMenuSet.has(navMenuName)
     );
 
-    const navCategories: NavCategory[] = [...navCategoryNames]
+    const navCategoryList: NavCategory[] = [...navMenuNames]
       .sort((a, b) => a.localeCompare(b))
-      .map((category) => {
-        const subcategories = subcategoryLookup.get(category);
+      .map((navMenuName) => {
+        const subcategories = subcategoryLookup.get(navMenuName);
         if (!subcategories) {
           return {
-            category,
+            category: navMenuName,
             subcategories: [],
           };
         }
@@ -450,28 +527,32 @@ export const generateDocs = async (
           path: subcategories.get(label)!,
         }));
         return {
-          category,
+          category: navMenuName,
           subcategories: orderedSubcategories,
         };
       });
     const navCategoryMap = new Map(
-      navCategories.map((navCategory) => [navCategory.category, navCategory])
+      navCategoryList.map((navCategory) => [navCategory.category, navCategory])
     );
     const navOrderBefore = buildNavOrderBefore(
-      leftCategoryNames,
-      categoryOrder,
+      leftMenuNames,
+      menuOrder,
       includeTimelineInBefore
     );
     const navOrderAfter = buildNavOrderAfter(
       rightCategoryNames,
-      categoryAfterOrder,
+      afterMenuOrder,
       includeTimelineInAfter
     );
+    const blogCategoryNames = new Set(config.blogCategories);
+    const hasBlogCategories = blogCategoryNames.size > 0;
 
     const categoryIndexTemplatePath = join(templatesDir, 'index-category.html');
     const categoryEntryTemplatePath = join(templatesDir, 'category-entry.html');
     const timelineIndexTemplatePath = join(templatesDir, 'index-timeline.html');
     const timelineEntryTemplatePath = join(templatesDir, 'timeline-entry.html');
+    const blogIndexTemplatePath = join(templatesDir, 'index-blog.html');
+    const blogEntryTemplatePath = join(templatesDir, 'blog-entry.html');
 
     const frontPagePrefix =
       frontPage !== timelineKey ? `${frontPage.replaceAll('\\', '/')}/` : '';
@@ -487,18 +568,31 @@ export const generateDocs = async (
 
     const [
       pageTemplateScript,
-      indexTemplateScript,
+      timelineIndexTemplateScript,
       timelineEntryTemplateScript,
       categoryEntryTemplateScript,
+      blogIndexTemplateScript,
+      blogEntryTemplateScript,
     ] = await Promise.all([
       readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
-      readFile(timelineIndexTemplatePath, { encoding: 'utf-8' }),
-      readFile(timelineEntryTemplatePath, { encoding: 'utf-8' }),
+      includeTimeline
+        ? readFile(timelineIndexTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
+      includeTimeline
+        ? readFile(timelineEntryTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
       readFileIfExists(categoryEntryTemplatePath),
+      hasBlogCategories
+        ? readFile(blogIndexTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
+      hasBlogCategories
+        ? readFile(blogEntryTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
       copyTargetContentFiles(docsDir, config.contentFiles, outDir, {
         rewritePath: rewriteContentPath,
         detectDuplicates: frontPage !== timelineKey,
       }),
+      copyAssetFiles(assetsDir, outDir, configPath),
     ]);
 
     const pageTemplate: PageTemplateInfo = {
@@ -506,14 +600,20 @@ export const generateDocs = async (
       path: categoryIndexTemplatePath,
     };
 
-    const indexTemplate: PageTemplateInfo = {
-      script: indexTemplateScript,
-      path: timelineIndexTemplatePath,
-    };
-    const timelineEntryTemplate: PageTemplateInfo = {
-      script: timelineEntryTemplateScript,
-      path: timelineEntryTemplatePath,
-    };
+    const timelineIndexTemplate: PageTemplateInfo | undefined =
+      timelineIndexTemplateScript
+        ? {
+            script: timelineIndexTemplateScript,
+            path: timelineIndexTemplatePath,
+          }
+        : undefined;
+    const timelineEntryTemplate: PageTemplateInfo | undefined =
+      timelineEntryTemplateScript
+        ? {
+            script: timelineEntryTemplateScript,
+            path: timelineEntryTemplatePath,
+          }
+        : undefined;
     const categoryEntryTemplate: PageTemplateInfo | undefined =
       categoryEntryTemplateScript
         ? {
@@ -521,11 +621,26 @@ export const generateDocs = async (
             path: categoryEntryTemplatePath,
           }
         : undefined;
+    const blogIndexTemplate: PageTemplateInfo | undefined =
+      blogIndexTemplateScript
+        ? {
+            script: blogIndexTemplateScript,
+            path: blogIndexTemplatePath,
+          }
+        : undefined;
+    const blogEntryTemplate: PageTemplateInfo | undefined =
+      blogEntryTemplateScript
+        ? {
+            script: blogEntryTemplateScript,
+            path: blogEntryTemplatePath,
+          }
+        : undefined;
 
     const articleFileInfos = Array.from(
       filteredGroupedArticleFiles.values()
     ).flat();
     const codeHighlight = config.codeHighlight;
+    const beautifulMermaid = config.beautifulMermaid;
     const enableGitMetadata = options.enableGitMetadata ?? true;
     let renderedResults: RenderedArticleInfo[] = [];
 
@@ -555,9 +670,11 @@ export const generateDocs = async (
           logger,
           plan,
           workDir,
-          cacheDir: options.cacheDir,
+          cacheDir,
           userAgent,
           codeHighlight,
+          beautifulMermaid,
+          mermaidRenderer,
           linkTarget,
           signal,
         });
@@ -636,6 +753,34 @@ export const generateDocs = async (
         documentPaths.add(
           resolveCategoryDestinationPath(outDir, articleDir, frontPage)
         );
+        const isBlogCategory = blogCategoryNames.has(
+          getDirectoryLabel(articleDir)
+        );
+        if (isBlogCategory) {
+          if (!blogIndexTemplate || !blogEntryTemplate) {
+            throw new Error(
+              'Blog templates are missing: index-blog.html or blog-entry.html'
+            );
+          }
+          return generateBlogDocument(
+            logger,
+            configDir,
+            outDir,
+            finalOutDir,
+            articleDir,
+            renderedArticles,
+            blogIndexTemplate,
+            blogEntryTemplate,
+            configVariables,
+            navOrderBefore,
+            navOrderAfter,
+            navCategoryMap,
+            frontPage,
+            includeTimeline,
+            siteTemplateOutputMap,
+            signal
+          );
+        }
         return generateDirectoryDocument(
           logger,
           configDir,
@@ -657,22 +802,29 @@ export const generateDocs = async (
       })
     );
 
-    await generateTimelineDocument(
-      logger,
-      configDir,
-      outDir,
-      finalOutDir,
-      renderedResults,
-      indexTemplate,
-      configVariables,
-      navOrderBefore,
-      navOrderAfter,
-      navCategoryMap,
-      timelineEntryTemplate,
-      frontPage,
-      siteTemplateOutputMap,
-      signal
-    );
+    if (includeTimeline) {
+      if (!timelineIndexTemplate || !timelineEntryTemplate) {
+        throw new Error(
+          'Timeline templates are missing: index-timeline.html or timeline-entry.html'
+        );
+      }
+      await generateTimelineDocument(
+        logger,
+        configDir,
+        outDir,
+        finalOutDir,
+        renderedResults,
+        timelineIndexTemplate,
+        configVariables,
+        navOrderBefore,
+        navOrderAfter,
+        navCategoryMap,
+        timelineEntryTemplate,
+        frontPage,
+        siteTemplateOutputMap,
+        signal
+      );
+    }
 
     const siteTemplateData: Record<string, unknown> = {};
     const hasFeedTemplates = filteredSiteTemplateEntries.some(
@@ -743,7 +895,7 @@ const createOutputStagingDir = async (finalOutDir: string): Promise<string> => {
   const parentDir = dirname(finalOutDir);
   await mkdir(parentDir, { recursive: true });
   const baseName = basename(finalOutDir);
-  const prefix = join(parentDir, `${baseName}.atr-next-`);
+  const prefix = join(parentDir, `${baseName}.tmp-`);
   return mkdtemp(prefix);
 };
 
@@ -755,7 +907,7 @@ const swapOutputDir = async (
   const baseName = basename(finalOutDir);
   const hasOutDir = await pathExists(finalOutDir);
   const backupDir = hasOutDir
-    ? join(parentDir, `${baseName}.atr-prev-${Date.now()}`)
+    ? join(parentDir, `${baseName}.tmp-${Date.now()}`)
     : undefined;
 
   if (hasOutDir && backupDir) {

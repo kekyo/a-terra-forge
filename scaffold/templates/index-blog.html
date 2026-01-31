@@ -7,6 +7,7 @@ https://github.com/kekyo/a-terra-forge
 -->
 {{
 set tpc (cond prerenderCount? prerenderCount 5)
+set pageTitle (cond title? (getMessage title title) 'Blog')
 if locale?
 }}
 <html lang="{{locale}}">
@@ -17,8 +18,8 @@ if locale?
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="application-name" content="a-terra-forge_{{version}}">
-    <meta property="og:type" content="website">
-    <meta property="og:title" content="{{title}}">
+    <meta property="og:type" content="blog">
+    <meta property="og:title" content="{{pageTitle}}">
     {{if siteDescription?}}
     <meta name="description" content="{{siteDescription}}">
     <meta property="og:description" content="{{siteDescription}}">
@@ -59,9 +60,9 @@ if locale?
     end
     if siteName?
     }}
-    <title>{{getMessage 'Timeline'}} - {{siteName}}</title>
+    <title>{{pageTitle}} - {{siteName}}</title>
     {{else}}
-    <title>{{getMessage 'Timeline'}}</title>
+    <title>{{pageTitle}}</title>
     {{end}}
     <script>
       // Earlier theme application
@@ -108,16 +109,16 @@ if locale?
   <body>
 {{import 'navigation-bar.html'}}
     <div class="docs-outer">
-      <div class="docs" data-timeline-index="{{timelineIndexPath}}">
-        <div id="timeline-list" class="stream-list"{{if tpc}} data-timeline-prerender="{{tpc}}"{{end}}>
+      <div class="docs" data-blog-index="{{blogIndexPath}}">
+        <div id="blog-list" class="stream-list"{{if tpc}} data-blog-prerender="{{tpc}}"{{end}}>
           {{
-          for entry (slice 0 tpc timelineEntries)
-            getTimelineEntry entry.entryPath
+          for entry (slice 0 tpc blogEntries)
+            getBlogEntry entry.entryPath
           end
           }}
         </div>
-        <div id="timeline-status" class="stream-status" role="status" aria-live="polite"></div>
-        <div id="timeline-sentinel" class="stream-sentinel" aria-hidden="true"></div>
+        <div id="blog-status" class="stream-status" role="status" aria-live="polite"></div>
+        <div id="blog-sentinel" class="stream-sentinel" aria-hidden="true"></div>
       </div>
     </div>
     <script

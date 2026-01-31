@@ -51,7 +51,7 @@ describe('template style', () => {
     expect(mediaBlocks.length).toBeGreaterThan(0);
     expect(
       mediaBlocks.some((block) =>
-        /\.docs\s*\{[^}]*padding:\s*0\.5em\s+1em\s+0\s+1em;/.test(block)
+        /\.docs-outer\s*\{[^}]*padding:\s*0\.5em\s+1em\s+0\s+1em;/.test(block)
       )
     ).toBe(true);
   });
@@ -93,7 +93,33 @@ describe('template style', () => {
     );
     expect(dialogMatch).not.toBeNull();
     expect(dialogMatch?.[1]).toMatch(/max-width:\s*calc\(100vw\s*-\s*2rem\);/);
-    expect(dialogMatch?.[1]).toMatch(/width:\s*calc\(100vw\s*-\s*2rem\);/);
+    const mediaDialogMatch = css.match(
+      /\.image-modal\.image-modal--media\s+\.image-modal-dialog\s*\{([^}]*)\}/
+    );
+    expect(mediaDialogMatch).not.toBeNull();
+    expect(mediaDialogMatch?.[1]).toMatch(/width:\s*calc\(100vw\s*-\s*2rem\);/);
+  });
+
+  it('clips image modal content to the rounded border', async () => {
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
+    const contentMatch = css.match(
+      /\.image-modal\s+\.modal-content\s*\{([^}]*)\}/
+    );
+
+    expect(contentMatch).not.toBeNull();
+    expect(contentMatch?.[1]).toMatch(/overflow:\s*hidden;/);
+  });
+
+  it('removes image modal padding at the smartphone breakpoint', async () => {
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
+    const mediaBlocks = extractMediaBlocks(css, '@media (max-width: 575.98px)');
+
+    expect(mediaBlocks.length).toBeGreaterThan(0);
+    expect(
+      mediaBlocks.some((block) =>
+        /\.image-modal\s+\.modal-body\s*\{[^}]*padding:\s*0;/.test(block)
+      )
+    ).toBe(true);
   });
 
   it('renders blockquotes with the bootstrap quote icon', async () => {
@@ -131,7 +157,7 @@ describe('template style', () => {
   it('defines primary and secondary palette variables', async () => {
     const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
-      /--primary-rgb:\s*\{\{cond\s+primaryColorRgb\?\s+primaryColorRgb\s+'13,\s*110,\s*253'\}\};/
+      /--primary-rgb:\s*\{\{toCssRgb\s+primaryColor\?\s+'13,\s*110,\s*253'\}\};/
     );
     expect(css).toContain(
       `--header-icon-default: '{{cond headerIconCode? headerIconCode '\\\\F66B'}}';`
@@ -141,7 +167,7 @@ describe('template style', () => {
       /--primary-alpha-50:\s*color-mix\(in\s+srgb,\s*var\(--primary\)\s+50%,\s*transparent\);/
     );
     expect(css).toMatch(
-      /--secondary-rgb:\s*\{\{cond\s+secondaryColorRgb\?\s+secondaryColorRgb\s+'108,\s*117,\s*125'\}\};/
+      /--secondary-rgb:\s*\{\{toCssRgb\s+secondaryColor\?\s+'108,\s*117,\s*125'\}\};/
     );
     expect(css).toMatch(/--secondary:\s*rgb\(var\(--secondary-rgb\)\);/);
     expect(css).toMatch(
@@ -232,12 +258,12 @@ describe('template style', () => {
     );
   });
 
-  it('applies primary palette to headings and timeline accents', async () => {
+  it('applies primary palette to headings and stream accents', async () => {
     const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const h1Match = css.match(/h1\s*\{([^}]*)\}/);
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
     const h2Match = css.match(/h2\s*\{[^}]*border-left:[^}]*\}/);
-    const timelineMatch = css.match(/\.timeline-entry\s*\{([^}]*)\}/);
+    const streamMatch = css.match(/\.stream-entry\s*\{([^}]*)\}/);
 
     expect(h1Match).not.toBeNull();
     expect(h1Match?.[1]).toMatch(
@@ -252,8 +278,8 @@ describe('template style', () => {
     expect(h2Match?.[0]).toMatch(
       /border-left:\s*0\.7rem\s+solid\s+var\(--primary-alpha-75\);/
     );
-    expect(timelineMatch).not.toBeNull();
-    expect(timelineMatch?.[1]).toMatch(
+    expect(streamMatch).not.toBeNull();
+    expect(streamMatch?.[1]).toMatch(
       /border-bottom:\s*2px\s+solid\s+var\(--primary-alpha-75\);/
     );
   });

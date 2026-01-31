@@ -4,7 +4,10 @@
 // https://github.com/kekyo/a-terra-forge
 
 import type { FunCityVariables } from 'funcity';
-import type { CodeHighlightOptions } from 'mark-deco';
+import type {
+  BeautifulMermaidPluginOptions,
+  CodeHighlightOptions,
+} from 'mark-deco';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -25,20 +28,27 @@ export interface Logger {
 ///////////////////////////////////////////////////////////////////////////////////
 
 /**
+ * Mermaid renderer selection.
+ */
+export type MermaidRenderer = 'beautiful' | 'mermaid';
+
+/**
  * a-terra-forge processing options.
  */
 export interface ATerraForgeProcessingOptions {
-  /** Markdown document directory. */
-  docsDir: string;
-  /** Template directory. */
-  templatesDir: string;
-  /** Output directory. */
-  outDir: string;
-  /** Temporary working directory base (defaults to /tmp when omitted). */
+  /** Markdown document directory (defaults to "docs" when omitted). */
+  docsDir?: string;
+  /** Template directory (defaults to "templates" when omitted). */
+  templatesDir?: string;
+  /** Asset directory (defaults to "assets" when omitted). */
+  assetsDir?: string;
+  /** Output directory (defaults to "dist" when omitted). */
+  outDir?: string;
+  /** Temporary working directory base (defaults to the system temp directory when omitted). */
   tmpDir?: string;
   /** Enable Git metadata (defaults to true). */
   enableGitMetadata?: boolean;
-  /** Cache directory (defaults to ".cache" when omitted). */
+  /** Cache directory (defaults to "$HOME/.cache/a-terra-forge" when omitted). */
   cacheDir?: string;
   /** User agent string for fetchers (defaults to the built-in UA when omitted). */
   userAgent?: string;
@@ -58,12 +68,16 @@ export interface ATerraForgeVariablesInput {
   docsDir?: string;
   /** Template directory. */
   templatesDir?: string;
+  /** Asset directory. */
+  assetsDir?: string;
   /** Output directory. */
   outDir?: string;
   /** Temporary working directory base. */
   tmpDir?: string;
   /** Enable Git metadata (defaults to true). */
   enableGitMetadata?: boolean;
+  /** Mermaid renderer selection. */
+  mermaidRenderer?: MermaidRenderer;
   /** Cache directory. */
   cacheDir?: string;
   /** User agent string for fetchers. */
@@ -72,10 +86,14 @@ export interface ATerraForgeVariablesInput {
   siteTemplates?: readonly string[];
   /** Glob patterns for static content files to copy. */
   contentFiles?: readonly string[];
-  /** Category ordering for primary navigation. */
-  categories?: readonly string[];
-  /** Category ordering for secondary navigation. */
-  categoriesAfter?: readonly string[];
+  /** Menu ordering for primary navigation. */
+  menuOrder?: readonly string[];
+  /** Menu ordering for secondary navigation. */
+  afterMenuOrder?: readonly string[];
+  /** Categories rendered with blog-style ordering and templates. */
+  blogCategories?: readonly string[];
+  /** Code highlighting configuration values. */
+  codeHighlight?: Record<string, unknown>;
   /** Additional variable entries. */
   [key: string]: unknown;
 }
@@ -88,8 +106,10 @@ export interface ATerraForgeConfigInput {
   variables?: ATerraForgeVariablesInput;
   /** Message dictionaries keyed by locale. */
   messages?: Record<string, unknown>;
-  /** Code highlighting configuration values. */
+  /** Code highlighting configuration values (legacy top-level). */
   codeHighlight?: Record<string, unknown>;
+  /** Beautiful Mermaid configuration values. */
+  'beautiful-mermaid'?: Record<string, unknown>;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -110,12 +130,16 @@ export interface ATerraForgeConfig {
   messages: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration. */
   codeHighlight: CodeHighlightOptions;
+  /** Beautiful Mermaid configuration. */
+  beautifulMermaid?: BeautifulMermaidPluginOptions;
   /** Glob patterns for static content files to copy. */
   contentFiles: readonly string[];
-  /** Category ordering for primary navigation. */
-  categories: readonly string[];
-  /** Category ordering for secondary navigation. */
-  categoriesAfter: readonly string[];
+  /** Menu ordering for primary navigation. */
+  menuOrder: readonly string[];
+  /** Menu ordering for secondary navigation. */
+  afterMenuOrder: readonly string[];
+  /** Categories rendered with blog-style ordering and templates. */
+  blogCategories: readonly string[];
 }
 
 /**
@@ -128,6 +152,8 @@ export interface ATerraForgeConfigOverrides {
   messages?: ATerraForgeMessageListByLocale;
   /** Code highlighting configuration to replace base config values. */
   codeHighlight?: CodeHighlightOptions;
+  /** Beautiful Mermaid configuration to replace base config values. */
+  beautifulMermaid?: BeautifulMermaidPluginOptions;
 }
 
 ///////////////////////////////////////////////////////////////////////////////////

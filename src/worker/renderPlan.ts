@@ -6,9 +6,14 @@
 import { readFile } from 'fs/promises';
 import { cpus } from 'os';
 import { Worker } from 'worker_threads';
-import type { CodeHighlightOptions, Logger } from 'mark-deco';
+import type {
+  BeautifulMermaidPluginOptions,
+  CodeHighlightOptions,
+  Logger,
+} from 'mark-deco';
 
 import { createProcessorLogger } from '../logger';
+import type { MermaidRenderer } from '../types';
 import type { ArticleFileInfo } from '../utils';
 import { isValidArticleId, parseFrontmatterInfo } from '../process/frontmatter';
 import { toPosixPath } from '../process/helpers';
@@ -156,6 +161,8 @@ const renderPlanInProcess = async (
   cacheDir: string | undefined,
   userAgent: string,
   codeHighlight: CodeHighlightOptions,
+  beautifulMermaid: BeautifulMermaidPluginOptions | undefined,
+  mermaidRenderer: MermaidRenderer,
   linkTarget?: string,
   onEntryRendered?: (durationMs: number) => void
 ): Promise<void> => {
@@ -164,6 +171,8 @@ const renderPlanInProcess = async (
     cacheDir,
     userAgent,
     logger: processorLogger,
+    mermaidRenderer,
+    beautifulMermaid,
   });
 
   for (const entry of plan.files) {
@@ -192,6 +201,8 @@ export const runRenderWorkers = async ({
   cacheDir,
   userAgent,
   codeHighlight,
+  beautifulMermaid,
+  mermaidRenderer,
   linkTarget,
   signal,
 }: {
@@ -201,6 +212,8 @@ export const runRenderWorkers = async ({
   cacheDir: string | undefined;
   userAgent: string;
   codeHighlight: CodeHighlightOptions;
+  beautifulMermaid: BeautifulMermaidPluginOptions | undefined;
+  mermaidRenderer: MermaidRenderer;
   linkTarget?: string;
   signal: AbortSignal;
 }): Promise<void> => {
@@ -269,6 +282,8 @@ export const runRenderWorkers = async ({
       cacheDir,
       userAgent,
       codeHighlight,
+      beautifulMermaid,
+      mermaidRenderer,
       linkTarget,
       recordEntryDuration
     );
@@ -289,6 +304,8 @@ export const runRenderWorkers = async ({
       cacheDir,
       userAgent,
       codeHighlight,
+      beautifulMermaid,
+      mermaidRenderer,
       linkTarget,
       recordEntryDuration
     );
@@ -332,6 +349,8 @@ export const runRenderWorkers = async ({
               cacheDir,
               userAgent,
               codeHighlight,
+              beautifulMermaid,
+              mermaidRenderer,
               linkTarget,
             };
 

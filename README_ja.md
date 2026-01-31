@@ -57,6 +57,7 @@ TODO: WIP
 - サイトマップ・RSS・Atomによる情報公開に標準で対応しています。
 - 標準のテンプレートアセットは、[bootstrap](https://getbootstrap.jp/) によるシンプルでモダンなページを実現しています。
   もちろん、bootstrapを使わず、全く別のUIフレームワークを使用することも不可能ではない柔軟性があります。
+- ブログを同時に収容出来ます（カテゴリのブログ転用）
 
 ---
 
@@ -126,14 +127,16 @@ my-page
 ├── package.json
 ├── templates
 │   ├── atom.xml
+│   ├── blog-entry.html
 │   ├── category-entry.html
 │   ├── feed.xml
+│   ├── index-blog.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
 │   ├── sitemap.xml
 │   ├── site-script.js
-│   ├── site-site-style.css
+│   ├── site-style.css
 │   └── timeline-entry.html
 ├── vite.config.ts
 ├── .github
@@ -159,30 +162,29 @@ found 0 vulnerabilities
 
 ```bash
 $ npm run dev
-[atr-vite-plugin] a-terra-forge - Universal document-oriented markdown site generator
-[atr-vite-plugin] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
-[atr-vite-plugin] License under MIT
-[atr-vite-plugin] https://github.com/kekyo/a-terra-forge
-[atr-vite-plugin] [0.0.3-c3878308d52ba4d64b67d2aeb59436eb86953241] Started.
+[atr-vite] a-terra-forge - Universal document-oriented markdown site generator
+[atr-vite] Copyright (c) Kouji Matsui (@kekyo@mi.kekyo.net)
+[atr-vite] License under MIT
+[atr-vite] https://github.com/kekyo/a-terra-forge
 
   VITE v7.3.1  ready in 597 ms
 
   ➜  Local:   http://localhost:5173/
   ➜  Network: use --host to expose
   ➜  press h + enter to show help
-[atr-vite-plugin] Preparing...
-[atr-vite-plugin] Render each articles [4]...
-[atr-vite-plugin] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
-[atr-vite-plugin] renderer: total time 2493.13ms
-[atr-vite-plugin] Finalizing now...
-[atr-vite-plugin] built: dist/about/index.html
-[atr-vite-plugin] built: dist/hello/index.html
-[atr-vite-plugin] built: dist/index.html
-[atr-vite-plugin] built: dist/site-script.js
-[atr-vite-plugin] built: dist/sitemap.xml
-[atr-vite-plugin] built: dist/atom.xml
-[atr-vite-plugin] built: dist/feed.xml
-[atr-vite-plugin] built: dist/site-style.css
+[atr-vite] Preparing...
+[atr-vite] Render each articles [4]...
+[atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
+[atr-vite] renderer: total time 2493.13ms
+[atr-vite] Finalizing now...
+[atr-vite] built: dist/about/index.html
+[atr-vite] built: dist/hello/index.html
+[atr-vite] built: dist/index.html
+[atr-vite] built: dist/site-script.js
+[atr-vite] built: dist/sitemap.xml
+[atr-vite] built: dist/atom.xml
+[atr-vite] built: dist/feed.xml
+[atr-vite] built: dist/site-style.css
 ```
 
 ![Preview](images/preview.png)
@@ -260,14 +262,16 @@ my-page
 │       └── rich-demo.md
 ├── templates
 │   ├── atom.xml
+│   ├── blog-entry.html
 │   ├── category-entry.html
 │   ├── feed.xml
+│   ├── index-blog.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
 │   ├── sitemap.xml
 │   ├── site-script.js
-│   ├── style.css
+│   ├── site-style.css
 │   └── timeline-entry.html
 ├── .github
 │   └── workflows
@@ -423,8 +427,8 @@ a-terra-forgeは、文書スペースの全体的な管理を `atr.json` とい�
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"]
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["about"]
   }
 }
 ```
@@ -443,8 +447,8 @@ a-terra-forgeは、文書スペースの全体的な管理を `atr.json` とい�
 |`primaryColor`| サイトのプライマリ（優先）アクセントカラーを指定します。雛形が青色のアクセントを多用しているのはこの指定によるものです。この色を変えれば、あなたの好みのアクセントカラーに変更できます。但し、システムテーマのlightとdarkでバランスの取れている色味を試行錯誤することを忘れずに。 |
 |`secondaryColor`| サイトのセカンダリ（補間）アクセントカラーを指定します。セカンダリカラーは今の所、ブロッククオートでのみ使用しています。 |
 |`inlineCodeColor`| サイトのインラインコードカラーを指定します。これは、markdown上でバッククオートで囲まれた文字（インラインコード）の色です。インラインコードの背景色もこの指定から着色されます。 |
-|`categories`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
-|`categoriesAfter`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
+|`menuOrder`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
+|`afterMenuOrder`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
 
 例えば、 `primaryColor` を `#ff4040` に変更すると、以下のようにアクセントカラーが変わります:
 
@@ -552,24 +556,24 @@ New article created: food/index.md
 
 ![Navigation menu order](./images/navigation-order.png)
 
-この順序は、`atr.json` の `categories` 変数で指定できます:
+この順序は、`atr.json` の `menuOrder` 変数で指定できます:
 
 ```json
 {
   "variables": {
-    "categories": ["timeline", "hello", "food", "web", "server"],
+    "menuOrder": ["timeline", "hello", "food", "web", "server"],
   }
 }
 ```
 
-`categories` には、カテゴリのディレクトリ名を指定します。そして、サブカテゴリであっても親カテゴリ名を指定せず、サブカテゴリ名だけで指定してください。
+`menuOrder` には、カテゴリのディレクトリ名を指定します。そして、サブカテゴリであっても親カテゴリ名を指定せず、サブカテゴリ名だけで指定してください。
 このリストの指定通りの順序が維持されるように、ナビゲーションメニュー項目が配置されます。
 
 サブカテゴリ名は、親カテゴリが分割されるような指定を行ったとしても、その通りのメニュー配置にはならず、単に順序だけが反映されることに注意してください。
 つまり、以下の指定は同じ結果となります:
 
-- `"categories": ["timeline", "hello", "web", "food", "server"]`
-- `"categories": ["timeline", "hello", "web", "server", "food"]`
+- `"menuOrder": ["timeline", "hello", "web", "food", "server"]`
+- `"menuOrder": ["timeline", "hello", "web", "server", "food"]`
 
 また、ここに指定されていないカテゴリが存在する場合は、メニューの後端に追加されます。
 
@@ -578,23 +582,23 @@ New article created: food/index.md
 
 ![Navigation menu (after)](./images/navigation-after.png)
 
-これは、`categoriesAfter` 変数で指定できます:
+これは、`afterMenuOrder` 変数で指定できます:
 
 ```json
 {
   "variables": {
-    "categoriesAfter": ["about"],
+    "afterMenuOrder": ["about"],
   }
 }
 ```
 
-`categoriesAfter` は常に `categories` の指定の後で評価されることに注意してください。
-`categoriesAfter` に指定したカテゴリが、 `categories` に含まれていると、左側のグループに配置されてしまいます。
+`afterMenuOrder` は常に `menuOrder` の指定の後で評価されることに注意してください。
+`afterMenuOrder` に指定したカテゴリが、 `menuOrder` に含まれていると、左側のグループに配置されてしまいます。
 
 タイムラインカテゴリは特殊なカテゴリと説明しましたが、カテゴリ名 `timeline` を使うことで、ナビゲーションメニューでのタイムラインの位置を調整することも出来ます。
-敢えてタイムラインを右端（`categoriesAfter`）に配置して、校正済みのドキュメントを全面に押し出したサイトにすることも出来ます。
+敢えてタイムラインを右端（`afterMenuOrder`）に配置して、校正済みのドキュメントを全面に押し出したサイトにすることも出来ます。
 
-### フロントページ
+### フロントページとタイムライン
 
 フロントページとは、そのサイトの先頭のページです。 `http://foobar.github.io/foobar/` のようなURLで公開された場合に、 `http://foobar.github.io/foobar/index.html` として配信されるページです。
 
@@ -617,6 +621,16 @@ New article created: food/index.md
 つまり、ページに訪問するユーザーから見えるURLのパスが変化することになります。
 ページ構造はサイトマップにも反映されるので、検索エンジンのクローラーなどはその変化を検知できると思われますが、頻繁に変更すると恐らくペナルティを課せられると思われます。
 （検索エンジンの都合であなたの歩みを止めるのは本末転倒かもしれませんが...）
+
+タイムラインについての補足:
+
+- `frontPage` に `timeline` と指定するか、 `frontPage` を省略した場合
+- または、 `menuOrder` や `afterMenuOrder` のどこかに `timeline` を配置した場合
+
+は、タイムラインページが生成されます。
+しかし、`timeline`指定が存在しない場合は、タイムラインページは生成されません。
+
+タイムラインページの描画は、a-terra-forgeの特徴的な機能の一つなので使ってほしいところですが、どうしても不要な場合は、このようにしてタイムラインページを省くことが出来ます。
 
 ### メッセージ置換と言語
 
@@ -697,10 +711,33 @@ New article created: food/index.md
 
 これを実現しているのは、funcityスクリプト内の `getMessage` という関数です。もし、既存のテンプレートでも `messages` を参照していない箇所や、自分でカスタマイズしたHTMLの一部でも `messages` による置き換えを実現したい場合は、後述の「テンプレートのカスタマイズ」を参照してください。
 
-ここまでの解説で、a-terra-forgeの基本的な執筆方法は網羅しました。
-以降は、文書以外のコンテンツの挿入方法について説明します。
+### ブログカテゴリ
+
+a-terra-forgeは、ブログを執筆するための機能も持っています。但し、オプショナルな機能なので、以下の方法で有効化する必要があります:
+
+- ブログは、指定したカテゴリをブログのように「時系列降順」で読ませるための機能です。
+- `atr.json` の `variables.blogCategories` に、ブログとして使用するカテゴリを指定します。
+  カテゴリを転用する、という方法なので、任意のカテゴリ（複数可）をブログのように描画することが出来ます。
+- ブログページは、タイムラインにかなり近い描画を行います。最新の文書はスタティック生成され、古い記事は無限スクロール（デマンド読み込み）が行われます。
+  従って、ブログが長期に渡って蓄積されても、1ページの物理的なHTMLサイズを一定の範囲に制約できます。
+
+以下のように、ブログに転用するカテゴリ名を指定します:
+
+```json
+{
+  "variables": {
+    "blogCategories": ["blog"]
+  },
+}
+```
+
+ナビゲーションメニューのどこにメニューを配置するのかは、これまで述べてきた `menuOrder` などの指定で決定されるので、配置の自由度は通常のカテゴリと同様です。
+タイムライン同様に、動的に読み込むHTMLが `blog-bodies/` に配置されます。
 
 ---
+
+ここまでの解説で、a-terra-forgeの基本的な執筆方法は網羅しました。
+以降は、文書以外のコンテンツの挿入方法について説明します。
 
 ### 画像の挿入
 
@@ -763,15 +800,17 @@ const run = async (
   行番号はコピーコードに含まれないので、コードを簡単にコピーして試すことが出来ます。
 - コードブロックの描画は、 [Shiki](https://shiki.style/) で実現しています。対応する言語は https://shiki.style/languages を参照してください。
 
-コードブロックを囲む枠線は、`primaryColor` に従った色が使用されますが、シンタックスハイライト（コード中の色付け）は、Shikiのテーマに従って描画されます。その他の Shiki の設定も含めて、 `atr.json` の `codeHighlight` で指定します:
+コードブロックを囲む枠線は、`primaryColor` に従った色が使用されますが、シンタックスハイライト（コード中の色付け）は、Shikiのテーマに従って描画されます。その他の Shiki の設定も含めて、 `atr.json` の `variables.codeHighlight` で指定します:
 
 ```json
 {
-  "codeHighlight": {
-    "lineNumbers": true,
-    "theme": {
-      "light": "light-plus",
-      "dark": "dark-plus"
+  "variables": {
+    "codeHighlight": {
+      "lineNumbers": true,
+      "theme": {
+        "light": "light-plus",
+        "dark": "dark-plus"
+      }
     }
   }
 }
@@ -851,35 +890,53 @@ a-terra-forgeの雛形にはこのコードが含まれているため、すぐ�
 
 以下に、`atr.json`に定義済みの全ての値を示します:
 
-|変数名|詳細|
+|変数名|テンプレートのみ|詳細|
+|:----|:----|:----|
+|`baseUrl`|No| このサイトのデプロイ後の公開基底URLを指定します。ナビゲーションメニューに影響はありませんが、サイトマップの生成には必要なので、設定してください。|
+|`siteName`|No| このサイトのサイト名で、ナビゲーションメニューの左端の表示や、ページメタデータの埋め込みに使用されます。 |
+|`siteDescription`|No| このサイトの説明文で、ページメタデータ (OGP/RSS/Atom) の埋め込みに使用されます。サイズは、`1200px`x`630px`が標準的に使用されます。 |
+|`siteImage`|Yes| このサイトの画像パスで、ページメタデータ (OGP) の埋め込みに使用されます。画像は `assetsDir` などに配置してデプロイ出来ます。 |
+|`locale`|No| サイト全体の言語指定です。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。例えば英語の場合は`en`、日本語の場合は`ja`です。この指定を行っても、コンテンツが自動的に翻訳されるわけではありません。 |
+|`frontPage`|No| サイトのフロントページ（トップページ）として、どのカテゴリを表示するかを指定します。既定は`timeline`で、これはタイムラインを表示する、特殊なカテゴリ名です。 |
+|`headerIcon`|Yes| 文書のタイトルに表示するアイコンの指定です。名称は [bootstrap icons](https://icons.getbootstrap.com/) で指定します。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。 |
+|`primaryColor`|Yes| サイトのプライマリ（優先）アクセントカラーを指定します。雛形が青色のアクセントを多用しているのはこの指定によるものです。この色を変えれば、あなたの好みのアクセントカラーに変更できます。但し、システムテーマのlightとdarkでバランスの取れている色味を試行錯誤することを忘れずに。 |
+|`secondaryColor`|Yes| サイトのセカンダリ（補間）アクセントカラーを指定します。セカンダリカラーは今の所、ブロッククオートでのみ使用しています。 |
+|`inlineCodeColor`|Yes| サイトのインラインコードカラーを指定します。これは、markdown上でバッククオートで囲まれた文字（インラインコード）の色です。インラインコードの背景色もこの指定から着色されます。 |
+|`maxWidth`|Yes| 文書エリアの最大幅を指定します。デフォルトは無制限で、ビューポートの横幅の広がりに無制限で追従します。横方向に広がりすぎると、目線で行を追うことが難しくなる場合があるため、 `90rem` のように指定することで、これを抑制できます。 |
+|`codeHighlight`|No| Shikiのコードハイライト設定です。詳細は「コードハイライト設定」を参照してください。 |
+|`siteTemplates`|No| サイト共通のアセットファイルで、funcityによるスクリプト処理を行うテンプレートファイル群を指定します。CSSやJavaScriptファイル、RSS/Atom、サイトマップなどは、全てスクリプトとして処理されて出力されます。追加のスクリプト処理が必要なファイルはこのリストに追加することで、同じようにスクリプト処理の対象として認識させることが出来ます。デフォルトは、`site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`です。|
+|`contentFiles`|No| ビルド時に文書ディレクトリ以下から追加でコピーする静的ファイルの glob パターンを指定します。画像などの補助ファイルを出力先に展開したい場合に使います。デフォルトは、`./**/*.png`, `./**/*.jpg`です。 |
+|`assetsDir`|No| アセットを配置するディレクトリパスです。デフォルトは `assets/` で、パスは `atr.json` があるディレクトリから解決されます。この配下のファイルはディレクトリ構造を保ったまま `outDir` にコピーされます（例: `assets/favicon.ico` → `dist/favicon.ico`）。 |
+|`docsDir`|No| 文書ディレクトリです。デフォルトは `docs/` で、パスは `atr.json` があるディレクトリから解決されます。 |
+|`templatesDir`|No| テンプレートディレクトリです。デフォルトは `templates/` で、パスは `atr.json` があるディレクトリから解決されます。 |
+|`outDir`|No| 出力ディレクトリです。デフォルトは `dist/` で、パスは `atr.json` があるディレクトリから解決されます。 |
+|`tmpDir`|No| 一時作業ディレクトリです。デフォルトはシステムテンポラリディレクトリで、パスは `atr.json` があるディレクトリから解決されます。 |
+|`cacheDir`|No| oEmbed/OGP探索キャッシュディレクトリです。デフォルトは `$HOME/.cache/a-terra-forge/` で、パスは `atr.json` があるディレクトリから解決されます。 |
+|`feedSummaryLength`|No| RSS/Atomのエントリ要約の最大長です。デフォルトは `200` です。 |
+|`feedTitle`|No| RSS/Atomのタイトルです。`siteName` が空の場合は `"feed"` が使われます。 |
+|`feedDescription`|No| RSS/Atomの説明文です。デフォルトは `siteDescription` の値です。 |
+|`prerenderCount`|No| ページに事前描画する件数です。デフォルトは `5` です。 |
+|`menuOrder`|No| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
+|`afterMenuOrder`|No| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
+
+- 「テンプレートのみ」とは、a-terra-forge変換プロセスはこの値を使用せず、テンプレートアセット内で変数として参照されるものです。
+- ここに示した変数以外にも、 [funcityで標準的に使用可能な変数群](https://github.com/kekyo/funcity/blob/main/README_ja.md#%E6%A8%99%E6%BA%96%E9%96%A2%E6%95%B0) も使用できます。
+- また、あなた自身で独自に変数値を定義して、それをfuncityスクリプト内から参照することが出来ます。
+  これは特に、一度定義したパラメータ値のようなものを、funcityスクリプト内で繰り返し使用し、値の管理を一元化することに役立ちます。
+
+### コードハイライト設定
+
+`variables.codeHighlight` に、Shiki のシンタックスハイライト設定を指定します。
+
+|キー名|詳細|
 |:----|:----|
-|`baseUrl`| このサイトのデプロイ後の公開基底URLを指定します。ナビゲーションメニューに影響はありませんが、サイトマップの生成には必要なので、設定してください。|
-|`siteName`| このサイトのサイト名で、ナビゲーションメニューの左端の表示や、ページメタデータの埋め込みに使用されます。 |
-|`siteDescription`| このサイトの説明文で、ページメタデータの埋め込みに使用されます。 |
-|`locale`| サイト全体の言語指定です。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。例えば英語の場合は`en`、日本語の場合は`ja`です。この指定を行っても、コンテンツが自動的に翻訳されるわけではありません。 |
-|`frontPage`| サイトのフロントページ（トップページ）として、どのカテゴリを表示するかを指定します。既定は`timeline`で、これはタイムラインを表示する、特殊なカテゴリ名です。 |
-|`headerIcon`| 文書のタイトルに表示するアイコンの指定です。名称は [bootstrap icons](https://icons.getbootstrap.com/) で指定します。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。 |
-|`primaryColor`| サイトのプライマリ（優先）アクセントカラーを指定します。雛形が青色のアクセントを多用しているのはこの指定によるものです。この色を変えれば、あなたの好みのアクセントカラーに変更できます。但し、システムテーマのlightとdarkでバランスの取れている色味を試行錯誤することを忘れずに。 |
-|`secondaryColor`| サイトのセカンダリ（補間）アクセントカラーを指定します。セカンダリカラーは今の所、ブロッククオートでのみ使用しています。 |
-|`inlineCodeColor`| サイトのインラインコードカラーを指定します。これは、markdown上でバッククオートで囲まれた文字（インラインコード）の色です。インラインコードの背景色もこの指定から着色されます。 |
-|`siteTemplates`| サイト共通のアセットファイルで、funcityによるスクリプト処理を行うテンプレートファイル群を指定します。CSSやJavaScriptファイル、RSS/Atom、サイトマップなどは、全てスクリプトとして処理されて出力されます。追加のスクリプト処理が必要なファイルはこのリストに追加することで、同じようにスクリプト処理の対象として認識させることが出来ます。デフォルトは、`site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`です。|
-|`contentFiles`| ビルド時に文書ディレクトリ以下から追加でコピーする静的ファイルの glob パターンを指定します。画像などの補助ファイルを出力先に展開したい場合に使います。デフォルトは、`./**/*.png`, `./**/*.jpg`です。 |
-|`docsDir`| 文書ディレクトリです。デフォルトは `docs/` で、パスは `atr.json` があるディレクトリから解決されます。 |
-|`templatesDir`| テンプレートディレクトリです。デフォルトは `templates/` で、パスは `atr.json` があるディレクトリから解決されます。 |
-|`outDir`| 出力ディレクトリです。デフォルトは `dist/` で、パスは `atr.json` があるディレクトリから解決されます。 |
-|`tmpDir`| 一時作業ディレクトリです。デフォルトはシステムテンポラリディレクトリで、パスは `atr.json` があるディレクトリから解決されます。 |
-|`cacheDir`| oEmbed/OGP探索キャッシュディレクトリです。デフォルトは `$HOME/.cache/a-terra-forge/` で、パスは `atr.json` があるディレクトリから解決されます。 |
-|`feedSummaryLength`| RSS/Atomのエントリ要約の最大長です。デフォルトは `200` です。 |
-|`feedTitle`| RSS/Atomのタイトルです。`siteName` が空の場合は `"feed"` が使われます。 |
-|`feedDescription`| RSS/Atomの説明文です。デフォルトは `siteDescription` の値です。 |
-|`timelinePrerenderCount`| タイムラインページに事前描画する件数です。デフォルトは `5` です。 |
-|`categories`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。ここに明示のないカテゴリは、これらのリストの終端に配置されます。また、個々に明示されているのに存在しないカテゴリは無視されます。 |
-|`categoriesAfter`| 認識したカテゴリを、どの順序でナビゲーションメニューに表示させるのかを決定するリストです。但し、このリストは、ナビゲーションメニューの右寄せで表示されます。一般カテゴリとは分けて置きたい場合に使用できます。 |
-
-ここに示した変数以外にも、 [funcityで標準的に使用可能な変数群](https://github.com/kekyo/funcity/blob/main/README_ja.md#%E6%A8%99%E6%BA%96%E9%96%A2%E6%95%B0) も使用できます。
-
-また、あなた自身で独自に変数値を定義して、それをfuncityスクリプト内から参照することが出来ます。
-これは特に、一度定義したパラメータ値のようなものを、funcityスクリプト内で繰り返し使用し、値の管理を一元化することに役立ちます。
+|`lineNumbers`|`true` で行番号を表示します。 |
+|`theme`|適用するテーマを指定します。文字列またはライト/ダークのオブジェクトを指定できます。 |
+|`theme.light`|ライトテーマ名です。 |
+|`theme.dark`|ダークテーマ名です。 |
+|`languages`|登録する言語一覧です。指定した言語は同名で `languageAliases` にも追加されます。 |
+|`languageAliases`|言語エイリアスのマップです（`alias`: `language`）。 |
+|`defaultLanguage`|コードブロックで言語指定がない場合のデフォルト言語名です。 |
 
 ---
 

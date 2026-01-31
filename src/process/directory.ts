@@ -14,7 +14,7 @@ import type { Logger } from 'mark-deco';
 
 import type { GitCommitMetadata } from '../types';
 import {
-  adjustPath,
+  resolveBuiltLogPath,
   toPosixRelativePath,
   writeContentFile,
   type ArticleFileInfo,
@@ -288,9 +288,11 @@ export const generateDirectoryDocument = async (
 
   if (!isError) {
     await writeContentFile(destinationPath, rendered);
-    const builtPath = toPosixRelativePath(
+    const builtPath = resolveBuiltLogPath(
       configDir,
-      adjustPath(destinationPath, outDir, finalOutDir)
+      destinationPath,
+      outDir,
+      finalOutDir
     );
     logger.info(`built: ${builtPath}`);
   }

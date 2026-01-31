@@ -10,7 +10,6 @@ import { atrPreview } from 'a-terra-forge/vite';
 const projectRoot = process.cwd();
 
 export default defineConfig({
-  root: resolve(projectRoot, 'dist'),
   publicDir: false,
   plugins: [
     atrPreview({

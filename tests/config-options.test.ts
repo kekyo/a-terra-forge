@@ -8,6 +8,12 @@ import { resolve } from 'path';
 import { describe, expect, it, type TestContext } from 'vitest';
 
 import {
+  defaultAssetDir,
+  defaultCacheDir,
+  defaultDocsDir,
+  defaultOutDir,
+  defaultTemplatesDir,
+  defaultTmpDir,
   mergeATerraForgeConfig,
   loadATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
@@ -30,6 +36,7 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const variables = new Map<string, unknown>([
       ['docsDir', './docs'],
       ['templatesDir', 'templates'],
+      ['assetsDir', './assets'],
       ['outDir', '../out'],
       ['tmpDir', './tmp'],
       ['cacheDir', '.cache'],
@@ -45,6 +52,7 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
 
     expect(resolved.docsDir).toBe(resolve(baseDir, './docs'));
     expect(resolved.templatesDir).toBe(resolve(baseDir, 'templates'));
+    expect(resolved.assetsDir).toBe(resolve(baseDir, './assets'));
     expect(resolved.outDir).toBe(resolve(baseDir, '../out'));
     expect(resolved.tmpDir).toBe(resolve(baseDir, './tmp'));
     expect(resolved.cacheDir).toBe(resolve(baseDir, '.cache'));
@@ -57,6 +65,7 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const variables = new Map<string, unknown>([
       ['docsDir', 123],
       ['templatesDir', false],
+      ['assetsDir', 456],
       ['outDir', null],
       ['tmpDir', 123],
       ['cacheDir', {}],
@@ -70,6 +79,7 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
 
     expect(resolved.docsDir).toBeUndefined();
     expect(resolved.templatesDir).toBeUndefined();
+    expect(resolved.assetsDir).toBeUndefined();
     expect(resolved.outDir).toBeUndefined();
     expect(resolved.tmpDir).toBeUndefined();
     expect(resolved.cacheDir).toBeUndefined();
@@ -124,20 +134,21 @@ describe('mergeATerraForgeConfig', () => {
         ['siteName', 'Base'],
         ['docsDir', 'docs'],
         ['contentFiles', ['a.txt']],
-        ['categories', ['alpha']],
-        ['categoriesAfter', ['omega']],
+        ['menuOrder', ['alpha']],
+        ['afterMenuOrder', ['omega']],
       ]),
       messages: new Map([['', new Map([['hello', 'base']])]]),
       codeHighlight: {},
       contentFiles: ['a.txt'],
-      categories: ['alpha'],
-      categoriesAfter: ['omega'],
+      menuOrder: ['alpha'],
+      afterMenuOrder: ['omega'],
+      blogCategories: [],
     };
 
     const overrides: ATerraForgeConfigOverrides = {
       variables: new Map<string, unknown>([
         ['siteName', 'Override'],
-        ['categories', ['beta']],
+        ['menuOrder', ['beta']],
       ]),
       messages: new Map([['', new Map([['hello', 'override']])]]),
     };
@@ -146,11 +157,11 @@ describe('mergeATerraForgeConfig', () => {
 
     expect(merged.variables.get('siteName')).toBe('Override');
     expect(merged.variables.get('docsDir')).toBe('docs');
-    expect(merged.variables.get('categories')).toEqual(['beta']);
+    expect(merged.variables.get('menuOrder')).toEqual(['beta']);
     expect(merged.messages.get('')?.get('hello')).toBe('override');
     expect(merged.contentFiles).toEqual(['a.txt']);
-    expect(merged.categories).toEqual(['beta']);
-    expect(merged.categoriesAfter).toEqual(['omega']);
+    expect(merged.menuOrder).toEqual(['beta']);
+    expect(merged.afterMenuOrder).toEqual(['omega']);
   });
 });
 
@@ -163,5 +174,66 @@ describe('loadATerraForgeConfig', () => {
     const config = await loadATerraForgeConfig(configPath);
 
     expect(config.variables.get('locale')).toBe('en');
+  });
+
+  it('fills directory variables with defaults when missing.', async (fn) => {
+    const root = await createTempDir(fn, 'default-dirs');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(configPath, '{}', 'utf8');
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.variables.get('docsDir')).toBe(defaultDocsDir);
+    expect(config.variables.get('templatesDir')).toBe(defaultTemplatesDir);
+    expect(config.variables.get('assetsDir')).toBe(defaultAssetDir);
+    expect(config.variables.get('outDir')).toBe(defaultOutDir);
+    expect(config.variables.get('tmpDir')).toBe(defaultTmpDir);
+    expect(config.variables.get('cacheDir')).toBe(defaultCacheDir);
+  });
+
+  it('reads codeHighlight from variables when top-level is missing.', async (fn) => {
+    const root = await createTempDir(fn, 'code-highlight-variables');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          codeHighlight: {
+            lineNumbers: true,
+          },
+        },
+      }),
+      'utf8'
+    );
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.codeHighlight.lineNumbers).toBe(true);
+    expect(config.variables.get('codeHighlight')).toEqual({
+      lineNumbers: true,
+    });
+  });
+
+  it('prefers top-level codeHighlight over variables.', async (fn) => {
+    const root = await createTempDir(fn, 'code-highlight-precedence');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        codeHighlight: {
+          lineNumbers: false,
+        },
+        variables: {
+          codeHighlight: {
+            lineNumbers: true,
+          },
+        },
+      }),
+      'utf8'
+    );
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.codeHighlight.lineNumbers).toBe(false);
   });
 });

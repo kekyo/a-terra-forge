@@ -4,13 +4,20 @@
     "siteName": "atr-doc-site",
     "siteDescription": "Sample a-terra-forge site",
     "frontPage": "timeline",
-    "headerIcon": "activity", // https://icons.getbootstrap.com/
+    "headerIcon": "activity",
     "primaryColor": "#0080ff",
     "secondaryColor": "#40ff40",
     "inlineCodeColor": "#0080ff",
-    "categories": ["timeline", "hello"],
-    "categoriesAfter": ["about"],
-    "locale": "en"
+    "menuOrder": ["timeline", "hello"],
+    "afterMenuOrder": ["about"],
+    "locale": "en",
+    "codeHighlight": {
+      "lineNumbers": true,
+      "theme": {
+        "light": "light-plus",
+        "dark": "dark-plus"
+      }
+    }
   },
   "messages": {
     "en": {
@@ -34,14 +41,6 @@
       "endOfTimeline": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
-    }
-  },
-  "codeHighlight": {
-    "lineNumbers": true,
-    "theme": {
-      // https://shiki.style/themes
-      "light": "light-plus",
-      "dark": "dark-plus"
     }
   }
 }

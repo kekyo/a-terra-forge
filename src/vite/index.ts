@@ -3,8 +3,10 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { watch, type FSWatcher } from 'fs';
-import { dirname, isAbsolute, join, relative, resolve } from 'path';
+import { rmSync, statSync, watch, type FSWatcher } from 'fs';
+import { mkdir, mkdtemp, rm } from 'fs/promises';
+import { tmpdir } from 'os';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'path';
 import type { Plugin, ViteDevServer } from 'vite';
 
 import {
@@ -24,13 +26,21 @@ import type {
   ATerraForgeProcessingOptions,
 } from '../types';
 import {
+  defaultCacheDir,
+  defaultAssetDir,
+  defaultDocsDir,
+  defaultTemplatesDir,
+  defaultTmpDir,
   loadATerraForgeConfig,
   mergeATerraForgeConfig,
   parseATerraForgeConfigOverrides,
   resolveATerraForgeConfigPathFromDir,
   resolveATerraForgeProcessingOptionsFromVariables,
 } from '../utils';
-import { createPreviewHtmlNotFoundMiddleware } from './previewMiddleware';
+import {
+  createPreviewHtmlNotFoundMiddleware,
+  createPreviewPathRewriteMiddleware,
+} from './previewMiddleware';
 import { collectGitWatchTargets, resolveGitDir } from './gitWatch';
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -41,8 +51,12 @@ import { collectGitWatchTargets, resolveGitDir } from './gitWatch';
 export interface ATerraForgeVitePluginOptions extends ATerraForgeConfigInput {
   /** Path to atr config (defaults to atr.json5/atr.jsonc/atr.json in the Vite root when omitted). */
   configPath?: string;
-  /** Temporary working directory base (defaults to /tmp when omitted). */
+  /** Temporary working directory base (defaults to the system temp directory when omitted). */
   tmpDir?: string;
+  /** Base directory for temporary preview root (defaults to `$TEMP/atr-preview/`). */
+  previewBaseDir?: string;
+  /** Additional watch targets (mainly for atr development). */
+  watchInclude?: string[];
 }
 
 const resolveConfigPath = (
@@ -63,6 +77,15 @@ const isWithinDir = (filePath: string, dirPath: string): boolean => {
 
 ///////////////////////////////////////////////////////////////////////////////////
 
+const resolvePreviewBaseDir = (options: ATerraForgeVitePluginOptions): string =>
+  resolve(options.previewBaseDir ?? join(tmpdir(), 'atr-preview'));
+
+const getNewPreviewRootDir = async (previewBaseDir: string) => {
+  await mkdir(previewBaseDir, { recursive: true });
+  const previewRootDir = await mkdtemp(join(previewBaseDir, `dist-`));
+  return previewRootDir;
+};
+
 /**
  * a-terra-forge preview plugin for Vite.
  * @param options - a-terra-forge options.
@@ -71,47 +94,137 @@ const isWithinDir = (filePath: string, dirPath: string): boolean => {
 export const atrPreview = (
   options: ATerraForgeVitePluginOptions = {}
 ): Plugin => {
-  const defaultCacheDir = process.env.HOME
-    ? join(process.env.HOME, '.cache', 'atr')
-    : '.cache';
-  const defaultDocsDir = resolve('docs');
-  const defaultTemplatesDir = resolve('templates');
-  const defaultOutDir = resolve('dist');
-  const defaultTmpDir = resolve('/tmp');
-  const defaultCacheDirResolved = resolve(defaultCacheDir);
+  const previewRootBaseDir = resolvePreviewBaseDir(options);
+
   let configPath = resolveConfigPath(options.configPath, process.cwd());
+  let configDir = dirname(configPath);
+  const resolveDefaultDirs = (baseDir: string) => ({
+    docsDir: resolve(baseDir, defaultDocsDir),
+    templatesDir: resolve(baseDir, defaultTemplatesDir),
+    assetsDir: resolve(baseDir, defaultAssetDir),
+    cacheDir: resolve(baseDir, defaultCacheDir),
+    tmpDir: resolve(baseDir, defaultTmpDir),
+  });
   const configOverrides: ATerraForgeConfigOverrides =
     parseATerraForgeConfigOverrides(options, configPath);
-  let docsDir = defaultDocsDir;
-  let templatesDir = defaultTemplatesDir;
-  const pluginName = `atr-vite-plugin`;
+  let { docsDir, templatesDir, assetsDir } = resolveDefaultDirs(configDir);
+
+  // Current serving preview directory.
+  let activePreviewRootDir: string | undefined;
+
+  const pluginName = `atr-vite`;
   const abortController = new AbortController();
   const debugNamespace = `vite:plugin:${pluginName}`;
+  let projectRoot = process.cwd();
+  let extraWatchDirs: string[] = [];
+  let extraWatchFiles: string[] = [];
 
-  let server: ViteDevServer | undefined;
-  let running = false;
-  let queued = false;
   let timer: NodeJS.Timeout | undefined;
   let logger: Logger = createConsoleLogger(pluginName, debugNamespace);
+  let pendingOpen: boolean | string | undefined;
   const watchedPaths = new Set<string>();
   let gitWatchers: FSWatcher[] = [];
   let watchedGitDir: string | undefined;
+  const allowedRecursiveDirs = new Set<string>();
+  const allowedExactPaths = new Set<string>();
+
+  const withTrailingSlash = (value: string): string =>
+    value.endsWith('/') ? value : `${value}/`;
+
+  const resolvePreviewOutDirName = (): string =>
+    activePreviewRootDir ? basename(activePreviewRootDir) : '';
+
+  const updateWatchAllowList = (
+    nextConfigDir: string,
+    recursiveDirs: string[],
+    exactPaths: string[]
+  ): void => {
+    configDir = resolve(nextConfigDir);
+    allowedRecursiveDirs.clear();
+    for (const dir of recursiveDirs) {
+      allowedRecursiveDirs.add(resolve(dir));
+    }
+    allowedExactPaths.clear();
+    for (const target of exactPaths) {
+      allowedExactPaths.add(resolve(target));
+    }
+  };
+
+  const isAllowedWatchPath = (filePath: string): boolean => {
+    const resolved = resolve(filePath);
+    if (resolved === configDir || dirname(resolved) === configDir) {
+      return true;
+    }
+    if (allowedExactPaths.has(resolved)) {
+      return true;
+    }
+    for (const dir of allowedRecursiveDirs) {
+      if (isWithinDir(resolved, dir)) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const resolveWatchIncludePaths = (baseDir: string): void => {
+    const rawInclude = options.watchInclude ?? [];
+    const nextDirs: string[] = [];
+    const nextFiles: string[] = [];
+    for (const target of rawInclude) {
+      const resolvedTarget = resolve(baseDir, target);
+      try {
+        const stat = statSync(resolvedTarget);
+        if (stat.isDirectory()) {
+          nextDirs.push(resolvedTarget);
+        } else {
+          nextFiles.push(resolvedTarget);
+        }
+      } catch {
+        nextFiles.push(resolvedTarget);
+      }
+    }
+    extraWatchDirs = Array.from(new Set(nextDirs));
+    extraWatchFiles = Array.from(new Set(nextFiles));
+  };
+
+  resolveWatchIncludePaths(projectRoot);
+  updateWatchAllowList(
+    configDir,
+    [docsDir, templatesDir, assetsDir, ...extraWatchDirs],
+    extraWatchFiles
+  );
 
   const shouldHandle = (filePath: string): boolean => {
     const resolved = resolve(filePath);
     return (
       isWithinDir(resolved, docsDir) ||
       isWithinDir(resolved, templatesDir) ||
+      isWithinDir(resolved, assetsDir) ||
       resolved === configPath
     );
   };
 
+  let server: ViteDevServer | undefined;
   const updateWatchTargets = (targets: string[]) => {
     if (!server) {
       return;
     }
-    const uniqueTargets = Array.from(new Set(targets));
-    const toAdd = uniqueTargets.filter((target) => !watchedPaths.has(target));
+    const normalizedTargets = Array.from(
+      new Set(targets.map((target) => resolve(target)))
+    );
+    const nextTargets = new Set(normalizedTargets);
+    const toRemove = Array.from(watchedPaths).filter(
+      (target) => !nextTargets.has(target)
+    );
+    if (toRemove.length > 0) {
+      server.watcher.unwatch(toRemove);
+      for (const target of toRemove) {
+        watchedPaths.delete(target);
+      }
+    }
+    const toAdd = normalizedTargets.filter(
+      (target) => !watchedPaths.has(target)
+    );
     if (toAdd.length > 0) {
       server.watcher.add(toAdd);
       for (const target of toAdd) {
@@ -163,56 +276,107 @@ export const atrPreview = (
     watchedGitDir = gitDir;
   };
 
-  const resolveRuntimeOptions =
-    async (): Promise<ATerraForgeProcessingOptions> => {
-      const baseConfig = await loadATerraForgeConfig(configPath);
-      const resolvedConfig = mergeATerraForgeConfig(
-        baseConfig,
-        configOverrides,
-        configPath
-      );
-      const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
-        resolvedConfig.variables,
-        dirname(configPath)
-      );
+  const resolveRuntimeOptions = async (
+    outDir: string
+  ): Promise<ATerraForgeProcessingOptions> => {
+    const baseConfig = await loadATerraForgeConfig(configPath);
+    const resolvedConfig = mergeATerraForgeConfig(
+      baseConfig,
+      configOverrides,
+      configPath
+    );
+    const variableOptions = resolveATerraForgeProcessingOptionsFromVariables(
+      resolvedConfig.variables,
+      dirname(configPath)
+    );
+    const defaults = resolveDefaultDirs(dirname(configPath));
 
-      docsDir = variableOptions.docsDir ?? defaultDocsDir;
-      templatesDir = variableOptions.templatesDir ?? defaultTemplatesDir;
+    docsDir = variableOptions.docsDir ?? defaults.docsDir;
+    templatesDir = variableOptions.templatesDir ?? defaults.templatesDir;
+    assetsDir = variableOptions.assetsDir ?? defaults.assetsDir;
 
-      const outDir = variableOptions.outDir ?? defaultOutDir;
-      const cacheDir = variableOptions.cacheDir ?? defaultCacheDirResolved;
-      const tmpDir = options.tmpDir
-        ? resolve(options.tmpDir)
-        : (variableOptions.tmpDir ?? defaultTmpDir);
+    const cacheDir = variableOptions.cacheDir ?? defaults.cacheDir;
+    const tmpDir = options.tmpDir
+      ? resolve(options.tmpDir)
+      : (variableOptions.tmpDir ?? defaults.tmpDir);
 
-      updateWatchTargets([docsDir, templatesDir, configPath]);
-      await updateGitWatchTargets(
-        docsDir,
-        variableOptions.enableGitMetadata ?? true
-      );
+    updateWatchAllowList(
+      dirname(configPath),
+      [docsDir, templatesDir, assetsDir, ...extraWatchDirs],
+      extraWatchFiles
+    );
+    updateWatchTargets([
+      configDir,
+      docsDir,
+      templatesDir,
+      assetsDir,
+      ...extraWatchDirs,
+      ...extraWatchFiles,
+    ]);
+    await updateGitWatchTargets(
+      docsDir,
+      variableOptions.enableGitMetadata ?? true
+    );
 
-      return {
-        docsDir,
-        templatesDir,
-        outDir,
-        tmpDir,
-        cacheDir,
-        enableGitMetadata: variableOptions.enableGitMetadata ?? true,
-        userAgent: variableOptions.userAgent,
-        configPath,
-      };
+    return {
+      docsDir,
+      templatesDir,
+      assetsDir,
+      outDir,
+      tmpDir,
+      cacheDir,
+      enableGitMetadata: variableOptions.enableGitMetadata ?? true,
+      userAgent: variableOptions.userAgent,
+      configPath,
     };
+  };
 
+  const openBrowserWhenReady = () => {
+    const activeServer = server;
+    if (!activeServer || pendingOpen === undefined) {
+      return;
+    }
+    if (!activeServer.resolvedUrls) {
+      setTimeout(openBrowserWhenReady, 100);
+      return;
+    }
+
+    const openValue = pendingOpen;
+    pendingOpen = undefined;
+    activeServer.config.server.open = openValue;
+    activeServer.openBrowser();
+    activeServer.config.server.open = false;
+  };
+
+  // Remove preview root directory.
+  const removePreviewRootDir = async (previewRootDir: string) => {
+    try {
+      await rm(previewRootDir, { recursive: true, force: true });
+    } catch {
+      // Ignore it.
+    }
+  };
+
+  // Generate preview contents
+  let running = false;
+  let queued = false;
   const runGenerate = async (): Promise<void> => {
+    // Schedule delayed runner when already running
     if (running) {
       queued = true;
       return;
     }
+
     running = true;
     let failed = false;
 
+    // Create next preview root directory.
+    const nextPreviewRootDir = await getNewPreviewRootDir(previewRootBaseDir);
+    logger.debug(`Building on: ${withTrailingSlash(nextPreviewRootDir)}`);
+
+    // Generate overall contents into preview root directory.
     try {
-      const atrOptions = await resolveRuntimeOptions();
+      const atrOptions = await resolveRuntimeOptions(nextPreviewRootDir);
       atrOptions.logger = logger;
       await generateDocs(atrOptions, abortController.signal, configOverrides);
     } catch (error) {
@@ -232,15 +396,33 @@ export const atrPreview = (
       running = false;
     }
 
+    // Retry when scheduled.
     if (queued) {
       queued = false;
-      await runGenerate();
+      await Promise.all([
+        removePreviewRootDir(nextPreviewRootDir), // Cancel it.
+        runGenerate(),
+      ]);
       return;
     }
 
     const activeServer = server;
-    if (!failed && activeServer && activeServer.config.server.hmr !== false) {
-      activeServer.ws.send({ type: 'full-reload' });
+    if (!failed && activeServer) {
+      // Swap new preview directory.
+      const oldPreviewRootDir = activePreviewRootDir;
+      activePreviewRootDir = nextPreviewRootDir;
+
+      // Remove old preview directory.
+      if (oldPreviewRootDir) {
+        await removePreviewRootDir(oldPreviewRootDir);
+      }
+
+      // Try to open browser.
+      openBrowserWhenReady();
+
+      if (activeServer.config.server.hmr !== false) {
+        activeServer.ws.send({ type: 'full-reload' });
+      }
     }
   };
 
@@ -254,35 +436,113 @@ export const atrPreview = (
     }, 100);
   };
 
+  // Preserve preview root directory (may not contains any contents)
+  const preservePreviewRootDir = async () => {
+    if (!activePreviewRootDir) {
+      activePreviewRootDir = await getNewPreviewRootDir(previewRootBaseDir);
+    }
+  };
+
+  // Clean up (sync)
+  const cleanSync = (): void => {
+    closeGitWatchers();
+    if (activePreviewRootDir) {
+      try {
+        rmSync(activePreviewRootDir, { recursive: true, force: true });
+      } catch {
+        // Ignore it.
+      }
+      activePreviewRootDir = undefined;
+    }
+  };
+
+  // Hook exit handlers.
+  process.once('exit', () => cleanSync());
+  process.once('SIGINT', () => {
+    cleanSync();
+    process.exit(0);
+  });
+  process.once('SIGTERM', () => {
+    cleanSync();
+    process.exit(1);
+  });
+
   return {
     name: pluginName,
     apply: 'serve',
-    configureServer(devServer) {
+    async config(_config, env) {
+      if (env.command !== 'serve') {
+        return;
+      }
+      projectRoot = resolve(_config.root ?? process.cwd());
+      resolveWatchIncludePaths(projectRoot);
+      await preservePreviewRootDir();
+      return {
+        root: previewRootBaseDir,
+        server: {
+          watch: {
+            ignored: (filePath: string) => !isAllowedWatchPath(filePath),
+          },
+        },
+      };
+    },
+    async configureServer(devServer) {
       server = devServer;
       if (!options.configPath) {
-        configPath = resolveATerraForgeConfigPathFromDir(devServer.config.root);
+        configPath = resolveATerraForgeConfigPathFromDir(projectRoot);
       }
+      const defaults = resolveDefaultDirs(dirname(configPath));
+      docsDir = defaults.docsDir;
+      templatesDir = defaults.templatesDir;
+      assetsDir = defaults.assetsDir;
+      resolveWatchIncludePaths(projectRoot);
+      updateWatchAllowList(
+        dirname(configPath),
+        [docsDir, templatesDir, assetsDir, ...extraWatchDirs],
+        extraWatchFiles
+      );
       const viteLogger =
         devServer.config.customLogger ?? devServer.config.logger;
+
+      await preservePreviewRootDir();
+
       logger = createViteLoggerAdapter(
         viteLogger,
         devServer.config.logLevel ?? 'info',
         pluginName,
         debugNamespace
       );
+
       logger.info(`a-terra-forge - ${description}`);
       logger.info(`Copyright (c) ${author}`);
       logger.info(`License under ${license}`);
       logger.info(repository_url);
       logger.info(`[${version}-${git_commit_hash}] Started.`);
 
+      if (devServer.config.server.open) {
+        pendingOpen = devServer.config.server.open;
+        devServer.config.server.open = false;
+      }
+
+      devServer.middlewares.use(
+        createPreviewPathRewriteMiddleware(resolvePreviewOutDirName)
+      );
       devServer.middlewares.use(
         createPreviewHtmlNotFoundMiddleware(devServer.config.root)
       );
-      updateWatchTargets([docsDir, templatesDir, configPath]);
-      devServer.httpServer?.on('close', () => {
-        closeGitWatchers();
-      });
+
+      updateWatchTargets([
+        configDir,
+        docsDir,
+        templatesDir,
+        assetsDir,
+        ...extraWatchDirs,
+        ...extraWatchFiles,
+      ]);
+
+      // Hook exit handlers.
+      devServer.httpServer?.on('close', () => cleanSync());
+
       devServer.watcher.on('all', (_event, filePath) => {
         if (shouldHandle(filePath)) {
           scheduleGenerate();

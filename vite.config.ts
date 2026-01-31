@@ -67,7 +67,6 @@ export default defineConfig(async ({ command }): Promise<UserConfig> => {
   if (command === 'serve') {
     const demoRoot = resolve('demo');
     return {
-      root: join(demoRoot, 'dist'),
       publicDir: false,
       plugins: [
         atrPreview({
@@ -77,6 +76,7 @@ export default defineConfig(async ({ command }): Promise<UserConfig> => {
             templatesDir: resolve('scaffold/templates'),
             outDir: join(demoRoot, 'dist'),
           },
+          watchInclude: [resolve('src'), resolve('vite.config.ts')],
         }),
       ],
       server: {

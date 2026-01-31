@@ -1,25 +1,7 @@
 <article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
   <header class="entry-header">
-      <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
-      {{if categoryPath?}}
-      <a href="{{categoryPath}}{{if anchorId?}}#{{anchorId}}{{end}}">{{title}}</a>
-      {{
-      else
-        title
-      end
-      }}
-    </h1>
+    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>{{title}}</h1>
     <div class="entry-meta">
-      {{if category?}}
-      <p>
-        <span class="me-1">{{getMessage 'category'}}:</span>
-        {{if categoryPath?}}
-        <a class="badge rounded-pill text-decoration-none" href="{{categoryPath}}">{{getMessage category}}</a>
-        {{else}}
-        <span class="badge rounded-pill">{{getMessage category}}</span>
-        {{end}}
-      </p>
-      {{end}}
       {{
       if git?
         if git.committer.date?
@@ -40,6 +22,7 @@
       {{end}}
     </div>
   </header>
+  {{if anchorId?}}<a id="{{anchorId}}"></a>{{end}}
   <div class="entry-body">
 {{body}}
   </div>

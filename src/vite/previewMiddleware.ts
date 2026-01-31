@@ -42,6 +42,9 @@ const isInternalPath = (pathname: string): boolean =>
   pathname.startsWith('/__') ||
   pathname.startsWith('/node_modules');
 
+const normalizeOutDirName = (outDirName: string): string =>
+  outDirName.replace(/^\/+/, '').replace(/\/+$/, '');
+
 const resolveIndexPath = (rootDir: string, pathname: string): string => {
   const relativePath = pathname.replace(/^\/+/, '');
   return join(rootDir, relativePath, 'index.html');
@@ -118,5 +121,46 @@ export const createPreviewHtmlNotFoundMiddleware = (rootDir: string) => {
 
     res.statusCode = 404;
     res.end();
+  };
+};
+
+type PreviewOutDirNameResolver = string | (() => string);
+
+export const createPreviewPathRewriteMiddleware = (
+  outDirName: PreviewOutDirNameResolver = 'dist'
+) => {
+  const resolveOutDirName = (): string => {
+    const raw = typeof outDirName === 'function' ? outDirName() : outDirName;
+    return normalizeOutDirName(raw);
+  };
+
+  return (req: IncomingMessage, _res: ServerResponse, next: NextFunction) => {
+    if (!req.url) {
+      next();
+      return;
+    }
+    if (req.method !== 'GET' && req.method !== 'HEAD') {
+      next();
+      return;
+    }
+    const [pathPart, queryPart] = req.url.split('?');
+    if (!pathPart || pathPart.startsWith('//')) {
+      next();
+      return;
+    }
+    const normalizedOutDir = resolveOutDirName();
+    const prefix = normalizedOutDir ? `/${normalizedOutDir}` : '';
+    if (!prefix || isInternalPath(pathPart)) {
+      next();
+      return;
+    }
+    if (pathPart === prefix || pathPart.startsWith(`${prefix}/`)) {
+      next();
+      return;
+    }
+    const normalizedPath = pathPart.startsWith('/') ? pathPart : `/${pathPart}`;
+    const rewrittenPath = `${prefix}${normalizedPath}`;
+    req.url = queryPart ? `${rewrittenPath}?${queryPart}` : rewrittenPath;
+    next();
   };
 };

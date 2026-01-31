@@ -39,7 +39,7 @@ describe('createViteLoggerAdapter', () => {
     const logger = createViteLoggerAdapter(
       viteLogger,
       'info',
-      'atr-vite-plugin',
+      'atr-vite',
       'vite:plugin:atr'
     );
 
@@ -50,15 +50,9 @@ describe('createViteLoggerAdapter', () => {
 
     expect(debugInstances).toHaveLength(1);
     expect(debugInstances[0]).toHaveBeenCalledWith('debug message');
-    expect(viteLogger.info).toHaveBeenCalledWith(
-      '[atr-vite-plugin] info message'
-    );
-    expect(viteLogger.warn).toHaveBeenCalledWith(
-      '[atr-vite-plugin] warn message'
-    );
-    expect(viteLogger.error).toHaveBeenCalledWith(
-      '[atr-vite-plugin] error message'
-    );
+    expect(viteLogger.info).toHaveBeenCalledWith('[atr-vite] info message');
+    expect(viteLogger.warn).toHaveBeenCalledWith('[atr-vite] warn message');
+    expect(viteLogger.error).toHaveBeenCalledWith('[atr-vite] error message');
   });
 
   it('suppresses info/warn/error when log level is silent.', () => {
