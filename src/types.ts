@@ -88,6 +88,8 @@ export interface ATerraForgeVariablesInput {
   afterMenuOrder?: readonly string[];
   /** Categories rendered with blog-style ordering and templates. */
   blogCategories?: readonly string[];
+  /** Code highlighting configuration values. */
+  codeHighlight?: Record<string, unknown>;
   /** Additional variable entries. */
   [key: string]: unknown;
 }
@@ -100,7 +102,7 @@ export interface ATerraForgeConfigInput {
   variables?: ATerraForgeVariablesInput;
   /** Message dictionaries keyed by locale. */
   messages?: Record<string, unknown>;
-  /** Code highlighting configuration values. */
+  /** Code highlighting configuration values (legacy top-level). */
   codeHighlight?: Record<string, unknown>;
   /** Beautiful Mermaid configuration values. */
   'beautiful-mermaid'?: Record<string, unknown>;

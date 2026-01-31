@@ -800,15 +800,17 @@ const run = async (
   行番号はコピーコードに含まれないので、コードを簡単にコピーして試すことが出来ます。
 - コードブロックの描画は、 [Shiki](https://shiki.style/) で実現しています。対応する言語は https://shiki.style/languages を参照してください。
 
-コードブロックを囲む枠線は、`primaryColor` に従った色が使用されますが、シンタックスハイライト（コード中の色付け）は、Shikiのテーマに従って描画されます。その他の Shiki の設定も含めて、 `atr.json` の `codeHighlight` で指定します:
+コードブロックを囲む枠線は、`primaryColor` に従った色が使用されますが、シンタックスハイライト（コード中の色付け）は、Shikiのテーマに従って描画されます。その他の Shiki の設定も含めて、 `atr.json` の `variables.codeHighlight` で指定します:
 
 ```json
 {
-  "codeHighlight": {
-    "lineNumbers": true,
-    "theme": {
-      "light": "light-plus",
-      "dark": "dark-plus"
+  "variables": {
+    "codeHighlight": {
+      "lineNumbers": true,
+      "theme": {
+        "light": "light-plus",
+        "dark": "dark-plus"
+      }
     }
   }
 }
@@ -900,6 +902,7 @@ a-terra-forgeの雛形にはこのコードが含まれているため、すぐ�
 |`secondaryColor`|Yes| サイトのセカンダリ（補間）アクセントカラーを指定します。セカンダリカラーは今の所、ブロッククオートでのみ使用しています。 |
 |`inlineCodeColor`|Yes| サイトのインラインコードカラーを指定します。これは、markdown上でバッククオートで囲まれた文字（インラインコード）の色です。インラインコードの背景色もこの指定から着色されます。 |
 |`maxWidth`|Yes| 文書エリアの最大幅を指定します。デフォルトは無制限で、ビューポートの横幅の広がりに無制限で追従します。横方向に広がりすぎると、目線で行を追うことが難しくなる場合があるため、 `90rem` のように指定することで、これを抑制できます。 |
+|`codeHighlight`|No| Shikiのコードハイライト設定です。詳細は「コードハイライト設定」を参照してください。 |
 |`siteTemplates`|No| サイト共通のアセットファイルで、funcityによるスクリプト処理を行うテンプレートファイル群を指定します。CSSやJavaScriptファイル、RSS/Atom、サイトマップなどは、全てスクリプトとして処理されて出力されます。追加のスクリプト処理が必要なファイルはこのリストに追加することで、同じようにスクリプト処理の対象として認識させることが出来ます。デフォルトは、`site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`です。|
 |`contentFiles`|No| ビルド時に文書ディレクトリ以下から追加でコピーする静的ファイルの glob パターンを指定します。画像などの補助ファイルを出力先に展開したい場合に使います。デフォルトは、`./**/*.png`, `./**/*.jpg`です。 |
 |`docsDir`|No| 文書ディレクトリです。デフォルトは `docs/` で、パスは `atr.json` があるディレクトリから解決されます。 |
@@ -918,6 +921,20 @@ a-terra-forgeの雛形にはこのコードが含まれているため、すぐ�
 - ここに示した変数以外にも、 [funcityで標準的に使用可能な変数群](https://github.com/kekyo/funcity/blob/main/README_ja.md#%E6%A8%99%E6%BA%96%E9%96%A2%E6%95%B0) も使用できます。
 - また、あなた自身で独自に変数値を定義して、それをfuncityスクリプト内から参照することが出来ます。
   これは特に、一度定義したパラメータ値のようなものを、funcityスクリプト内で繰り返し使用し、値の管理を一元化することに役立ちます。
+
+### コードハイライト設定
+
+`variables.codeHighlight` に、Shiki のシンタックスハイライト設定を指定します。
+
+|キー名|詳細|
+|:----|:----|
+|`lineNumbers`|`true` で行番号を表示します。 |
+|`theme`|適用するテーマを指定します。文字列またはライト/ダークのオブジェクトを指定できます。 |
+|`theme.light`|ライトテーマ名です。 |
+|`theme.dark`|ダークテーマ名です。 |
+|`languages`|登録する言語一覧です。指定した言語は同名で `languageAliases` にも追加されます。 |
+|`languageAliases`|言語エイリアスのマップです（`alias`: `language`）。 |
+|`defaultLanguage`|コードブロックで言語指定がない場合のデフォルト言語名です。 |
 
 ---
 

@@ -165,4 +165,50 @@ describe('loadATerraForgeConfig', () => {
 
     expect(config.variables.get('locale')).toBe('en');
   });
+
+  it('reads codeHighlight from variables when top-level is missing.', async (fn) => {
+    const root = await createTempDir(fn, 'code-highlight-variables');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          codeHighlight: {
+            lineNumbers: true,
+          },
+        },
+      }),
+      'utf8'
+    );
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.codeHighlight.lineNumbers).toBe(true);
+    expect(config.variables.get('codeHighlight')).toEqual({
+      lineNumbers: true,
+    });
+  });
+
+  it('prefers top-level codeHighlight over variables.', async (fn) => {
+    const root = await createTempDir(fn, 'code-highlight-precedence');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        codeHighlight: {
+          lineNumbers: false,
+        },
+        variables: {
+          codeHighlight: {
+            lineNumbers: true,
+          },
+        },
+      }),
+      'utf8'
+    );
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.codeHighlight.lineNumbers).toBe(false);
+  });
 });

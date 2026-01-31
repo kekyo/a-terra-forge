@@ -637,6 +637,12 @@ const parseCodeHighlight = (
   return parseCodeHighlightConfig(value, configPath);
 };
 
+const resolveCodeHighlightInput = (
+  explicitValue: unknown,
+  variables: FunCityVariables | undefined
+): unknown =>
+  explicitValue !== undefined ? explicitValue : variables?.get('codeHighlight');
+
 const parseCodeHighlightOverrides = (
   value: unknown,
   configPath: string
@@ -795,11 +801,15 @@ const parseATerraForgeConfigObject = (
   const parsedVariables = parseVariables(parsed.variables, configPath);
   const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
     normalizeVariablesWithLists(parsedVariables, configPath);
+  const codeHighlightInput = resolveCodeHighlightInput(
+    parsed.codeHighlight,
+    parsedVariables
+  );
 
   return {
     variables,
     messages: parseMessages(parsed.messages, configPath),
-    codeHighlight: parseCodeHighlight(parsed.codeHighlight, configPath),
+    codeHighlight: parseCodeHighlight(codeHighlightInput, configPath),
     beautifulMermaid: parseBeautifulMermaidOptions(
       parsed['beautiful-mermaid'],
       configPath
@@ -821,17 +831,27 @@ export const parseATerraForgeConfigOverrides = (
 
   const overrides: ATerraForgeConfigOverrides = {};
 
-  if (input.variables !== undefined) {
-    overrides.variables = parseVariablesOverrides(input.variables, configPath);
+  const parsedVariables =
+    input.variables !== undefined
+      ? parseVariablesOverrides(input.variables, configPath)
+      : undefined;
+
+  if (parsedVariables !== undefined) {
+    overrides.variables = parsedVariables;
   }
 
   if (input.messages !== undefined) {
     overrides.messages = parseMessagesOverrides(input.messages, configPath);
   }
 
-  if (input.codeHighlight !== undefined) {
+  const codeHighlightInput = resolveCodeHighlightInput(
+    input.codeHighlight,
+    parsedVariables
+  );
+
+  if (codeHighlightInput !== undefined) {
     overrides.codeHighlight = parseCodeHighlightOverrides(
-      input.codeHighlight,
+      codeHighlightInput,
       configPath
     );
   }

@@ -799,15 +799,17 @@ When you start with three backticks and an optional language label like ` ```typ
 - Code blocks have a copy button (top right) for copy and paste. Line numbers are not included in copied code, so it is easy to paste and run.
 - Code block rendering is done with [Shiki](https://shiki.style/). See https://shiki.style/languages for supported languages.
 
-The code block border uses the color based on `primaryColor`, but syntax highlighting follows the Shiki theme. Other Shiki settings are configured under `codeHighlight` in `atr.json`:
+The code block border uses the color based on `primaryColor`, but syntax highlighting follows the Shiki theme. Other Shiki settings are configured under `variables.codeHighlight` in `atr.json`:
 
 ```json
 {
-  "codeHighlight": {
-    "lineNumbers": true,
-    "theme": {
-      "light": "light-plus",
-      "dark": "dark-plus"
+  "variables": {
+    "codeHighlight": {
+      "lineNumbers": true,
+      "theme": {
+        "light": "light-plus",
+        "dark": "dark-plus"
+      }
     }
   }
 }
@@ -900,6 +902,7 @@ Below are all values defined in `atr.json`:
 |`secondaryColor`|Yes|Specifies the secondary accent color for the site. The secondary color is currently used only in block quotes. |
 |`inlineCodeColor`|Yes|Specifies the inline code color for the site. This is the color of text enclosed in backticks in Markdown (inline code). The background color of inline code is also colored based on this setting. |
 |`maxWidth`|Yes|Specifies the maximum width of the document area. The default is unlimited, allowing it to expand freely to match the viewport's width. If it expands too far horizontally, it can become difficult to follow lines with our eyes. Specifying a value like `90rem` can prevent this. |
+|`codeHighlight`|No|Code highlight settings used by Shiki. See "Code highlighting settings" for details. |
 |`siteTemplates`|No|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
 |`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
@@ -918,6 +921,20 @@ Below are all values defined in `atr.json`:
 - In addition to the variables shown here, you can also use the [standard variables available in funcity](https://github.com/kekyo/funcity#standard-functions).
 - You can also define your own custom variable values and reference them within your funcity script.
   This is particularly useful for managing parameters like defined values centrally within your funcity script, allowing you to reuse them repeatedly.
+
+### Code highlighting settings
+
+`variables.codeHighlight` contains the configuration used for Shiki syntax highlighting.
+
+|Key|Details|
+|:----|:----|
+|`lineNumbers`|Shows line numbers when `true`. |
+|`theme`|Specifies the theme to apply. You can set this to a string or an object with light/dark values. |
+|`theme.light`|Light theme name. |
+|`theme.dark`|Dark theme name. |
+|`languages`|A list of languages to register. Each entry is also added to `languageAliases` with the same name. |
+|`languageAliases`|Map of language aliases (`alias`: `language`). |
+|`defaultLanguage`|Default language name used when a code block omits the language label. |
 
 ---
 
