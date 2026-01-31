@@ -304,7 +304,7 @@ Details here`,
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1003,7 +1003,7 @@ title: Beta
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1641,7 +1641,7 @@ title: Second
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2852,7 +2852,7 @@ ${sampleUrl}
     );
     await writeFile(
       join(templatesDir, 'site-style.css'),
-      ":root { --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '0, 0, 0'}}; --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '0, 0, 0'}}; }",
+      ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);

@@ -9,11 +9,11 @@
 /* Global variables */
 :root {
   /* Primary accent color */
-  --primary-rgb: {{cond primaryColorRgb? primaryColorRgb '13, 110, 253'}};
+  --primary-rgb: {{toCssRgb primaryColor? '13, 110, 253'}};
   /* Secondary accent color */
-  --secondary-rgb: {{cond secondaryColorRgb? secondaryColorRgb '108, 117, 125'}};
+  --secondary-rgb: {{toCssRgb secondaryColor? '108, 117, 125'}};
   /* Inline code accent color */
-  --inline-code-rgb: {{cond inlineCodeColorRgb? inlineCodeColorRgb '13, 110, 253'}};
+  --inline-code-rgb: {{toCssRgb inlineCodeColor? '13, 110, 253'}};
   /* Header (H1) icon (default: activity) */
   --header-icon-default: '{{cond headerIconCode? headerIconCode '\\F66B'}}';
   /* Max document area width  */

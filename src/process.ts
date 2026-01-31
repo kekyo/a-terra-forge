@@ -31,7 +31,6 @@ import {
   mergeATerraForgeConfig,
   resolveATerraForgeConfigPathFromDir,
   resolveBuiltLogPath,
-  toRgbString,
   writeContentFile,
   type ArticleFileInfo,
 } from './utils';
@@ -274,28 +273,6 @@ export const generateDocs = async (
   logger.info(`Preparing...`);
 
   const configVariablesRaw = new Map(config.variables);
-
-  const primaryColorRgb = toRgbString(configVariablesRaw.get('primaryColor'));
-  if (primaryColorRgb && !configVariablesRaw.has('primaryColorRgb')) {
-    configVariablesRaw.set('primaryColorRgb', primaryColorRgb);
-  }
-  configVariablesRaw.delete('primaryColor');
-
-  const secondaryColorRgb = toRgbString(
-    configVariablesRaw.get('secondaryColor')
-  );
-  if (secondaryColorRgb && !configVariablesRaw.has('secondaryColorRgb')) {
-    configVariablesRaw.set('secondaryColorRgb', secondaryColorRgb);
-  }
-  configVariablesRaw.delete('secondaryColor');
-
-  const inlineCodeColorRgb = toRgbString(
-    configVariablesRaw.get('inlineCodeColor')
-  );
-  if (inlineCodeColorRgb && !configVariablesRaw.has('inlineCodeColorRgb')) {
-    configVariablesRaw.set('inlineCodeColorRgb', inlineCodeColorRgb);
-  }
-  configVariablesRaw.delete('inlineCodeColor');
 
   const mermaidRenderer = resolveMermaidRenderer(
     configVariablesRaw.get('mermaidRenderer'),

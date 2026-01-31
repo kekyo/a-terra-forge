@@ -51,7 +51,7 @@ describe('template style', () => {
     expect(mediaBlocks.length).toBeGreaterThan(0);
     expect(
       mediaBlocks.some((block) =>
-        /\.docs\s*\{[^}]*padding:\s*0\.5em\s+1em\s+0\s+1em;/.test(block)
+        /\.docs-outer\s*\{[^}]*padding:\s*0\.5em\s+1em\s+0\s+1em;/.test(block)
       )
     ).toBe(true);
   });
@@ -157,7 +157,7 @@ describe('template style', () => {
   it('defines primary and secondary palette variables', async () => {
     const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     expect(css).toMatch(
-      /--primary-rgb:\s*\{\{cond\s+primaryColorRgb\?\s+primaryColorRgb\s+'13,\s*110,\s*253'\}\};/
+      /--primary-rgb:\s*\{\{toCssRgb\s+primaryColor\?\s+'13,\s*110,\s*253'\}\};/
     );
     expect(css).toContain(
       `--header-icon-default: '{{cond headerIconCode? headerIconCode '\\\\F66B'}}';`
@@ -167,7 +167,7 @@ describe('template style', () => {
       /--primary-alpha-50:\s*color-mix\(in\s+srgb,\s*var\(--primary\)\s+50%,\s*transparent\);/
     );
     expect(css).toMatch(
-      /--secondary-rgb:\s*\{\{cond\s+secondaryColorRgb\?\s+secondaryColorRgb\s+'108,\s*117,\s*125'\}\};/
+      /--secondary-rgb:\s*\{\{toCssRgb\s+secondaryColor\?\s+'108,\s*117,\s*125'\}\};/
     );
     expect(css).toMatch(/--secondary:\s*rgb\(var\(--secondary-rgb\)\);/);
     expect(css).toMatch(
