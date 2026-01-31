@@ -2361,7 +2361,7 @@ console.log(value);
     expect(html).toContain('data-highlighted-line');
   });
 
-  it('Embeds git metadata into templates when enabled.', async (fn) => {
+  it('Embeds git metadata into templates.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-git-metadata');
     const docsDir = join(siteRoot, 'docs');
     const templatesDir = join(siteRoot, 'templates');
@@ -2461,7 +2461,6 @@ Dirty edit`,
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
       cacheDir: '.cache',
-      enableGitMetadata: true,
     };
 
     const abortController = new AbortController();

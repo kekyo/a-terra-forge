@@ -116,7 +116,6 @@ describe('generateDocs', () => {
         templatesDir: resolve(templatesDir),
         outDir: resolve(outDir),
         cacheDir: '.cache',
-        enableGitMetadata: true,
       },
       abortController.signal
     );

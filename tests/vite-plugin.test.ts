@@ -66,7 +66,6 @@ describe('atrPreview', () => {
           variables: {
             docsDir: './docs',
             templatesDir: './templates',
-            enableGitMetadata: false,
           },
         },
         null,
@@ -179,7 +178,6 @@ describe('atrPreview', () => {
           variables: {
             docsDir: './docs',
             templatesDir: './templates',
-            enableGitMetadata: false,
           },
         },
         null,
@@ -295,7 +293,6 @@ describe('atrPreview', () => {
             variables: {
               docsDir: './docs',
               templatesDir: './templates',
-              enableGitMetadata: false,
             },
           },
           null,
@@ -393,7 +390,6 @@ describe('atrPreview', () => {
             docsDir: './docs',
             templatesDir: './templates',
             assetsDir: './assets',
-            enableGitMetadata: false,
           },
         },
         null,

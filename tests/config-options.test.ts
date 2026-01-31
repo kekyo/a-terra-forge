@@ -41,7 +41,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
       ['tmpDir', './tmp'],
       ['cacheDir', '.cache'],
       ['userAgent', 'agent'],
-      ['enableGitMetadata', false],
       ['siteName', 'Sample'],
     ]);
 
@@ -57,7 +56,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     expect(resolved.tmpDir).toBe(resolve(baseDir, './tmp'));
     expect(resolved.cacheDir).toBe(resolve(baseDir, '.cache'));
     expect(resolved.userAgent).toBe('agent');
-    expect(resolved.enableGitMetadata).toBe(false);
   });
 
   it('ignores non-string values for option variables.', () => {
@@ -69,7 +67,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
       ['outDir', null],
       ['tmpDir', 123],
       ['cacheDir', {}],
-      ['enableGitMetadata', 'yes'],
     ]);
 
     const resolved = resolveATerraForgeProcessingOptionsFromVariables(
@@ -83,7 +80,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     expect(resolved.outDir).toBeUndefined();
     expect(resolved.tmpDir).toBeUndefined();
     expect(resolved.cacheDir).toBeUndefined();
-    expect(resolved.enableGitMetadata).toBeUndefined();
   });
 });
 

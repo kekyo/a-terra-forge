@@ -60,7 +60,6 @@ type BuildCliOptions = {
   tmpDir?: string;
   cache?: string;
   config?: string;
-  git?: boolean;
   log?: ConsoleLogLevel;
 };
 
@@ -102,9 +101,6 @@ const resolveBuildOptions = async (
   const defaultAssetsDirResolved = resolve(configDir, defaultAssetDir);
   const defaultTmpDirResolved = resolve(configDir, defaultTmpDir);
   const defaultCacheDirResolved = resolve(configDir, defaultCacheDir);
-  const enableGitMetadata =
-    opts.git === false ? false : (variableOptions.enableGitMetadata ?? true);
-
   return {
     docsDir:
       resolveCliPath(opts.docs) ??
@@ -127,7 +123,6 @@ const resolveBuildOptions = async (
       resolveCliPath(opts.cache) ??
       variableOptions.cacheDir ??
       defaultCacheDirResolved,
-    enableGitMetadata,
     userAgent: variableOptions.userAgent,
     configPath,
   };
@@ -187,7 +182,6 @@ if (isDirectExecution) {
         'Config file path (atr.json5 / atr.jsonc / atr.json)'
       )
     )
-    .addOption(new Option('--no-git', 'Disable Git metadata'))
     .action(async (opts: BuildCliOptions) => {
       banner();
       const options = await resolveBuildOptions(opts);

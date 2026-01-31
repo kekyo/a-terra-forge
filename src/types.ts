@@ -46,8 +46,6 @@ export interface ATerraForgeProcessingOptions {
   outDir?: string;
   /** Temporary working directory base (defaults to the system temp directory when omitted). */
   tmpDir?: string;
-  /** Enable Git metadata (defaults to true). */
-  enableGitMetadata?: boolean;
   /** Cache directory (defaults to "$HOME/.cache/a-terra-forge" when omitted). */
   cacheDir?: string;
   /** User agent string for fetchers (defaults to the built-in UA when omitted). */
@@ -74,8 +72,6 @@ export interface ATerraForgeVariablesInput {
   outDir?: string;
   /** Temporary working directory base. */
   tmpDir?: string;
-  /** Enable Git metadata (defaults to true). */
-  enableGitMetadata?: boolean;
   /** Mermaid renderer selection. */
   mermaidRenderer?: MermaidRenderer;
   /** Cache directory. */

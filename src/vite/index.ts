@@ -242,14 +242,8 @@ export const atrPreview = (
   };
 
   const updateGitWatchTargets = async (
-    targetDocsDir: string,
-    enableGitMetadata: boolean
+    targetDocsDir: string
   ): Promise<void> => {
-    if (!enableGitMetadata) {
-      closeGitWatchers();
-      return;
-    }
-
     const gitDir = await resolveGitDir(targetDocsDir);
     if (!gitDir) {
       closeGitWatchers();
@@ -313,10 +307,7 @@ export const atrPreview = (
       ...extraWatchDirs,
       ...extraWatchFiles,
     ]);
-    await updateGitWatchTargets(
-      docsDir,
-      variableOptions.enableGitMetadata ?? true
-    );
+    await updateGitWatchTargets(docsDir);
 
     return {
       docsDir,
@@ -325,7 +316,6 @@ export const atrPreview = (
       outDir,
       tmpDir,
       cacheDir,
-      enableGitMetadata: variableOptions.enableGitMetadata ?? true,
       userAgent: variableOptions.userAgent,
       configPath,
     };

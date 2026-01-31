@@ -975,9 +975,6 @@ const getTrimmedStringValue = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const getBooleanValue = (value: unknown): boolean | undefined =>
-  typeof value === 'boolean' ? value : undefined;
-
 const resolveVariablePath = (
   variables: FunCityVariables,
   baseDir: string,
@@ -1024,11 +1021,6 @@ export const resolveATerraForgeProcessingOptionsFromVariables = (
   const userAgent = getTrimmedStringValue(variables.get('userAgent'));
   if (userAgent) {
     resolved.userAgent = userAgent;
-  }
-
-  const enableGitMetadata = getBooleanValue(variables.get('enableGitMetadata'));
-  if (enableGitMetadata !== undefined) {
-    resolved.enableGitMetadata = enableGitMetadata;
   }
 
   return resolved;

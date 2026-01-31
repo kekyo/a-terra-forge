@@ -641,7 +641,6 @@ export const generateDocs = async (
     ).flat();
     const codeHighlight = config.codeHighlight;
     const beautifulMermaid = config.beautifulMermaid;
-    const enableGitMetadata = options.enableGitMetadata ?? true;
     let renderedResults: RenderedArticleInfo[] = [];
 
     if (articleFileInfos.length > 0) {
@@ -649,10 +648,7 @@ export const generateDocs = async (
 
       const gitMetadataPromise: Promise<
         ReadonlyMap<string, GitCommitMetadata | undefined>
-      > =
-        enableGitMetadata && articleFileInfos.length > 0
-          ? collectGitMetadata(docsDir, articleFileInfos, logger)
-          : Promise.resolve(new Map<string, GitCommitMetadata | undefined>());
+      > = collectGitMetadata(docsDir, articleFileInfos, logger);
 
       const workDir = await createWorkDir(tmpDir);
       let cleanup = true;
