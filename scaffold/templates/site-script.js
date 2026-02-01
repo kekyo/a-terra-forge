@@ -14,7 +14,7 @@
   const imageModalId = 'imageModal';
   const imageModalImageClass = 'image-modal-image';
   const imageModalContentClass = 'image-modal-content-body';
-  const endOfTimeline = "{{getMessage 'endOfTimeline' 'End of timeline.'}}";
+  const endOfArticle = "{{getMessage 'endOfArticle' 'End of article.'}}";
   const noArticlesYet = "{{getMessage 'noArticlesYet' 'No articles yet.'}}";
   let mermaidInitialized = false;
   let mermaidThemeKey = '';
@@ -557,7 +557,7 @@
         return;
       }
       if (cursor >= entries.length) {
-        updateStatus(entries.length === 0 ? noArticlesYet : endOfTimeline);
+        updateStatus(entries.length === 0 ? noArticlesYet : endOfArticle);
         return;
       }
 
@@ -573,7 +573,7 @@
       renderMermaid(listElement);
 
       loading = false;
-      updateStatus(cursor >= entries.length ? endOfTimeline : '');
+      updateStatus(cursor >= entries.length ? endOfArticle : '');
 
       if (cursor < entries.length && isSentinelVisible()) {
         requestAnimationFrame(() => {

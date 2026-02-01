@@ -655,7 +655,7 @@ To customize this, define the `messages` variable in `atr.json`:
       "timeline": "Timeline",
       "hello": "Hello World",
       "about": "About",
-      "endOfTimeline": "End of timeline.",
+      "endOfArticle": "End of article.",
       "noArticlesYet": "No articles yet.",
       "uncommitted": "uncommitted"
     },
@@ -666,7 +666,7 @@ To customize this, define the `messages` variable in `atr.json`:
       "timeline": "タイムライン",
       "hello": "ハローワールド",
       "about": "About",
-      "endOfTimeline": "タイムラインは以上です",
+      "endOfArticle": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
     }

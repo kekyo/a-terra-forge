@@ -27,7 +27,7 @@
       "timeline": "Timeline",
       "hello": "Hello World",
       "about": "About",
-      "endOfTimeline": "End of timeline.",
+      "endOfArticle": "End of article.",
       "noArticlesYet": "No articles yet.",
       "uncommitted": "uncommitted"
     },
@@ -38,7 +38,7 @@
       "timeline": "タイムライン",
       "hello": "ハローワールド",
       "about": "About",
-      "endOfTimeline": "タイムラインは以上です",
+      "endOfArticle": "文書は以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
     }

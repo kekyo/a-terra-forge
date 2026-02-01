@@ -656,7 +656,7 @@ New article created: food/index.md
       "timeline": "Timeline",
       "hello": "Hello World",
       "about": "About",
-      "endOfTimeline": "End of timeline.",
+      "endOfArticle": "End of article.",
       "noArticlesYet": "No articles yet.",
       "uncommitted": "uncommitted"
     },
@@ -667,7 +667,7 @@ New article created: food/index.md
       "timeline": "タイムライン",
       "hello": "ハローワールド",
       "about": "About",
-      "endOfTimeline": "タイムラインは以上です",
+      "endOfArticle": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
     }
