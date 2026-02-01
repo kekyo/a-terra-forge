@@ -56,8 +56,9 @@ const resolveCliPath = (value: unknown): string | undefined => {
 type BuildCliOptions = {
   docs?: string;
   templates?: string;
+  assets?: string;
   out?: string;
-  tmpDir?: string;
+  temp?: string;
   cache?: string;
   config?: string;
   log?: ConsoleLogLevel;
@@ -97,8 +98,8 @@ const resolveBuildOptions = async (
   const configDir = dirname(configPath);
   const defaultDocsDirResolved = resolve(configDir, defaultDocsDir);
   const defaultTemplatesDirResolved = resolve(configDir, defaultTemplatesDir);
-  const defaultOutDirResolved = resolve(configDir, defaultOutDir);
   const defaultAssetsDirResolved = resolve(configDir, defaultAssetDir);
+  const defaultOutDirResolved = resolve(configDir, defaultOutDir);
   const defaultTmpDirResolved = resolve(configDir, defaultTmpDir);
   const defaultCacheDirResolved = resolve(configDir, defaultCacheDir);
   return {
@@ -110,13 +111,16 @@ const resolveBuildOptions = async (
       resolveCliPath(opts.templates) ??
       variableOptions.templatesDir ??
       defaultTemplatesDirResolved,
-    assetsDir: variableOptions.assetsDir ?? defaultAssetsDirResolved,
+    assetsDir:
+      resolveCliPath(opts.assets) ??
+      variableOptions.assetsDir ??
+      defaultAssetsDirResolved,
     outDir:
       resolveCliPath(opts.out) ??
       variableOptions.outDir ??
       defaultOutDirResolved,
     tmpDir:
-      resolveCliPath(opts.tmpDir) ??
+      resolveCliPath(opts.temp) ??
       variableOptions.tmpDir ??
       defaultTmpDirResolved,
     cacheDir:
@@ -167,11 +171,12 @@ if (isDirectExecution) {
   const abortController = new AbortController();
   program
     .command('build', { isDefault: true })
-    .summary('Build static assets for deployment')
+    .summary('Build static site contents for deployment')
     .addOption(new Option('-d, --docs <dir>', 'Markdown document directory'))
     .addOption(new Option('-t, --templates <dir>', 'Template directory'))
+    .addOption(new Option('-a, --assets <dir>', 'Asset directory'))
     .addOption(new Option('-o, --out <dir>', 'Output directory'))
-    .addOption(new Option('--tmp-dir <dir>', 'Temporary working directory'))
+    .addOption(new Option('--temp <dir>', 'Temporary working directory'))
     .addOption(new Option('--cache <dir>', 'Cache directory'))
     .addOption(
       new Option('--log <level>', 'Log level').choices(logLevelChoices)
@@ -199,7 +204,7 @@ if (isDirectExecution) {
     .command('init')
     .summary('Initialize a new atr scaffold in the current directory')
     .addOption(
-      new Option('--targetDir <dir>', 'Target directory to scaffold into')
+      new Option('--target <dir>', 'Target directory to scaffold into')
     )
     .addOption(new Option('--no-vite', 'Skip Vite scaffold files'))
     .addOption(new Option('-f, --force', 'Overwrite existing files'))
@@ -208,7 +213,7 @@ if (isDirectExecution) {
     )
     .action(
       async (opts: {
-        targetDir?: string;
+        target?: string;
         vite?: boolean;
         force?: boolean;
         log?: ConsoleLogLevel;
@@ -216,7 +221,7 @@ if (isDirectExecution) {
         banner();
         const logLevel = resolveLogLevel(opts.log);
         await initScaffold({
-          targetDir: opts.targetDir ? resolve(opts.targetDir) : process.cwd(),
+          targetDir: opts.target ? resolve(opts.target) : process.cwd(),
           includeVite: opts.vite ?? true,
           force: opts.force ?? false,
           logger: getTrimmingConsoleLogger(logLevel),
