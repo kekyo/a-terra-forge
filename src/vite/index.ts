@@ -131,6 +131,39 @@ export const atrPreview = (
   const withTrailingSlash = (value: string): string =>
     value.endsWith('/') ? value : `${value}/`;
 
+  const resolveServerBaseUrl = (): string => {
+    const resolved = server?.resolvedUrls?.local?.[0];
+    if (typeof resolved === 'string' && resolved.length > 0) {
+      return withTrailingSlash(resolved);
+    }
+    if (!server) {
+      return 'http://localhost/';
+    }
+    const protocol = server.config.server.https ? 'https' : 'http';
+    let host = server.config.server.host;
+    if (host === true || host === undefined || host === null) {
+      host = 'localhost';
+    }
+    if (host === '0.0.0.0' || host === '::') {
+      host = 'localhost';
+    }
+    const hostname =
+      typeof host === 'string' && host.trim().length > 0 ? host : 'localhost';
+    const port = server.config.server.port ?? 5173;
+    return `${protocol}://${hostname}:${port}/`;
+  };
+
+  const buildRuntimeOverrides = (
+    baseUrl: string
+  ): ATerraForgeConfigOverrides => {
+    const nextVariables = new Map(configOverrides.variables ?? []);
+    nextVariables.set('baseUrl', baseUrl);
+    return {
+      ...configOverrides,
+      variables: nextVariables,
+    };
+  };
+
   const resolvePreviewOutDirName = (): string =>
     activePreviewRootDir ? basename(activePreviewRootDir) : '';
 
@@ -368,7 +401,8 @@ export const atrPreview = (
     try {
       const atrOptions = await resolveRuntimeOptions(nextPreviewRootDir);
       atrOptions.logger = logger;
-      await generateDocs(atrOptions, abortController.signal, configOverrides);
+      const runtimeOverrides = buildRuntimeOverrides(resolveServerBaseUrl());
+      await generateDocs(atrOptions, abortController.signal, runtimeOverrides);
     } catch (error) {
       failed = true;
       const message = error instanceof Error ? error.message : String(error);

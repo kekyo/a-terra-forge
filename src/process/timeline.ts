@@ -22,6 +22,7 @@ import {
 import {
   applyHeaderIconCode,
   buildArticleAnchorId,
+  createPathFunctions,
   scriptVariables,
 } from './helpers';
 import { resolvePrerenderCount } from './paging';
@@ -67,12 +68,18 @@ export const generateTimelineDocument = async (
   timelineEntryTemplate: PageTemplateInfo,
   frontPage: string,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  baseUrl: URL,
   signal: AbortSignal
 ): Promise<void> => {
   const destinationPath = resolveTimelineDestinationPath(outDir, frontPage);
   const timelineOutputDir = resolveTimelineOutputDir(outDir, frontPage);
   const articleBodiesDir = join(timelineOutputDir, 'article-bodies');
   const prerenderCount = resolvePrerenderCount(configVariables);
+  const indexPathFunctions = createPathFunctions({
+    outDir,
+    documentPath: destinationPath,
+    baseUrl,
+  });
 
   await mkdir(articleBodiesDir, { recursive: true });
 
@@ -140,7 +147,12 @@ export const generateTimelineDocument = async (
         buildCandidateVariables(
           scriptVariables,
           configVariables,
-          entryVariables
+          entryVariables,
+          createPathFunctions({
+            outDir,
+            documentPath: entryFilePath,
+            baseUrl,
+          })
         ),
         configVariables
       );
@@ -290,7 +302,12 @@ export const generateTimelineDocument = async (
   };
 
   const templateVariables = applyHeaderIconCode(
-    buildCandidateVariables(scriptVariables, configVariables, contentVariables),
+    buildCandidateVariables(
+      scriptVariables,
+      configVariables,
+      contentVariables,
+      indexPathFunctions
+    ),
     configVariables
   );
 

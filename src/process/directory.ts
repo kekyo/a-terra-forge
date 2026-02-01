@@ -22,6 +22,7 @@ import {
 import {
   applyHeaderIconCode,
   buildArticleAnchorId,
+  createPathFunctions,
   scriptVariables,
   toPosixPath,
 } from './helpers';
@@ -82,6 +83,7 @@ export const generateDirectoryDocument = async (
   frontPage: string,
   includeTimeline: boolean,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  baseUrl: URL,
   signal: AbortSignal
 ): Promise<void> => {
   const destinationPath = resolveCategoryDestinationPath(
@@ -89,6 +91,11 @@ export const generateDirectoryDocument = async (
     directory,
     frontPage
   );
+  const pathFunctions = createPathFunctions({
+    outDir,
+    documentPath: destinationPath,
+    baseUrl,
+  });
 
   const sortedResults = [...renderedResults].sort((a, b) => {
     const aIsIndex = isIndexMarkdown(a.articleFile.relativePath);
@@ -171,7 +178,8 @@ export const generateDirectoryDocument = async (
             buildCandidateVariables(
               scriptVariables,
               configVariables,
-              entryVariables
+              entryVariables,
+              pathFunctions
             ),
             configVariables
           );
@@ -269,7 +277,8 @@ export const generateDirectoryDocument = async (
       scriptVariables,
       configVariables,
       baseResult.frontmatter,
-      contentVariables
+      contentVariables,
+      pathFunctions
     ),
     configVariables
   );

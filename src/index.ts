@@ -20,7 +20,10 @@ import {
 import { generateDocs } from './process';
 import { initScaffold } from './init';
 import { createNewArticle } from './new';
-import type { ATerraForgeProcessingOptions } from './types';
+import type {
+  ATerraForgeConfigOverrides,
+  ATerraForgeProcessingOptions,
+} from './types';
 import {
   type ConsoleLogLevel,
   defaultAssetDir,
@@ -60,6 +63,7 @@ type BuildCliOptions = {
   out?: string;
   temp?: string;
   cache?: string;
+  baseUrl?: string;
   config?: string;
   log?: ConsoleLogLevel;
 };
@@ -178,6 +182,7 @@ if (isDirectExecution) {
     .addOption(new Option('-o, --out <dir>', 'Output directory'))
     .addOption(new Option('--temp <dir>', 'Temporary working directory'))
     .addOption(new Option('--cache <dir>', 'Cache directory'))
+    .addOption(new Option('--base-url <url>', 'Override baseUrl variable'))
     .addOption(
       new Option('--log <level>', 'Log level').choices(logLevelChoices)
     )
@@ -191,12 +196,21 @@ if (isDirectExecution) {
       banner();
       const options = await resolveBuildOptions(opts);
       const logLevel = resolveLogLevel(opts.log);
+      const baseUrlOverride =
+        typeof opts.baseUrl === 'string' ? opts.baseUrl.trim() : '';
+      const overrides: ATerraForgeConfigOverrides | undefined =
+        baseUrlOverride.length > 0
+          ? {
+              variables: new Map([['baseUrl', baseUrlOverride]]),
+            }
+          : undefined;
       await generateDocs(
         {
           ...options,
           logger: getTrimmingConsoleLogger(logLevel),
         },
-        abortController.signal
+        abortController.signal,
+        overrides
       );
     });
 

@@ -22,6 +22,7 @@ import {
 import {
   applyHeaderIconCode,
   buildArticleAnchorId,
+  createPathFunctions,
   scriptVariables,
   toPosixPath,
 } from './helpers';
@@ -68,6 +69,7 @@ export const generateBlogDocument = async (
   frontPage: string,
   includeTimeline: boolean,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  baseUrl: URL,
   signal: AbortSignal
 ): Promise<void> => {
   const destinationPath = resolveCategoryDestinationPath(
@@ -78,6 +80,11 @@ export const generateBlogDocument = async (
   const blogOutputDir = dirname(destinationPath);
   const blogBodiesDir = join(blogOutputDir, 'blog-bodies');
   const prerenderCount = resolvePrerenderCount(configVariables);
+  const indexPathFunctions = createPathFunctions({
+    outDir,
+    documentPath: destinationPath,
+    baseUrl,
+  });
 
   await mkdir(blogBodiesDir, { recursive: true });
 
@@ -138,7 +145,12 @@ export const generateBlogDocument = async (
         buildCandidateVariables(
           scriptVariables,
           configVariables,
-          entryVariables
+          entryVariables,
+          createPathFunctions({
+            outDir,
+            documentPath: entryFilePath,
+            baseUrl,
+          })
         ),
         configVariables
       );
@@ -286,7 +298,12 @@ export const generateBlogDocument = async (
   };
 
   const templateVariables = applyHeaderIconCode(
-    buildCandidateVariables(scriptVariables, configVariables, contentVariables),
+    buildCandidateVariables(
+      scriptVariables,
+      configVariables,
+      contentVariables,
+      indexPathFunctions
+    ),
     configVariables
   );
 

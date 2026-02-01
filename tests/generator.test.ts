@@ -1478,6 +1478,111 @@ Details here
     expect(htmlMatch?.[1]).toBe('2024/03/05');
   });
 
+  it('Resolves relative and absolute paths based on output documents.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs-paths');
+    const templatesDir = await createTempDir(fn, 'templates-paths');
+    const outDir = await createTempDir(fn, 'out-paths');
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), '# Guide', 'utf8');
+
+    const template = `<html><body>{{toRelativePath siteImage}}|{{toRelativePath siteIcon}}|{{toAbsolutePath siteImage}}|{{toAbsolutePath siteIcon}}</body></html>`;
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      template,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir, { indexTemplate: template });
+
+    const config = {
+      variables: {
+        baseUrl: 'https://example.com/docs',
+        siteImage: './images/og.png',
+        siteIcon: '/icons/icon.png',
+      },
+    };
+    const configPath = join(outDir, 'atr.json');
+    await writeFile(configPath, JSON.stringify(config), 'utf8');
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath,
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const timelineHtml = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(timelineHtml).toContain(
+      'images/og.png|icons/icon.png|https://example.com/docs/images/og.png|https://example.com/docs/icons/icon.png'
+    );
+
+    const categoryHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain(
+      '../images/og.png|../icons/icon.png|https://example.com/docs/images/og.png|https://example.com/docs/icons/icon.png'
+    );
+  });
+
+  it('Falls back to localhost baseUrl when invalid.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs-baseurl');
+    const templatesDir = await createTempDir(fn, 'templates-baseurl');
+    const outDir = await createTempDir(fn, 'out-baseurl');
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), '# Guide', 'utf8');
+
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html><body>{{toAbsolutePath siteImage}}</body></html>',
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const config = {
+      variables: {
+        baseUrl: 'not a url',
+        siteImage: '/images/og.png',
+      },
+    };
+    const configPath = join(outDir, 'atr.json');
+    await writeFile(configPath, JSON.stringify(config), 'utf8');
+
+    const warnings: string[] = [];
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath,
+      logger: {
+        debug: () => undefined,
+        info: () => undefined,
+        warn: (message: string) => warnings.push(message),
+        error: () => undefined,
+      },
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const categoryHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain('http://localhost/images/og.png');
+    expect(
+      warnings.some((message) => message.includes('Invalid baseUrl'))
+    ).toBe(true);
+  });
+
   it('Imports templates and executes scripts in them.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, 'templates');

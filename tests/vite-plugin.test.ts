@@ -163,6 +163,85 @@ describe('atrPreview', () => {
     await runOpenDelayScenario(fn, false);
   });
 
+  it('passes the dev server baseUrl into generateDocs.', async (fn) => {
+    const rootDir = await createTempDir(fn, 'root-base-url');
+    const docsDir = join(rootDir, 'docs');
+    const templatesDir = join(rootDir, 'templates');
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+
+    const configPath = join(rootDir, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify(
+        {
+          variables: {
+            docsDir: './docs',
+            templatesDir: './templates',
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    mockState.generateDocsMock.mockResolvedValue(undefined);
+
+    const httpServer = new EventEmitter();
+    const devServer = {
+      config: {
+        root: rootDir,
+        logLevel: 'info',
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+        server: {
+          open: false,
+          hmr: false,
+        },
+      },
+      middlewares: {
+        use: vi.fn(),
+      },
+      watcher: {
+        add: vi.fn(),
+        unwatch: vi.fn(),
+        on: vi.fn(),
+      },
+      ws: {
+        send: vi.fn(),
+      },
+      httpServer,
+      openBrowser: vi.fn(),
+      resolvedUrls: { local: ['http://localhost:5173/'] },
+    } as unknown as ViteDevServer;
+
+    vi.resetModules();
+    const { atrPreview } = await import('../src/vite');
+    const plugin = atrPreview({ configPath });
+    const configureServerHook = plugin.configureServer;
+    if (!configureServerHook) {
+      throw new Error('configureServer is not defined.');
+    }
+    const pluginContext = {} as any;
+    if (typeof configureServerHook === 'function') {
+      await configureServerHook.call(pluginContext, devServer);
+    } else {
+      await configureServerHook.handler.call(pluginContext, devServer);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const [, , overrides] = mockState.generateDocsMock.mock.calls[0] ?? [];
+    expect(overrides?.variables instanceof Map).toBe(true);
+    expect(overrides?.variables?.get('baseUrl')).toBe('http://localhost:5173/');
+
+    httpServer.emit('close');
+  });
+
   it('serves from the preview base directory and rewrites to the active preview output.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-preview-base');
     const docsDir = join(rootDir, 'docs');

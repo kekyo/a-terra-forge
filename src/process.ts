@@ -41,7 +41,11 @@ import {
   writeContentFile,
   type ArticleFileInfo,
 } from './utils';
-import { applyHeaderIconCode, scriptVariables } from './process/helpers';
+import {
+  applyHeaderIconCode,
+  createPathFunctions,
+  scriptVariables,
+} from './process/helpers';
 import { defaultUserAgent, parseFrontmatterInfo } from './process/frontmatter';
 import {
   readFileIfExists,
@@ -219,7 +223,9 @@ const resolveSiteTemplateEntries = async (
 
 const renderSiteTemplates = async (
   entries: readonly SiteTemplateEntry[],
-  variables: FunCityVariables,
+  configVariables: FunCityVariables,
+  siteTemplateData: Record<string, unknown>,
+  baseUrl: URL,
   configDir: string,
   outDir: string,
   finalOutDir: string,
@@ -228,6 +234,20 @@ const renderSiteTemplates = async (
 ): Promise<void> => {
   await Promise.all(
     entries.map(async (entry) => {
+      const pathFunctions = createPathFunctions({
+        outDir,
+        documentPath: entry.outputPath,
+        baseUrl,
+      });
+      const variables = applyHeaderIconCode(
+        buildCandidateVariables(
+          scriptVariables,
+          configVariables,
+          siteTemplateData,
+          pathFunctions
+        ),
+        configVariables
+      );
       const logs: FunCityLogEntry[] = [];
       const rendered = await renderTemplateWithImportHandler(
         entry.templatePath,
@@ -445,36 +465,32 @@ export const generateDocs = async (
     outDir,
     siteTemplates
   );
-  const baseUrlDependentTemplates = new Set([
-    'feed.xml',
-    'atom.xml',
-    'sitemap.xml',
-  ]);
-  const needsBaseUrl = siteTemplateEntries.some((entry) =>
-    baseUrlDependentTemplates.has(entry.name)
-  );
   const baseUrlRaw = configVariablesRaw.get('baseUrl');
   const trimmedBaseUrl =
     typeof baseUrlRaw === 'string' ? baseUrlRaw.trim() : '';
-  let resolvedBaseUrl: URL | undefined;
-  if (needsBaseUrl && trimmedBaseUrl.length > 0) {
+  const fallbackBaseUrl = 'http://localhost/';
+  let resolvedBaseUrl: URL;
+  if (trimmedBaseUrl.length > 0) {
     const normalizedBaseUrl = ensureTrailingSlash(trimmedBaseUrl);
     try {
       resolvedBaseUrl = new URL(normalizedBaseUrl);
+      configVariablesRaw.set('baseUrl', normalizedBaseUrl);
     } catch {
       logger.warn(
-        `warning: Invalid baseUrl "${baseUrlRaw}", feed.xml/atom.xml/sitemap.xml were not generated.`
+        `warning: Invalid baseUrl "${baseUrlRaw}", using default "${fallbackBaseUrl}".`
       );
+      resolvedBaseUrl = new URL(fallbackBaseUrl);
+      configVariablesRaw.set('baseUrl', fallbackBaseUrl);
     }
+  } else {
+    logger.warn(
+      `warning: baseUrl is not configured, using default "${fallbackBaseUrl}".`
+    );
+    resolvedBaseUrl = new URL(fallbackBaseUrl);
+    configVariablesRaw.set('baseUrl', fallbackBaseUrl);
   }
-  const filteredSiteTemplateEntries =
-    needsBaseUrl && !resolvedBaseUrl
-      ? siteTemplateEntries.filter(
-          (entry) => !baseUrlDependentTemplates.has(entry.name)
-        )
-      : siteTemplateEntries;
   const siteTemplateOutputMap = new Map(
-    filteredSiteTemplateEntries.map((entry) => [entry.name, entry.outputPath])
+    siteTemplateEntries.map((entry) => [entry.name, entry.outputPath])
   );
   let outputSwapped = false;
   try {
@@ -774,6 +790,7 @@ export const generateDocs = async (
             frontPage,
             includeTimeline,
             siteTemplateOutputMap,
+            resolvedBaseUrl,
             signal
           );
         }
@@ -793,6 +810,7 @@ export const generateDocs = async (
           frontPage,
           includeTimeline,
           siteTemplateOutputMap,
+          resolvedBaseUrl,
           signal
         );
       })
@@ -818,51 +836,43 @@ export const generateDocs = async (
         timelineEntryTemplate,
         frontPage,
         siteTemplateOutputMap,
+        resolvedBaseUrl,
         signal
       );
     }
 
     const siteTemplateData: Record<string, unknown> = {};
-    const hasFeedTemplates = filteredSiteTemplateEntries.some(
+    const hasFeedTemplates = siteTemplateEntries.some(
       (entry) => entry.name === 'feed.xml' || entry.name === 'atom.xml'
     );
-    const hasSitemapTemplate = filteredSiteTemplateEntries.some(
+    const hasSitemapTemplate = siteTemplateEntries.some(
       (entry) => entry.name === 'sitemap.xml'
     );
-    if (resolvedBaseUrl) {
-      if (hasFeedTemplates) {
-        const feedData = await buildFeedTemplateData({
-          logger,
-          outDir,
-          baseUrl: resolvedBaseUrl,
-          renderedResults,
-          variables: configVariables,
-          frontPage,
-          siteTemplateOutputMap,
-        });
-        Object.assign(siteTemplateData, feedData);
-      }
-      if (hasSitemapTemplate) {
-        siteTemplateData.sitemapUrls = buildSitemapUrls({
-          outDir,
-          baseUrl: resolvedBaseUrl,
-          documentPaths: Array.from(documentPaths),
-        });
-      }
+    if (hasFeedTemplates) {
+      const feedData = await buildFeedTemplateData({
+        logger,
+        outDir,
+        baseUrl: resolvedBaseUrl,
+        renderedResults,
+        variables: configVariables,
+        frontPage,
+        siteTemplateOutputMap,
+      });
+      Object.assign(siteTemplateData, feedData);
+    }
+    if (hasSitemapTemplate) {
+      siteTemplateData.sitemapUrls = buildSitemapUrls({
+        outDir,
+        baseUrl: resolvedBaseUrl,
+        documentPaths: Array.from(documentPaths),
+      });
     }
 
-    const siteTemplateVariables = applyHeaderIconCode(
-      buildCandidateVariables(
-        scriptVariables,
-        configVariables,
-        siteTemplateData
-      ),
-      configVariables
-    );
-
     await renderSiteTemplates(
-      filteredSiteTemplateEntries,
-      siteTemplateVariables,
+      siteTemplateEntries,
+      configVariables,
+      siteTemplateData,
+      resolvedBaseUrl,
       configDir,
       outDir,
       finalOutDir,
