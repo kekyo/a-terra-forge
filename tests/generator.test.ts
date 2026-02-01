@@ -1632,6 +1632,54 @@ Details here
     expect(htmlMatch?.[1]).toBe('2024/03/05');
   });
 
+  it('Silently ignores missing templates with tryImport.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, 'templates');
+    const outDir = await createTempDir(fn, 'out');
+
+    const markdown = `
+# Body
+
+Details here
+`;
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
+
+    const partial = `<section class="partial">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
+    await writeFile(join(templatesDir, 'partial.html'), partial, 'utf8');
+
+    const template = `
+<html>
+  <body>
+    {{tryImport 'missing.html'}}
+    {{tryImport 'partial.html'}}
+    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+  </body>
+</html>
+`;
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      template,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'guide', 'index.html'), 'utf8');
+    expect(html).toContain('2024/03/05');
+    expect(html).not.toContain('missing.html');
+  });
+
   it('Renders timeline entry templates at build time.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, 'templates');

@@ -130,9 +130,36 @@ export const renderTemplateWithImportHandler = async (
       signal
     );
   };
+  const tryImportTemplate = async (arg0: unknown) => {
+    const importPath = resolve(templateDir, String(arg0));
+    const importScript = await readFileIfExists(importPath);
+    if (importScript === undefined) {
+      return '';
+    }
+    if (importStack.includes(importPath)) {
+      logs.push({
+        type: 'error',
+        description: `circular import detected: ${importPath}`,
+        range: {
+          start: { line: 1, column: 1 },
+          end: { line: 1, column: 1 },
+        },
+      });
+      return '';
+    }
+    return await renderTemplateWithImportHandler(
+      importPath,
+      importScript,
+      baseVariables,
+      logs,
+      [...importStack, importPath],
+      signal
+    );
+  };
 
   const variables = new Map(baseVariables);
   variables.set('import', importTemplate);
+  variables.set('tryImport', tryImportTemplate);
 
   const result = await renderFunCity(templateScript, variables, logs, signal);
   return result;
