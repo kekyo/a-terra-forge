@@ -1,7 +1,7 @@
 ---
 title: Hello a-terra-forge world!
 id: 2
-tags: ['tag-a', 'tag-b']
+tags: [tag-a, tag-b]
 ---
 
 Entered a-terra-forge world.

@@ -3,6 +3,19 @@
     <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>{{title}}</h1>
     <div class="entry-meta">
       {{
+      if tags?
+        set articleTags (distinct tags)
+        if (length articleTags)
+      }}
+      <p>
+        <span class="me-1">{{getMessage 'tags'}}:</span>
+        {{join ',' (map (fun tag (concat '<span class="badge rounded-pill">' tag '</span>')) articleTags)}}
+      </p>
+      {{
+        end
+      end
+      }}
+      {{
       if git?
         if git.committer.date?
       }}
@@ -24,6 +37,6 @@
   </header>
   {{if anchorId?}}<a id="{{anchorId}}"></a>{{end}}
   <div class="entry-body">
-{{body}}
+{{contentHtml}}
   </div>
 </article>

@@ -7,6 +7,11 @@ https://github.com/kekyo/a-terra-forge
 -->
 {{
 set tpc (cond prerenderCount? prerenderCount 5)
+set pageTitle (getMessage 'timeline')
+set pageDescription siteDescription
+set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
+set committerDates (map (fun date (formatDate date)) (sort (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
 if locale?
 }}
 <html lang="{{locale}}">
@@ -14,96 +19,8 @@ if locale?
 <html>
 {{end}}
   <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# website: http://ogp.me/ns/website#">
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="application-name" content="a-terra-forge_{{version}}">
+    {{import 'common-header.html'}}
     <meta property="og:type" content="website">
-    <meta property="og:title" content="{{title}}">
-    {{if siteDescription?}}
-    <meta name="description" content="{{siteDescription}}">
-    <meta property="og:description" content="{{siteDescription}}">
-    {{
-    end
-    if siteName?
-    }}
-    <meta property="og:site_name" content="{{siteName}}">
-    {{
-    end
-    if siteImage?
-    }}
-    <meta property="og:image" content="{{toRelativePath siteImage}}">
-    {{
-    end
-    if locale?
-    }}
-    <meta property="og:locale" content="{{locale}}">
-    {{if (not (eq locale 'en'))}}
-    <meta property="og:locale:alternate" content="en">
-    {{
-    end
-    end
-    }}
-    <meta property="twitter:card" content="summary">
-    {{
-    set rssPath (getSiteTemplatePath 'feed.xml')
-    if rssPath?
-    }}
-    <link rel="alternate" type="application/rss+xml" title="RSS" href="{{rssPath}}" />
-    {{
-    end
-    set atomPath (getSiteTemplatePath 'atom.xml')
-    if atomPath?
-    }}
-    <link rel="alternate" type="application/atom+xml" title="Atom" href="{{atomPath}}" />
-    {{
-    end
-    if siteName?
-    }}
-    <title>{{getMessage 'Timeline'}} - {{siteName}}</title>
-    {{else}}
-    <title>{{getMessage 'Timeline'}}</title>
-    {{end}}
-    <script>
-      // Earlier theme application
-      (() => {
-        const storageKey = 'preferred-theme';
-        const themeAttr = 'data-bs-theme';
-        const getStoredTheme = () => {
-          try {
-            const saved = localStorage.getItem(storageKey);
-            return saved === 'dark' || saved === 'light' ? saved : null;
-          } catch {
-            return null;
-          }
-        };
-        const getMediaTheme = () => {
-          if (typeof window.matchMedia !== 'function') {
-            return 'light';
-          }
-          return window.matchMedia('(prefers-color-scheme: dark)').matches
-            ? 'dark'
-            : 'light';
-        };
-        const theme = getStoredTheme() ?? getMediaTheme();
-        document.documentElement.setAttribute(themeAttr, theme);
-      })();
-    </script>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-      integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM"
-      crossorigin="anonymous"
-    />
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
-      rel="stylesheet"
-      crossorigin="anonymous">
-    {{
-    set stylePath (getSiteTemplatePath 'site-style.css')
-    if stylePath?
-    }}
-    <link rel="stylesheet" href="{{stylePath}}" />
-    {{end}}
   </head>
   <body>
 {{import 'navigation-bar.html'}}
@@ -111,8 +28,8 @@ if locale?
       <div class="docs" data-timeline-index="{{timelineIndexPath}}">
         <div id="timeline-list" class="stream-list"{{if tpc}} data-timeline-prerender="{{tpc}}"{{end}}>
           {{
-          for entry (slice 0 tpc timelineEntries)
-            getTimelineEntry entry.entryPath
+          for articleEntry (slice 0 tpc articleEntries)
+            getEntry articleEntry
           end
           }}
         </div>

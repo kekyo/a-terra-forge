@@ -8,11 +8,15 @@ import { dirname, resolve } from 'path';
 import {
   convertToString,
   FunCityReducerError,
+  makeFunCityFunction,
   outputErrors,
+  reduceNode,
   runParser,
   runReducer,
   runTokenizer,
   type FunCityBlockNode,
+  type FunCityExpressionNode,
+  type FunCityFunctionContext,
   type FunCityLogEntry,
   type FunCityToken,
   type FunCityVariables,
@@ -55,6 +59,107 @@ const parseTemplate = (templateScript: string): ParsedTemplateCacheEntry => {
   };
   parsedTemplateCache.set(templateScript, parsed);
   return parsed;
+};
+
+type ImportHandlers = {
+  readonly importTemplate: Function;
+  readonly tryImportTemplate: Function;
+};
+
+const createImportHandlers = (
+  templatePath: string,
+  logs: FunCityLogEntry[],
+  importStack: readonly string[]
+): ImportHandlers => {
+  const templateDir = dirname(templatePath);
+
+  const renderImportedTemplate = async (
+    context: FunCityFunctionContext,
+    argNode: FunCityExpressionNode | undefined,
+    allowMissing: boolean
+  ): Promise<string> => {
+    const resolvedArg =
+      argNode === undefined ? undefined : await context.reduce(argNode);
+    const importPath = resolve(templateDir, String(resolvedArg));
+
+    if (importStack.includes(importPath)) {
+      logs.push({
+        type: 'error',
+        description: `circular import detected: ${importPath}`,
+        range: context.thisNode?.range ?? {
+          start: { line: 1, column: 1 },
+          end: { line: 1, column: 1 },
+        },
+      });
+      return '';
+    }
+
+    const importScript = allowMissing
+      ? await readFileIfExists(importPath)
+      : await readFile(importPath, 'utf8');
+    if (importScript === undefined) {
+      return '';
+    }
+
+    const parsed = parseTemplate(importScript);
+    if (parsed.logs.length > 0) {
+      logs.push(...parsed.logs);
+    }
+    if (parsed.logs.some((entry) => entry.type === 'error')) {
+      return '';
+    }
+
+    const scope = context.newScope();
+    const nestedHandlers = createImportHandlers(importPath, logs, [
+      ...importStack,
+      importPath,
+    ]);
+    scope.setValue(
+      'import',
+      nestedHandlers.importTemplate,
+      context.abortSignal
+    );
+    scope.setValue(
+      'tryImport',
+      nestedHandlers.tryImportTemplate,
+      context.abortSignal
+    );
+
+    const reducedValues: unknown[] = [];
+    try {
+      for (const node of parsed.nodes) {
+        const reduced = await reduceNode(scope, node, context.abortSignal);
+        reducedValues.push(...reduced);
+      }
+    } catch (error: unknown) {
+      if (error instanceof FunCityReducerError) {
+        logs.push(error.info);
+        return '';
+      }
+      throw error;
+    }
+
+    return reducedValues
+      .filter((value) => value !== undefined)
+      .map((value) => scope.convertToString(value))
+      .join('');
+  };
+
+  const importTemplate = makeFunCityFunction(async function (
+    this: FunCityFunctionContext,
+    arg0?: FunCityExpressionNode
+  ) {
+    return await renderImportedTemplate(this, arg0, false);
+  });
+
+  const tryImportTemplate = makeFunCityFunction(async function (
+    this: FunCityFunctionContext,
+    arg0?: FunCityExpressionNode
+  ) {
+    return await renderImportedTemplate(this, arg0, true);
+  });
+
+  return { importTemplate, tryImportTemplate };
 };
 
 /**
@@ -106,56 +211,11 @@ export const renderTemplateWithImportHandler = async (
   importStack: readonly string[],
   signal: AbortSignal
 ): Promise<string> => {
-  const templateDir = dirname(categoryIndexTemplatePath);
-  const importTemplate = async (arg0: unknown) => {
-    const importPath = resolve(templateDir, String(arg0));
-    if (importStack.includes(importPath)) {
-      logs.push({
-        type: 'error',
-        description: `circular import detected: ${importPath}`,
-        range: {
-          start: { line: 1, column: 1 },
-          end: { line: 1, column: 1 },
-        },
-      });
-      return '';
-    }
-    const importScript = await readFile(importPath, 'utf8');
-    return await renderTemplateWithImportHandler(
-      importPath,
-      importScript,
-      baseVariables,
-      logs,
-      [...importStack, importPath],
-      signal
-    );
-  };
-  const tryImportTemplate = async (arg0: unknown) => {
-    const importPath = resolve(templateDir, String(arg0));
-    const importScript = await readFileIfExists(importPath);
-    if (importScript === undefined) {
-      return '';
-    }
-    if (importStack.includes(importPath)) {
-      logs.push({
-        type: 'error',
-        description: `circular import detected: ${importPath}`,
-        range: {
-          start: { line: 1, column: 1 },
-          end: { line: 1, column: 1 },
-        },
-      });
-      return '';
-    }
-    return await renderTemplateWithImportHandler(
-      importPath,
-      importScript,
-      baseVariables,
-      logs,
-      [...importStack, importPath],
-      signal
-    );
-  };
+  const { importTemplate, tryImportTemplate } = createImportHandlers(
+    categoryIndexTemplatePath,
+    logs,
+    importStack
+  );
 
   const variables = new Map(baseVariables);
   variables.set('import', importTemplate);

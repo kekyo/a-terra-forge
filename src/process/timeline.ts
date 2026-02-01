@@ -3,8 +3,8 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { mkdir, readFile } from 'fs/promises';
-import { dirname, join, resolve } from 'path';
+import { mkdir } from 'fs/promises';
+import { dirname, join, posix } from 'path';
 import dayjs from 'dayjs';
 import {
   buildCandidateVariables,
@@ -24,7 +24,13 @@ import {
   buildArticleAnchorId,
   createPathFunctions,
   scriptVariables,
+  toPosixPath,
 } from './helpers';
+import {
+  type TimelineEntry,
+  type TimelineIndexEntry,
+  createEntryGetter,
+} from './entries';
 import { resolvePrerenderCount } from './paging';
 import { renderTemplateWithImportHandler } from './templates';
 import {
@@ -38,18 +44,6 @@ import {
 import type { PageTemplateInfo, RenderedArticleInfo } from './directory';
 
 //////////////////////////////////////////////////////////////////////////////
-
-/**
- * Timeline entry metadata stored in timeline.json.
- */
-export interface TimelineEntry {
-  readonly title: string;
-  readonly date: string;
-  readonly category: string;
-  readonly categoryPath?: string;
-  readonly anchorId?: string;
-  readonly entryPath: string;
-}
 
 /**
  * Generate timeline index and entry pages.
@@ -130,6 +124,10 @@ export const generateTimelineDocument = async (
         dirname(destinationPath),
         entryFilePath
       );
+      const entryFrontmatter = result.frontmatter as Record<string, unknown>;
+      const filePath = toPosixPath(articleFile.relativePath);
+      const fileName = posix.basename(filePath);
+      const directory = toPosixPath(articleFile.directory);
 
       const entryVariables = {
         title,
@@ -139,8 +137,9 @@ export const generateTimelineDocument = async (
         anchorId,
         id: entryId,
         git,
-        headerIcon: (result.frontmatter as Record<string, unknown>)?.headerIcon,
-        body: timelineHtml,
+        headerIcon: entryFrontmatter?.headerIcon,
+        contentHtml: timelineHtml,
+        ...entryFrontmatter,
       };
 
       const entryTemplateVariables = applyHeaderIconCode(
@@ -170,26 +169,26 @@ export const generateTimelineDocument = async (
         timelineEntryTemplate.path,
         entryErrors
       );
-      if (!entryHasError) {
-        await writeContentFile(entryFilePath, entryRendered);
-      }
+      const entryHtml = entryHasError ? timelineHtml : entryRendered;
+      await writeContentFile(entryFilePath, entryHtml);
 
       timelineEntries.push({
         entry: {
+          id: entryId,
           title,
+          fileName,
+          ...entryFrontmatter,
+          filePath,
+          directory,
+          anchorId,
+          git,
           date,
-          category: entryCategory ?? '',
-          ...(categoryPath
-            ? {
-                categoryPath,
-              }
-            : {}),
-          ...(categoryPath && anchorId
-            ? {
-                anchorId,
-              }
-            : {}),
+          contentHtml: timelineHtml,
+          timelineHtml,
+          entryHtml,
           entryPath,
+          category: entryCategory,
+          ...(categoryPath ? { categoryPath } : {}),
         },
         dateValue,
         hasDate,
@@ -230,27 +229,13 @@ export const generateTimelineDocument = async (
     timelineIndexPath
   );
 
-  const timelineIndexContent = JSON.stringify(sortedEntries);
+  const timelineIndexEntries: TimelineIndexEntry[] = sortedEntries.map(
+    (entry) => ({
+      entryPath: entry.entryPath,
+    })
+  );
+  const timelineIndexContent = JSON.stringify(timelineIndexEntries);
   await writeContentFile(timelineIndexPath, timelineIndexContent);
-
-  const getTimelineEntry = async (arg0: unknown) => {
-    const entryPath =
-      typeof arg0 === 'string'
-        ? arg0
-        : arg0 &&
-            typeof (arg0 as { entryPath?: unknown }).entryPath === 'string'
-          ? ((arg0 as { entryPath?: string }).entryPath ?? '')
-          : '';
-    if (!entryPath) {
-      return '';
-    }
-    const entryFilePath = resolve(dirname(destinationPath), entryPath);
-    try {
-      return await readFile(entryFilePath, 'utf8');
-    } catch {
-      return '';
-    }
-  };
 
   const getSiteTemplatePath = (arg0: unknown): string => {
     const name = typeof arg0 === 'string' ? arg0 : String(arg0 ?? '');
@@ -284,7 +269,7 @@ export const generateTimelineDocument = async (
   );
 
   const latestDate =
-    sortedEntries.find((entry) => entry.date.length > 0)?.date ??
+    sortedEntries.find((entry) => entry.date && entry.date.length > 0)?.date ??
     dayjs().format();
 
   const contentVariables = {
@@ -296,8 +281,9 @@ export const generateTimelineDocument = async (
     ...(navItemsAfter.length > 0 ? { navItemsAfter } : {}),
     timelineIndexPath: timelineIndexRelativePath,
     timelineCount: sortedEntries.length,
-    timelineEntries: sortedEntries,
-    getTimelineEntry,
+    articleEntries: sortedEntries,
+    entryMode: 'timeline',
+    getEntry: createEntryGetter(destinationPath),
     ...(prerenderCount !== undefined ? { prerenderCount } : {}),
   };
 

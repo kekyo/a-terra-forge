@@ -57,7 +57,7 @@ describe('generateDocs', () => {
     await writeFile(join(docsDir, 'entry.md'), '# Title', 'utf8');
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -67,7 +67,7 @@ describe('generateDocs', () => {
     );
     await writeFile(
       join(templatesDir, 'timeline-entry.html'),
-      '<article>{{body}}</article>',
+      '<article>{{contentHtml}}</article>',
       'utf8'
     );
 

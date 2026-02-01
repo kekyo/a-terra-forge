@@ -1,6 +1,7 @@
 ---
 id: 4
 title: New blog
+tags: [aaa, bbb]
 ---
 
 ## Today breakfast

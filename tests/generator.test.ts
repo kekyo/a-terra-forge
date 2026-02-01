@@ -32,7 +32,7 @@ const writeRequiredTemplates = async (
     options.indexTemplate ?? '<html><body>{{timelineIndexPath}}</body></html>';
   const entryTemplate =
     options.entryTemplate ??
-    '<article><header>{{title}}</header><section>{{body}}</section></article>';
+    '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>';
   await writeFile(
     join(templatesDir, 'index-timeline.html'),
     indexTemplate,
@@ -50,7 +50,7 @@ const writeRequiredTemplates = async (
   );
   await writeFile(
     join(templatesDir, 'blog-entry.html'),
-    '<article><header>{{title}}</header><section>{{body}}</section></article>',
+    '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>',
     'utf8'
   );
 };
@@ -85,6 +85,11 @@ const pickOEmbedSample = () => {
   throw new Error('No suitable oEmbed provider found for tests.');
 };
 
+const extractHeaderTitle = (html: string): string => {
+  const match = html.match(/<header>([^<]+)<\/header>/);
+  return match?.[1] ?? '';
+};
+
 describe('generateDocs', () => {
   it('Converts each directory into a single HTML using the fallback template.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
@@ -115,7 +120,7 @@ Details here`,
     );
 
     const fallbackTemplate =
-      '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" /></head><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" /></head><body>Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -168,10 +173,13 @@ Details here`,
     await mkdir(templatesDir, { recursive: true });
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html>{{for article articles}}{{article.entryHtml}}{{end}}</html>',
+      '<html>{{for article articleEntries}}{{article.entryHtml}}{{end}}</html>',
       'utf8'
     );
-    await writeRequiredTemplates(templatesDir);
+    await writeRequiredTemplates(templatesDir, {
+      entryTemplate:
+        '<article data-title="{{title}}" data-category-path="{{categoryPath}}">{{title}}</article>',
+    });
 
     const configPath = join(projectDir, 'atr.json');
     await writeFile(configPath, '{}', 'utf8');
@@ -205,7 +213,7 @@ Details here`,
     const configDir = await createTempDir(fn, 'config');
 
     const fallbackTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -299,7 +307,7 @@ Details here`,
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -453,7 +461,10 @@ Details here`,
       '<html><body>CAT:{{title}}</body></html>',
       'utf8'
     );
-    await writeRequiredTemplates(templatesDir);
+    await writeRequiredTemplates(templatesDir, {
+      entryTemplate:
+        '<article data-title="{{title}}" data-category-path="{{categoryPath}}">{{title}}</article>',
+    });
 
     await writeFile(
       join(siteRoot, 'atr.json'),
@@ -493,15 +504,22 @@ Details here`,
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline', 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, 'timeline', entry.entryPath), 'utf8')
+      )
     );
-    const guideEntry = timelineIndex.find(
-      (entry: { title: string }) => entry.title === 'Guide'
+    const guideHtml = entryHtmlList.find((html) =>
+      html.includes('data-title="Guide"')
     );
-    const referenceEntry = timelineIndex.find(
-      (entry: { title: string }) => entry.title === 'Reference'
+    const referenceHtml = entryHtmlList.find((html) =>
+      html.includes('data-title="Reference"')
     );
-    expect(guideEntry?.categoryPath).toBe('../index.html');
-    expect(referenceEntry?.categoryPath).toBe('../reference/index.html');
+    expect(guideHtml).toContain('data-category-path="../index.html"');
+    expect(referenceHtml).toContain(
+      'data-category-path="../reference/index.html"'
+    );
 
     const guideAsset = await readFile(
       join(outDir, 'images', 'logo.png'),
@@ -764,7 +782,7 @@ More text
   </head>
   <body>
     <header>{{description}}</header>
-    <main class="article">{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main class="article">{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -827,7 +845,7 @@ title: Frontmatter Title
     <header>{{siteName}}</header>
     <h1>{{title}}</h1>
     <p class="tagline">{{tagline}}</p>
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -904,7 +922,7 @@ Body text
     const template = `
 <html>
   <body>
-    {{for article articles}}
+    {{for article articleEntries}}
       <div
         data-index="{{article.index}}"
         data-file-path="{{article.filePath}}"
@@ -977,7 +995,7 @@ title: Entry
     {{else}}
     <header>Missing</header>
     {{end}}
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1050,7 +1068,7 @@ title: Beta
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -1110,7 +1128,7 @@ title: Beta
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.title}};{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.title}};{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1185,7 +1203,7 @@ title: Gamma
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.title}};{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.title}};{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1234,7 +1252,7 @@ title: Note
     const categoryTemplate = `
 <html>
   <body>
-    {{for article articles}}<section data-idx="{{article.index}}" data-file="{{article.fileName}}">{{article.entryHtml}}</section>{{end}}
+    {{for article articleEntries}}<section data-idx="{{article.index}}" data-file="{{article.fileName}}">{{article.entryHtml}}</section>{{end}}
   </body>
 </html>
 `;
@@ -1303,7 +1321,7 @@ Second body
   <head><title>{{title}}</title></head>
   <body>
     <h1>{{title}}</h1>
-    {{for article articles}}{{article.entryHtml}}{{end}}
+    {{for article articleEntries}}{{article.entryHtml}}{{end}}
   </body>
 </html>
 `;
@@ -1354,7 +1372,7 @@ Second body
     await writeFile(join(markdownDir, 'overview.md'), '# Overview', 'utf8');
 
     const fallbackTemplate =
-      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body>';
+      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -1370,7 +1388,7 @@ Second body
     const specificTemplateDir = join(templatesDir, 'guide');
     await mkdir(specificTemplateDir, { recursive: true });
     const specificTemplate =
-      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Specific template {{for article articles}}{{article.entryHtml}}{{end}} End</body>';
+      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Specific template {{for article articleEntries}}{{article.entryHtml}}{{end}} End</body>';
     await writeFile(
       join(specificTemplateDir, 'intro.html'),
       specificTemplate,
@@ -1451,7 +1469,7 @@ Details here
 <html>
   <body>
     <div class="date">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</div>
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1597,14 +1615,15 @@ Details here
     await mkdir(markdownDir, { recursive: true });
     await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
 
-    const partial = `<section class="partial">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
+    const partial = `<section class="partial">{{greeting}} {{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
     await writeFile(join(templatesDir, 'partial.html'), partial, 'utf8');
 
     const template = `
 <html>
   <body>
+    {{set greeting 'Hello'}}
     {{import 'partial.html'}}
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1629,7 +1648,7 @@ Details here
     const htmlMatch = html.match(/<section class="partial">([^<]+)<\/section>/);
     expect(htmlMatch).not.toBeNull();
 
-    expect(htmlMatch?.[1]).toBe('2024/03/05');
+    expect(htmlMatch?.[1]).toBe('Hello 2024/03/05');
   });
 
   it('Silently ignores missing templates with tryImport.', async (fn) => {
@@ -1654,7 +1673,7 @@ Details here
   <body>
     {{tryImport 'missing.html'}}
     {{tryImport 'partial.html'}}
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1696,7 +1715,7 @@ Details here
     await writeFile(join(docsDir, 'index.md'), markdown, 'utf8');
 
     const pageTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       pageTemplate,
@@ -1713,7 +1732,7 @@ Details here
     const entryTemplate = `
 <article>
   <header>{{title}}</header>
-  <section>{{body}}</section>
+  <section>{{contentHtml}}</section>
 </article>
 `;
     await writeFile(
@@ -1774,14 +1793,14 @@ Details here
     );
 
     const categoryTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       categoryTemplate,
       'utf8'
     );
     const indexTemplate =
-      '<html><body><div id="timeline-list" class="stream-list"{{if prerenderCount?}} data-timeline-prerender="{{prerenderCount}}"{{end}}>{{if prerenderCount?}}{{for entry (slice 0 prerenderCount timelineEntries)}}{{getTimelineEntry entry.entryPath}}{{end}}{{end}}</div></body></html>';
+      '<html><body><div id="timeline-list" class="stream-list"{{if prerenderCount?}} data-timeline-prerender="{{prerenderCount}}"{{end}}>{{if prerenderCount?}}{{for entry (slice 0 prerenderCount articleEntries)}}{{getEntry entry}}{{end}}{{end}}</div></body></html>';
     await writeRequiredTemplates(templatesDir, { indexTemplate });
 
     const config = {
@@ -1841,7 +1860,7 @@ title: Second
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -1883,8 +1902,13 @@ title: Second
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(titles[0]).toBe('Second');
     expect(titles[1]).toBe('First');
   });
@@ -1922,7 +1946,7 @@ title: Second
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1971,8 +1995,13 @@ Dirty edit`,
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(titles[0]).toBe('First');
   });
 
@@ -2009,7 +2038,7 @@ title: Uncommitted
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2041,8 +2070,13 @@ title: Uncommitted
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(titles[0]).toBe('Uncommitted');
     expect(titles[1]).toBe('Committed');
   });
@@ -2092,7 +2126,7 @@ title: Draft
     );
 
     const fallbackTemplate =
-      '<html><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -2104,7 +2138,7 @@ title: Draft
       'BLOG_INDEX {{blogIndexPath}}',
       '<div class="docs" data-blog-index="{{blogIndexPath}}">',
       '<div id="blog-list" class="stream-list"{{if prerenderCount?}} data-blog-prerender="{{prerenderCount}}"{{end}}>',
-      '{{for entry (slice 0 prerenderCount blogEntries)}}{{getBlogEntry entry.entryPath}}{{end}}',
+      '{{for entry (slice 0 prerenderCount articleEntries)}}{{getEntry entry}}{{end}}',
       '</div>',
       '<div id="blog-status"></div>',
       '<div id="blog-sentinel"></div>',
@@ -2163,8 +2197,16 @@ title: Draft
 
     const blogIndex = JSON.parse(
       await readFile(join(outDir, 'blog', 'blog.json'), 'utf8')
-    ) as { title: string; entryPath: string }[];
-    const titles = blogIndex.map((entry) => entry.title);
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      blogIndex.map((entry) =>
+        readFile(join(outDir, 'blog', entry.entryPath), 'utf8')
+      )
+    );
+    const titles = entryHtmlList.map((html) => {
+      const match = html.match(/BLOG_ENTRY:([^<]+)/);
+      return match ? match[1] : '';
+    });
     expect(blogIndex).toHaveLength(3);
     expect(titles[0]).toBe('Draft');
     expect(titles[1]).toBe('New');
@@ -2203,7 +2245,7 @@ title: Reference
     await writeFile(join(markdownDir, 'git-versioning.png'), 'image', 'utf8');
 
     const pageTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       pageTemplate,
@@ -2309,7 +2351,7 @@ title: Reference
       '{{end}}',
       '{{end}}',
       '</nav>',
-      '<main>{{for article articles}}{{article.entryHtml}}{{end}}</main>',
+      '<main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>',
       '</body></html>',
     ].join('\n');
     await writeFile(
@@ -2351,8 +2393,13 @@ title: Reference
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(timelineIndex).toHaveLength(3);
     expect(titles).toEqual(expect.arrayContaining(['API', 'CLI', 'Reference']));
     expect(titles).not.toContain('Guide Top');
@@ -2484,7 +2531,7 @@ console.log(value);
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2590,10 +2637,10 @@ Dirty edit`,
 <html>
   <body>
     <div id="git-list">
-      {{for article articles}}{{article.title}}|{{article.git.shortOid}}|{{article.git.summary}}|{{article.git.committer.email}}|{{article.git.file.path}}|{{article.git.dirty}}|{{article.git.status.head}}|{{article.git.status.workdir}}|{{article.git.status.stage}};{{end}}
+      {{for article articleEntries}}{{article.title}}|{{article.git.shortOid}}|{{article.git.summary}}|{{article.git.committer.email}}|{{article.git.file.path}}|{{article.git.dirty}}|{{article.git.status.head}}|{{article.git.status.workdir}}|{{article.git.status.stage}};{{end}}
     </div>
     <div id="commit-key">COMMITKEY:{{categoryCommitKeyWithDirty}}</div>
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -2606,7 +2653,7 @@ Dirty edit`,
     await writeRequiredTemplates(templatesDir, {
       indexTemplate: '<html><body>{{timelineIndexPath}}</body></html>',
       entryTemplate:
-        '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}</section></article>',
+        '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}</section><section>{{contentHtml}}</section></article>',
     });
 
     const options: ATerraForgeProcessingOptions = {
@@ -2695,7 +2742,7 @@ Body
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2788,7 +2835,7 @@ Draft body
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2925,7 +2972,7 @@ Draft body
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2975,7 +3022,7 @@ ${sampleUrl}
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -3051,7 +3098,7 @@ ${sampleUrl}
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(

@@ -3,8 +3,8 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { mkdir, readFile } from 'fs/promises';
-import { dirname, join, resolve } from 'path';
+import { mkdir } from 'fs/promises';
+import { dirname, join, posix } from 'path';
 import dayjs from 'dayjs';
 import {
   buildCandidateVariables,
@@ -26,6 +26,11 @@ import {
   scriptVariables,
   toPosixPath,
 } from './helpers';
+import {
+  type BlogEntry,
+  type BlogIndexEntry,
+  createEntryGetter,
+} from './entries';
 import { resolvePrerenderCount } from './paging';
 import { renderTemplateWithImportHandler } from './templates';
 import {
@@ -39,16 +44,6 @@ import {
 import type { PageTemplateInfo, RenderedArticleInfo } from './directory';
 
 //////////////////////////////////////////////////////////////////////////////
-
-/**
- * Blog entry metadata stored in blog.json.
- */
-export interface BlogEntry {
-  readonly title: string;
-  readonly date: string;
-  readonly anchorId?: string;
-  readonly entryPath: string;
-}
 
 /**
  * Generate a blog category page using blog.json and entry fragments.
@@ -100,7 +95,7 @@ export const generateBlogDocument = async (
   }[] = [];
 
   const bodyWrites = renderedResults.map(
-    async ({ articleFile, result, git }) => {
+    async ({ articleFile, result, timelineHtml, git }) => {
       const title =
         typeof result.frontmatter.title === 'string'
           ? result.frontmatter.title
@@ -130,6 +125,9 @@ export const generateBlogDocument = async (
       );
       const entryBody = result.html;
       const entryFrontmatter = result.frontmatter as Record<string, unknown>;
+      const filePath = toPosixPath(articleFile.relativePath);
+      const fileName = posix.basename(filePath);
+      const directory = toPosixPath(articleFile.directory);
       const entryVariables = {
         title,
         date: entryDate,
@@ -137,7 +135,7 @@ export const generateBlogDocument = async (
         id: entryId,
         git,
         headerIcon: entryFrontmatter?.headerIcon,
-        body: entryBody,
+        contentHtml: entryBody,
         ...entryFrontmatter,
       };
 
@@ -165,9 +163,8 @@ export const generateBlogDocument = async (
         signal
       );
       const entryHasError = outputErrors(blogEntryTemplate.path, entryErrors);
-      if (!entryHasError) {
-        await writeContentFile(entryFilePath, entryRendered);
-      }
+      const entryHtml = entryHasError ? entryBody : entryRendered;
+      await writeContentFile(entryFilePath, entryHtml);
 
       const isIndex = isIndexMarkdown(articleFile.relativePath);
       const orderValue =
@@ -176,9 +173,18 @@ export const generateBlogDocument = async (
 
       entryCandidates.push({
         entry: {
+          id: entryId,
           title,
+          fileName,
+          ...entryFrontmatter,
+          filePath,
+          directory,
+          anchorId,
+          git,
           date,
-          ...(anchorId ? { anchorId } : {}),
+          contentHtml: entryBody,
+          timelineHtml,
+          entryHtml,
           entryPath,
         },
         dateValue,
@@ -225,27 +231,11 @@ export const generateBlogDocument = async (
     blogIndexPath
   );
 
-  const blogIndexContent = JSON.stringify(sortedEntries);
+  const blogIndexEntries: BlogIndexEntry[] = sortedEntries.map((entry) => ({
+    entryPath: entry.entryPath,
+  }));
+  const blogIndexContent = JSON.stringify(blogIndexEntries);
   await writeContentFile(blogIndexPath, blogIndexContent);
-
-  const getBlogEntry = async (arg0: unknown) => {
-    const entryPath =
-      typeof arg0 === 'string'
-        ? arg0
-        : arg0 &&
-            typeof (arg0 as { entryPath?: unknown }).entryPath === 'string'
-          ? ((arg0 as { entryPath?: string }).entryPath ?? '')
-          : '';
-    if (!entryPath) {
-      return '';
-    }
-    const entryFilePath = resolve(dirname(destinationPath), entryPath);
-    try {
-      return await readFile(entryFilePath, 'utf8');
-    } catch {
-      return '';
-    }
-  };
 
   const getSiteTemplatePath = (arg0: unknown): string => {
     const name = typeof arg0 === 'string' ? arg0 : String(arg0 ?? '');
@@ -279,7 +269,7 @@ export const generateBlogDocument = async (
   );
 
   const latestDate =
-    sortedEntries.find((entry) => entry.date.length > 0)?.date ??
+    sortedEntries.find((entry) => entry.date && entry.date.length > 0)?.date ??
     dayjs().format();
   const categoryLabel = getDirectoryLabel(directory);
 
@@ -292,8 +282,9 @@ export const generateBlogDocument = async (
     ...(navItemsAfter.length > 0 ? { navItemsAfter } : {}),
     blogIndexPath: blogIndexRelativePath,
     blogCount: sortedEntries.length,
-    blogEntries: sortedEntries,
-    getBlogEntry,
+    articleEntries: sortedEntries,
+    entryMode: 'blog',
+    getEntry: createEntryGetter(destinationPath),
     ...(prerenderCount !== undefined ? { prerenderCount } : {}),
   };
 

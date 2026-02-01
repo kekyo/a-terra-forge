@@ -23,7 +23,7 @@ const createTempDir = async (fn: TestContext, name: string) => {
 const writeCategoryTemplate = async (templatesDir: string) => {
   await writeFile(
     join(templatesDir, 'index-category.html'),
-    "<html><body>{{if (eq mermaidRenderer 'mermaid')}}mermaid-runtime{{end}}{{for article articles}}{{article.entryHtml}}{{end}}</body></html>",
+    "<html><body>{{if (eq mermaidRenderer 'mermaid')}}mermaid-runtime{{end}}{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>",
     'utf8'
   );
 };
