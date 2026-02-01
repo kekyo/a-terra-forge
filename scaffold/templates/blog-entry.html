@@ -1,6 +1,16 @@
 <article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
   <header class="entry-header">
-    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>{{title}}</h1>
+    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
+      {{
+      if entrySinglePath?
+      }}
+      <a href="{{entrySinglePath}}">{{title}}</a>
+      {{
+      else
+        title
+      end
+      }}
+    </h1>
     <div class="entry-meta">
       {{
       if tags?

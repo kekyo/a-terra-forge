@@ -59,6 +59,7 @@ export const generateTimelineDocument = async (
   navOrderBefore: readonly string[],
   navOrderAfter: readonly string[],
   navCategories: ReadonlyMap<string, NavCategory>,
+  blogCategoryNames: ReadonlySet<string>,
   timelineEntryTemplate: PageTemplateInfo,
   frontPage: string,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
@@ -105,11 +106,25 @@ export const generateTimelineDocument = async (
           : 0;
       const dateValue = hasDate ? dayjs(date).valueOf() : 0;
       const hasCategory = categoryLabel.length > 0;
+      const isBlogCategory =
+        hasCategory && blogCategoryNames.has(categoryLabel);
       const categoryPath = hasCategory
         ? toPosixRelativePath(
             dirname(destinationPath),
             resolveCategoryDestinationPath(outDir, categoryDirectory, frontPage)
           )
+        : undefined;
+      const blogOutputDir = isBlogCategory
+        ? dirname(
+            resolveCategoryDestinationPath(outDir, categoryDirectory, frontPage)
+          )
+        : undefined;
+      const entrySingleFilePath =
+        blogOutputDir && idValue > 0
+          ? join(blogOutputDir, `${idValue}.html`)
+          : undefined;
+      const entrySinglePath = entrySingleFilePath
+        ? toPosixRelativePath(dirname(destinationPath), entrySingleFilePath)
         : undefined;
       const anchorId = buildArticleAnchorId(result.frontmatter.id);
       const entryId =
@@ -134,6 +149,7 @@ export const generateTimelineDocument = async (
         date: entryDate,
         category: entryCategory,
         categoryPath,
+        entrySinglePath,
         anchorId,
         id: entryId,
         git,
@@ -188,6 +204,7 @@ export const generateTimelineDocument = async (
           entryHtml,
           entryPath,
           category: entryCategory,
+          ...(entrySinglePath ? { entrySinglePath } : {}),
           ...(categoryPath ? { categoryPath } : {}),
         },
         dateValue,

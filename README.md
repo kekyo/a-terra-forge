@@ -128,8 +128,10 @@ my-page
 │   ├── atom.xml
 │   ├── blog-entry.html
 │   ├── category-entry.html
+│   ├── common-header.html
 │   ├── feed.xml
 │   ├── index-blog.html
+│   ├── index-blog-single.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
@@ -265,6 +267,7 @@ my-page
 │   ├── category-entry.html
 │   ├── feed.xml
 │   ├── index-blog.html
+│   ├── index-blog-single.html
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html

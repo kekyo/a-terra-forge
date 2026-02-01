@@ -53,6 +53,11 @@ const writeRequiredTemplates = async (
     '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>',
     'utf8'
   );
+  await writeFile(
+    join(templatesDir, 'index-blog-single.html'),
+    '<html><body>{{for article articleEntries}}{{article.title}}{{end}}</body></html>',
+    'utf8'
+  );
 };
 
 type OEmbedEndpoint = { url: string; schemes?: string[] };
@@ -2152,7 +2157,12 @@ title: Draft
     );
     await writeFile(
       join(templatesDir, 'blog-entry.html'),
-      '<article>BLOG_ENTRY:{{title}}</article>',
+      '<article>BLOG_ENTRY:{{title}}|{{entrySinglePath}}</article>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'index-blog-single.html'),
+      '<html><body>SINGLE:{{for entry articleEntries}}{{entry.title}}{{end}}</body></html>',
       'utf8'
     );
 
@@ -2203,14 +2213,19 @@ title: Draft
         readFile(join(outDir, 'blog', entry.entryPath), 'utf8')
       )
     );
-    const titles = entryHtmlList.map((html) => {
-      const match = html.match(/BLOG_ENTRY:([^<]+)/);
-      return match ? match[1] : '';
+    const entries = entryHtmlList.map((html) => {
+      const match = html.match(/BLOG_ENTRY:([^|<]+)\|([^<]+)/);
+      return {
+        title: match ? match[1] : '',
+        entrySinglePath: match ? match[2] : '',
+      };
     });
     expect(blogIndex).toHaveLength(3);
-    expect(titles[0]).toBe('Draft');
-    expect(titles[1]).toBe('New');
-    expect(titles[2]).toBe('Old');
+    expect(entries[0]?.title).toBe('Draft');
+    expect(entries[1]?.title).toBe('New');
+    expect(entries[2]?.title).toBe('Old');
+    const firstEntrySinglePath = entries[0]?.entrySinglePath;
+    expect(firstEntrySinglePath).toMatch(/\.html$/);
 
     const blogHtml = await readFile(join(outDir, 'blog', 'index.html'), 'utf8');
     expect(blogHtml).toContain('BLOG_INDEX');
@@ -2220,7 +2235,15 @@ title: Draft
       join(outDir, 'blog', firstEntry!.entryPath),
       'utf8'
     );
-    expect(entryHtml).toContain('BLOG_ENTRY:Draft');
+    expect(entryHtml).toContain('BLOG_ENTRY:Draft|');
+    if (!firstEntrySinglePath) {
+      throw new Error('Missing entrySinglePath for blog entry.');
+    }
+    const singleHtml = await readFile(
+      join(outDir, 'blog', firstEntrySinglePath),
+      'utf8'
+    );
+    expect(singleHtml).toContain('SINGLE:Draft');
   });
 
   it('Resolves relative URLs for timeline article-bodies.', async (fn) => {

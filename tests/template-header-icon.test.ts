@@ -13,7 +13,7 @@ describe('template header icon', () => {
       'utf8'
     );
     expect(template).toContain(
-      '<h1{{if headerIconCode?}} style="--header-icon: \'{{headerIconCode}}\';"{{end}}>{{article.title}}</h1>'
+      '<h1{{if headerIconCode?}} style="--header-icon: \'{{headerIconCode}}\';"{{end}}>{{articleEntry0.title}}</h1>'
     );
   });
 

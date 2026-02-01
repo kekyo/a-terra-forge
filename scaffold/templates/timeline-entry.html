@@ -1,7 +1,11 @@
 <article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
   <header class="entry-header">
-      <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
-      {{if categoryPath?}}
+    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
+      {{
+      if entrySinglePath?
+      }}
+      <a href="{{entrySinglePath}}">{{title}}</a>
+      {{elseif categoryPath?}}
       <a href="{{categoryPath}}{{if anchorId?}}#{{anchorId}}{{end}}">{{title}}</a>
       {{
       else

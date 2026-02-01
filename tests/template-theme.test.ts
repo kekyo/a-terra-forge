@@ -48,10 +48,15 @@ describe('template theme', () => {
       'scaffold/templates/index-blog.html',
       'utf8'
     );
+    const blogSingleTemplate = await readFile(
+      'scaffold/templates/index-blog-single.html',
+      'utf8'
+    );
 
     assertThemeScriptBeforeStyles(commonHeader);
     assertCommonHeaderImportInHead(indexTemplate);
     assertCommonHeaderImportInHead(categoryTemplate);
     assertCommonHeaderImportInHead(blogTemplate);
+    assertCommonHeaderImportInHead(blogSingleTemplate);
   });
 });

@@ -28,29 +28,6 @@ if locale?
 {{import 'navigation-bar.html'}}
     <div class="docs-outer">
       <div class="docs">
-        <div class="article-entry">
-          <div class="entry-header">
-            <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>{{articleEntry0.title}}</h1>
-            {{if (not hideMeta?)}}
-            <div class="entry-meta">
-              {{if (length articleTags)}}
-              <p>
-                <span class="me-1">{{getMessage 'tags'}}:</span>
-                {{join ',' (map (fun tag (concat '<span class="badge rounded-pill">' tag '</span>')) articleTags)}}
-              </p>
-              {{end}}
-              {{if articleEntry0.git?}}
-                {{if (length committerDates)}}
-                <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' articleEntry0.git.committer.date}}</p>
-                {{end}}
-                {{if (length authorNames)}}
-                <p>{{getMessage 'author'}}: {{getMessage articleEntry0.git.author.name}}</p>
-                {{end}}
-              {{end}}
-            </div>
-            {{end}}
-          </div>
-        </div>
         {{
         for articleEntry articleEntries
           getEntry articleEntry

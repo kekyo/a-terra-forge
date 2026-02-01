@@ -26,6 +26,7 @@ export interface BaseEntry extends Record<string, unknown> {
   readonly timelineHtml?: string;
   readonly entryHtml?: string;
   readonly entryPath?: string;
+  readonly entrySinglePath?: string;
 }
 
 /**

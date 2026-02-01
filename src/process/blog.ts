@@ -57,6 +57,7 @@ export const generateBlogDocument = async (
   renderedResults: readonly RenderedArticleInfo[],
   pageTemplate: PageTemplateInfo,
   blogEntryTemplate: PageTemplateInfo,
+  blogSingleTemplate: PageTemplateInfo,
   configVariables: FunCityVariables,
   navOrderBefore: readonly string[],
   navOrderAfter: readonly string[],
@@ -66,7 +67,7 @@ export const generateBlogDocument = async (
   siteTemplateOutputMap: ReadonlyMap<string, string>,
   baseUrl: URL,
   signal: AbortSignal
-): Promise<void> => {
+): Promise<readonly string[]> => {
   const destinationPath = resolveCategoryDestinationPath(
     outDir,
     directory,
@@ -92,6 +93,7 @@ export const generateBlogDocument = async (
     isIndex: boolean;
     orderValue: number;
     pathValue: string;
+    entrySingleFilePath: string;
   }[] = [];
 
   const bodyWrites = renderedResults.map(
@@ -123,6 +125,11 @@ export const generateBlogDocument = async (
         dirname(destinationPath),
         entryFilePath
       );
+      const entrySingleFilePath = join(blogOutputDir, entryFileName);
+      const entrySinglePath = toPosixRelativePath(
+        dirname(destinationPath),
+        entrySingleFilePath
+      );
       const entryBody = result.html;
       const entryFrontmatter = result.frontmatter as Record<string, unknown>;
       const filePath = toPosixPath(articleFile.relativePath);
@@ -135,6 +142,7 @@ export const generateBlogDocument = async (
         id: entryId,
         git,
         headerIcon: entryFrontmatter?.headerIcon,
+        entrySinglePath,
         contentHtml: entryBody,
         ...entryFrontmatter,
       };
@@ -186,6 +194,7 @@ export const generateBlogDocument = async (
           timelineHtml,
           entryHtml,
           entryPath,
+          entrySinglePath,
         },
         dateValue,
         hasDate,
@@ -194,36 +203,36 @@ export const generateBlogDocument = async (
         isIndex,
         orderValue,
         pathValue,
+        entrySingleFilePath,
       });
     }
   );
 
   await Promise.all(bodyWrites);
 
-  const sortedEntries = entryCandidates
-    .sort((a, b) => {
-      const dirtyDiff = a.dirtyRank - b.dirtyRank;
-      if (dirtyDiff !== 0) {
-        return dirtyDiff;
+  const sortedCandidates = entryCandidates.sort((a, b) => {
+    const dirtyDiff = a.dirtyRank - b.dirtyRank;
+    if (dirtyDiff !== 0) {
+      return dirtyDiff;
+    }
+    if (a.hasDate !== b.hasDate) {
+      return a.hasDate ? 1 : -1;
+    }
+    if (a.hasDate && b.hasDate) {
+      const dateDiff = b.dateValue - a.dateValue;
+      if (dateDiff !== 0) {
+        return dateDiff;
       }
-      if (a.hasDate !== b.hasDate) {
-        return a.hasDate ? 1 : -1;
-      }
-      if (a.hasDate && b.hasDate) {
-        const dateDiff = b.dateValue - a.dateValue;
-        if (dateDiff !== 0) {
-          return dateDiff;
-        }
-      }
-      if (a.isIndex !== b.isIndex) {
-        return a.isIndex ? -1 : 1;
-      }
-      if (a.orderValue !== b.orderValue) {
-        return a.orderValue - b.orderValue;
-      }
-      return a.pathValue.localeCompare(b.pathValue);
-    })
-    .map((item) => item.entry);
+    }
+    if (a.isIndex !== b.isIndex) {
+      return a.isIndex ? -1 : 1;
+    }
+    if (a.orderValue !== b.orderValue) {
+      return a.orderValue - b.orderValue;
+    }
+    return a.pathValue.localeCompare(b.pathValue);
+  });
+  const sortedEntries = sortedCandidates.map((item) => item.entry);
 
   const blogIndexPath = join(blogOutputDir, 'blog.json');
   const blogIndexRelativePath = toPosixRelativePath(
@@ -237,17 +246,20 @@ export const generateBlogDocument = async (
   const blogIndexContent = JSON.stringify(blogIndexEntries);
   await writeContentFile(blogIndexPath, blogIndexContent);
 
-  const getSiteTemplatePath = (arg0: unknown): string => {
-    const name = typeof arg0 === 'string' ? arg0 : String(arg0 ?? '');
-    if (!name) {
-      return '';
-    }
-    const outputPath = siteTemplateOutputMap.get(name);
-    if (!outputPath) {
-      return '';
-    }
-    return toPosixRelativePath(dirname(destinationPath), outputPath);
-  };
+  const createSiteTemplatePathResolver =
+    (documentPath: string) =>
+    (arg0: unknown): string => {
+      const name = typeof arg0 === 'string' ? arg0 : String(arg0 ?? '');
+      if (!name) {
+        return '';
+      }
+      const outputPath = siteTemplateOutputMap.get(name);
+      if (!outputPath) {
+        return '';
+      }
+      return toPosixRelativePath(dirname(documentPath), outputPath);
+    };
+  const getSiteTemplatePath = createSiteTemplatePathResolver(destinationPath);
 
   const navItems = buildNavItems(
     destinationPath,
@@ -320,4 +332,73 @@ export const generateBlogDocument = async (
     );
     logger.info(`built: ${builtPath}`);
   }
+
+  const singlePageOutputs = await Promise.all(
+    sortedCandidates.map(async (candidate) => {
+      const { entry, entrySingleFilePath } = candidate;
+      const singlePathFunctions = createPathFunctions({
+        outDir,
+        documentPath: entrySingleFilePath,
+        baseUrl,
+      });
+      const singleNavItems = buildNavItems(
+        entrySingleFilePath,
+        outDir,
+        directory,
+        navOrderBefore,
+        navCategories,
+        frontPage,
+        includeTimeline
+      );
+      const singleNavItemsAfter = buildNavItems(
+        entrySingleFilePath,
+        outDir,
+        directory,
+        navOrderAfter,
+        navCategories,
+        frontPage,
+        includeTimeline
+      );
+      const singleContentVariables = {
+        articleEntries: [entry],
+        entryMode: 'blog-single',
+        getSiteTemplatePath:
+          createSiteTemplatePathResolver(entrySingleFilePath),
+        getEntry: createEntryGetter(entrySingleFilePath),
+        navItems: singleNavItems,
+        ...(singleNavItemsAfter.length > 0
+          ? { navItemsAfter: singleNavItemsAfter }
+          : {}),
+      };
+      const singleTemplateVariables = applyHeaderIconCode(
+        buildCandidateVariables(
+          scriptVariables,
+          configVariables,
+          entry,
+          singleContentVariables,
+          singlePathFunctions
+        ),
+        configVariables
+      );
+      const singleLogs: FunCityLogEntry[] = [];
+      const singleRendered = await renderTemplateWithImportHandler(
+        blogSingleTemplate.path,
+        blogSingleTemplate.script,
+        singleTemplateVariables,
+        singleLogs,
+        [blogSingleTemplate.path],
+        signal
+      );
+      const singleHasError = outputErrors(blogSingleTemplate.path, singleLogs);
+      if (singleHasError) {
+        return undefined;
+      }
+      await writeContentFile(entrySingleFilePath, singleRendered);
+      return entrySingleFilePath;
+    })
+  );
+
+  return singlePageOutputs.filter(
+    (path): path is string => typeof path === 'string'
+  );
 };

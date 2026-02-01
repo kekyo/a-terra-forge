@@ -569,6 +569,7 @@ export const generateDocs = async (
     const timelineEntryTemplatePath = join(templatesDir, 'timeline-entry.html');
     const blogIndexTemplatePath = join(templatesDir, 'index-blog.html');
     const blogEntryTemplatePath = join(templatesDir, 'blog-entry.html');
+    const blogSingleTemplatePath = join(templatesDir, 'index-blog-single.html');
 
     const frontPagePrefix =
       frontPage !== timelineKey ? `${frontPage.replaceAll('\\', '/')}/` : '';
@@ -589,6 +590,7 @@ export const generateDocs = async (
       categoryEntryTemplateScript,
       blogIndexTemplateScript,
       blogEntryTemplateScript,
+      blogSingleTemplateScript,
     ] = await Promise.all([
       readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
       includeTimeline
@@ -603,6 +605,9 @@ export const generateDocs = async (
         : Promise.resolve(undefined),
       hasBlogCategories
         ? readFile(blogEntryTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
+      hasBlogCategories
+        ? readFile(blogSingleTemplatePath, { encoding: 'utf-8' })
         : Promise.resolve(undefined),
       copyTargetContentFiles(docsDir, config.contentFiles, outDir, {
         rewritePath: rewriteContentPath,
@@ -649,6 +654,13 @@ export const generateDocs = async (
         ? {
             script: blogEntryTemplateScript,
             path: blogEntryTemplatePath,
+          }
+        : undefined;
+    const blogSingleTemplate: PageTemplateInfo | undefined =
+      blogSingleTemplateScript
+        ? {
+            script: blogSingleTemplateScript,
+            path: blogSingleTemplatePath,
           }
         : undefined;
 
@@ -751,38 +763,64 @@ export const generateDocs = async (
       configVariablesRaw
     );
 
-    await Promise.all(
-      articleDirs.map((articleDir) => {
-        if ((articleDir === '.' || articleDir === '') && includeTimeline) {
-          return Promise.resolve();
-        }
+    const blogSinglePages = (
+      await Promise.all(
+        articleDirs.map(async (articleDir) => {
+          if ((articleDir === '.' || articleDir === '') && includeTimeline) {
+            return Promise.resolve([]);
+          }
 
-        const renderedArticles = renderedByDir.get(articleDir) ?? [];
-        if (renderedArticles.length === 0) {
-          return Promise.resolve();
-        }
+          const renderedArticles = renderedByDir.get(articleDir) ?? [];
+          if (renderedArticles.length === 0) {
+            return Promise.resolve([]);
+          }
 
-        documentPaths.add(
-          resolveCategoryDestinationPath(outDir, articleDir, frontPage)
-        );
-        const isBlogCategory = blogCategoryNames.has(
-          getDirectoryLabel(articleDir)
-        );
-        if (isBlogCategory) {
-          if (!blogIndexTemplate || !blogEntryTemplate) {
-            throw new Error(
-              'Blog templates are missing: index-blog.html or blog-entry.html'
+          documentPaths.add(
+            resolveCategoryDestinationPath(outDir, articleDir, frontPage)
+          );
+          const isBlogCategory = blogCategoryNames.has(
+            getDirectoryLabel(articleDir)
+          );
+          if (isBlogCategory) {
+            if (
+              !blogIndexTemplate ||
+              !blogEntryTemplate ||
+              !blogSingleTemplate
+            ) {
+              throw new Error(
+                'Blog templates are missing: index-blog.html, blog-entry.html, or index-blog-single.html'
+              );
+            }
+            return generateBlogDocument(
+              logger,
+              configDir,
+              outDir,
+              finalOutDir,
+              articleDir,
+              renderedArticles,
+              blogIndexTemplate,
+              blogEntryTemplate,
+              blogSingleTemplate,
+              configVariables,
+              navOrderBefore,
+              navOrderAfter,
+              navCategoryMap,
+              frontPage,
+              includeTimeline,
+              siteTemplateOutputMap,
+              resolvedBaseUrl,
+              signal
             );
           }
-          return generateBlogDocument(
+          await generateDirectoryDocument(
             logger,
             configDir,
             outDir,
             finalOutDir,
             articleDir,
             renderedArticles,
-            blogIndexTemplate,
-            blogEntryTemplate,
+            pageTemplate,
+            categoryEntryTemplate,
             configVariables,
             navOrderBefore,
             navOrderAfter,
@@ -793,28 +831,14 @@ export const generateDocs = async (
             resolvedBaseUrl,
             signal
           );
-        }
-        return generateDirectoryDocument(
-          logger,
-          configDir,
-          outDir,
-          finalOutDir,
-          articleDir,
-          renderedArticles,
-          pageTemplate,
-          categoryEntryTemplate,
-          configVariables,
-          navOrderBefore,
-          navOrderAfter,
-          navCategoryMap,
-          frontPage,
-          includeTimeline,
-          siteTemplateOutputMap,
-          resolvedBaseUrl,
-          signal
-        );
-      })
-    );
+          return [];
+        })
+      )
+    ).flat();
+
+    blogSinglePages.forEach((singlePath) => {
+      documentPaths.add(singlePath);
+    });
 
     if (includeTimeline) {
       if (!timelineIndexTemplate || !timelineEntryTemplate) {
@@ -833,6 +857,7 @@ export const generateDocs = async (
         navOrderBefore,
         navOrderAfter,
         navCategoryMap,
+        blogCategoryNames,
         timelineEntryTemplate,
         frontPage,
         siteTemplateOutputMap,
@@ -856,6 +881,7 @@ export const generateDocs = async (
         renderedResults,
         variables: configVariables,
         frontPage,
+        blogCategoryNames,
         siteTemplateOutputMap,
       });
       Object.assign(siteTemplateData, feedData);
