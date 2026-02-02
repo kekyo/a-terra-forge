@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 describe('template header icon', () => {
   it('injects header icon styles for category headers', async () => {
     const template = await readFile(
-      'scaffold/templates/index-category.html',
+      'scaffold/.templates/index-category.html',
       'utf8'
     );
     expect(template).toContain(
@@ -19,7 +19,7 @@ describe('template header icon', () => {
 
   it('injects header icon styles for timeline headers', async () => {
     const template = await readFile(
-      'scaffold/templates/timeline-entry.html',
+      'scaffold/.templates/timeline-entry.html',
       'utf8'
     );
     expect(template).toContain(
@@ -29,7 +29,7 @@ describe('template header icon', () => {
 
   it('renders timeline category as bootstrap pill badge', async () => {
     const template = await readFile(
-      'scaffold/templates/timeline-entry.html',
+      'scaffold/.templates/timeline-entry.html',
       'utf8'
     );
     expect(template).toMatch(/badge rounded-pill/);

@@ -98,7 +98,7 @@ const extractHeaderTitle = (html: string): string => {
 describe('generateDocs', () => {
   it('Converts each directory into a single HTML using the fallback template.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'guide');
@@ -161,7 +161,7 @@ Details here`,
   it('logs built paths relative to the config directory.', async (fn) => {
     const projectDir = await createTempDir(fn, 'built-log-paths');
     const docsDir = join(projectDir, 'docs');
-    const templatesDir = join(projectDir, 'templates');
+    const templatesDir = join(projectDir, '.templates');
     const outDir = join(projectDir, 'dist');
 
     const markdownDir = join(docsDir, 'guide');
@@ -213,7 +213,7 @@ Details here`,
 
   it('Renders assets even when no markdown files exist.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -295,7 +295,7 @@ Details here`,
   it('Copies target contents based on glob patterns.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-contents');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     const markdownDir = join(docsDir, 'develop');
@@ -387,7 +387,7 @@ Details here`,
 
   it('Copies assetsDir contents into the output root.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -400,7 +400,7 @@ Details here`,
     );
     await writeRequiredTemplates(templatesDir);
 
-    const assetsDir = join(configDir, 'assets');
+    const assetsDir = join(configDir, '.assets');
     const imagesDir = join(assetsDir, 'images');
     await mkdir(imagesDir, { recursive: true });
     await writeFile(join(assetsDir, 'favicon.ico'), 'icon', 'utf8');
@@ -433,14 +433,14 @@ Details here`,
     expect(copiedLogo).toBe('logo');
 
     await expect(
-      readFile(join(outDir, 'assets', 'favicon.ico'), 'utf8')
+      readFile(join(outDir, '.assets', 'favicon.ico'), 'utf8')
     ).rejects.toThrow();
   });
 
   it('Moves a category front page to root and relocates timeline assets.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-category');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -544,7 +544,7 @@ Details here`,
   it('Skips timeline output when timeline is not selected.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-no-timeline');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -591,7 +591,7 @@ Details here`,
   it('Throws when front page category has subcategories.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-subcategory');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     const apiDir = join(docsDir, 'guide', 'api');
@@ -629,7 +629,7 @@ Details here`,
   it('Throws when front page category does not exist.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-missing');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -665,7 +665,7 @@ Details here`,
   it('Keeps previous output when generation fails.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'output-rollback');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -707,7 +707,7 @@ Details here`,
   it('Throws on content file collisions after front page relocation.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-collision');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -752,7 +752,7 @@ Details here`,
 
   it('Uses the first markdown frontmatter for placeholders while concatenating directory markdown.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `---
@@ -828,7 +828,7 @@ More text
   it('Applies atr.json variables as template placeholders but allows frontmatter to override them.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -899,7 +899,7 @@ title: Frontmatter Title
 
   it('Exposes frontmatter values on articles while protecting internal keys.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `---
@@ -976,7 +976,7 @@ Body text
   it('Renders conditional template blocks for optional config variables.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-conditional');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1041,7 +1041,7 @@ title: Entry
 
   it('Assigns new article IDs in relative path order when frontmatter id is missing.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'article');
@@ -1109,7 +1109,7 @@ title: Beta
 
   it('Skips draft articles but reserves their IDs.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'notes');
@@ -1160,7 +1160,7 @@ title: Beta
 
   it('Orders category articles by frontmatter order with index first.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'guide');
@@ -1229,7 +1229,7 @@ title: Gamma
 
   it('Renders category entries with index and file name metadata.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'guide');
@@ -1297,7 +1297,7 @@ title: Note
 
   it('Extracts titles from headings and injects H2 for subsequent articles.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'article');
@@ -1368,7 +1368,7 @@ Second body
 
   it('If a template matching the first markdown exists, it takes precedence.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'guide');
@@ -1428,7 +1428,7 @@ Second body
 
   it('Templates without placeholders will result in an error.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'guide');
@@ -1458,7 +1458,7 @@ Second body
 
   it('Provides formatDate helper in template scripts.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `
@@ -1608,7 +1608,7 @@ Details here
 
   it('Imports templates and executes scripts in them.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `
@@ -1658,7 +1658,7 @@ Details here
 
   it('Silently ignores missing templates with tryImport.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `
@@ -1706,7 +1706,7 @@ Details here
 
   it('Renders timeline entry templates at build time.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `---
@@ -1780,7 +1780,7 @@ Details here
   it('Prerenders timeline entries when prerenderCount is set.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-prerender');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1835,7 +1835,7 @@ Details here
   it('Orders timeline entries by committer date.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-committer');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1921,7 +1921,7 @@ title: Second
   it('Places dirty entries at the top of the timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-dirty');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2013,7 +2013,7 @@ Dirty edit`,
   it('Places uncommitted entries at the top of the timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-uncommitted');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2089,7 +2089,7 @@ title: Uncommitted
   it('Renders blog categories with blog.json ordering by git date.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-blog-category');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2248,7 +2248,7 @@ title: Draft
 
   it('Resolves relative URLs for timeline article-bodies.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'reference');
@@ -2304,7 +2304,7 @@ title: Reference
 
   it('Skips category pages when subcategories exist and ignores deeper levels.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const guideDir = join(docsDir, 'guide');
@@ -2439,7 +2439,7 @@ title: Reference
   it('Orders navigation items using the menu order lists, including timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-nav-order');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2531,7 +2531,7 @@ title: ${title}
   it('Highlights code blocks with Shiki and line numbers.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-highlight');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2587,7 +2587,7 @@ console.log(value);
   it('Embeds git metadata into templates.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-git-metadata');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2744,7 +2744,7 @@ Dirty edit`,
   it('Generates sitemap.xml with all HTML files when baseUrl is configured.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-sitemap');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2816,7 +2816,7 @@ Body
   it('Generates RSS/Atom feeds with markdown summaries and excludes uncommitted entries.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-feeds');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });

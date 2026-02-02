@@ -51,7 +51,7 @@ describe('generateDocs', () => {
     mockState.loadRenderedSnapshotsMock.mockReset();
 
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     await writeFile(join(docsDir, 'entry.md'), '# Title', 'utf8');

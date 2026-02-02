@@ -124,7 +124,9 @@ my-page
 │       ├── index.md
 │       └── rich-demo.md
 ├── package.json
-├── templates
+├── .assets
+│   └── .gitkeep
+├── .templates
 │   ├── atom.xml
 │   ├── blog-entry.html
 │   ├── category-entry.html
@@ -262,7 +264,9 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── templates
+├── .assets
+│   └── .gitkeep
+├── .templates
 │   ├── atom.xml
 │   ├── blog-entry.html
 │   ├── category-entry.html
@@ -911,9 +915,9 @@ Below are all values defined in `atr.json`:
 |`codeHighlight`|No|Code highlight settings used by Shiki. See "Code highlighting settings" for details. |
 |`siteTemplates`|No|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
 |`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
-|`assetsDir`|No|Asset directory path. Default is `assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `assets/favicon.ico` → `dist/favicon.ico`). |
+|`assetsDir`|No|Asset directory path. Default is `.assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `.assets/favicon.ico` → `dist/favicon.ico`). |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
-|`templatesDir`|No|Overrides the templates directory. Default is `templates/`. The path is resolved relative to the directory containing `atr.json`. |
+|`templatesDir`|No|Overrides the templates directory. Default is `.templates/`. The path is resolved relative to the directory containing `atr.json`. |
 |`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
 |`tmpDir`|No|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
 |`cacheDir`|No|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |

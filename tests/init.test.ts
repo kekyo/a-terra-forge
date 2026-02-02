@@ -34,7 +34,7 @@ const writeFixture = async (root: string) => {
   await mkdir(join(root, 'scaffold', '.github', 'workflows'), {
     recursive: true,
   });
-  await mkdir(join(root, 'scaffold', 'templates'), { recursive: true });
+  await mkdir(join(root, 'scaffold', '.templates'), { recursive: true });
   await mkdir(join(root, 'scaffold', 'vite'), { recursive: true });
 
   await writeFile(
@@ -60,7 +60,7 @@ const writeFixture = async (root: string) => {
     'utf8'
   );
   await writeFile(
-    join(root, 'scaffold', 'templates', 'index-timeline.html'),
+    join(root, 'scaffold', '.templates', 'index-timeline.html'),
     '<html></html>',
     'utf8'
   );
@@ -88,7 +88,7 @@ describe('initScaffold', () => {
       existsSync(join(destination, '.github', 'workflows', 'build.yml'))
     ).toBe(true);
     expect(
-      existsSync(join(destination, 'templates', 'index-timeline.html'))
+      existsSync(join(destination, '.templates', 'index-timeline.html'))
     ).toBe(true);
     expect(existsSync(join(destination, 'package.json'))).toBe(true);
     expect(existsSync(join(destination, 'vite.config.ts'))).toBe(true);
@@ -112,7 +112,7 @@ describe('initScaffold', () => {
 
     expect(existsSync(join(destination, 'atr.json'))).toBe(true);
     expect(
-      existsSync(join(destination, 'templates', 'index-timeline.html'))
+      existsSync(join(destination, '.templates', 'index-timeline.html'))
     ).toBe(true);
     expect(existsSync(join(destination, 'package.json'))).toBe(false);
     expect(existsSync(join(destination, 'vite.config.ts'))).toBe(false);

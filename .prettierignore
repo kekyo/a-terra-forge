@@ -55,6 +55,6 @@ generated/
 gen/
 
 test_results/
-scaffold/templates/
+scaffold/.templates/
 
 *.md

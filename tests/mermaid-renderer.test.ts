@@ -73,7 +73,7 @@ const writeConfig = async (
 describe('mermaid renderer', () => {
   it('uses beautiful-mermaid by default', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -103,7 +103,7 @@ describe('mermaid renderer', () => {
 
   it('renders with mermaid.js when configured', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -134,7 +134,7 @@ describe('mermaid renderer', () => {
 
   it('forces css-vars for beautiful-mermaid', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 

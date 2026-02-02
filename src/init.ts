@@ -89,17 +89,17 @@ const buildCopyPlan = async (
   includeVite: boolean
 ): Promise<CopyEntry[]> => {
   const scaffoldDir = resolve(sourceRoot, 'scaffold');
-  const templatesDir = resolve(scaffoldDir, 'templates');
+  const templatesDir = resolve(scaffoldDir, '.templates');
   const viteScaffoldDir = resolve(scaffoldDir, 'vite');
 
   await assertDirectoryExists(scaffoldDir, 'scaffold');
-  await assertDirectoryExists(templatesDir, 'templates');
+  await assertDirectoryExists(templatesDir, '.templates');
 
   const entries: CopyEntry[] = [];
   const scaffoldEntries = await collectEntries(
     scaffoldDir,
     targetDir,
-    new Set(['templates', 'vite'])
+    new Set(['.templates', 'vite'])
   );
   entries.push(
     ...scaffoldEntries.map((entry) => {
@@ -129,7 +129,7 @@ const buildCopyPlan = async (
 
   const templateEntries = await collectEntries(
     templatesDir,
-    join(targetDir, 'templates'),
+    join(targetDir, '.templates'),
     undefined
   );
   entries.push(...templateEntries);

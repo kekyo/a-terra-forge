@@ -125,7 +125,9 @@ my-page
 │       ├── index.md
 │       └── rich-demo.md
 ├── package.json
-├── templates
+├── .assets
+│   └── .gitkeep
+├── .templates
 │   ├── atom.xml
 │   ├── blog-entry.html
 │   ├── category-entry.html
@@ -263,7 +265,9 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── templates
+├── .assets
+│   └── .gitkeep
+├── .templates
 │   ├── atom.xml
 │   ├── blog-entry.html
 │   ├── category-entry.html
@@ -912,9 +916,9 @@ a-terra-forgeの雛形にはこのコードが含まれているため、すぐ�
 |`codeHighlight`|No| Shikiのコードハイライト設定です。詳細は「コードハイライト設定」を参照してください。 |
 |`siteTemplates`|No| サイト共通のアセットファイルで、funcityによるスクリプト処理を行うテンプレートファイル群を指定します。CSSやJavaScriptファイル、RSS/Atom、サイトマップなどは、全てスクリプトとして処理されて出力されます。追加のスクリプト処理が必要なファイルはこのリストに追加することで、同じようにスクリプト処理の対象として認識させることが出来ます。デフォルトは、`site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`です。|
 |`contentFiles`|No| ビルド時に文書ディレクトリ以下から追加でコピーする静的ファイルの glob パターンを指定します。画像などの補助ファイルを出力先に展開したい場合に使います。デフォルトは、`./**/*.png`, `./**/*.jpg`です。 |
-|`assetsDir`|No| アセットを配置するディレクトリパスです。デフォルトは `assets/` で、パスは `atr.json` があるディレクトリから解決されます。この配下のファイルはディレクトリ構造を保ったまま `outDir` にコピーされます（例: `assets/favicon.ico` → `dist/favicon.ico`）。 |
+|`assetsDir`|No| アセットを配置するディレクトリパスです。デフォルトは `.assets/` で、パスは `atr.json` があるディレクトリから解決されます。この配下のファイルはディレクトリ構造を保ったまま `outDir` にコピーされます（例: `.assets/favicon.ico` → `dist/favicon.ico`）。 |
 |`docsDir`|No| 文書ディレクトリです。デフォルトは `docs/` で、パスは `atr.json` があるディレクトリから解決されます。 |
-|`templatesDir`|No| テンプレートディレクトリです。デフォルトは `templates/` で、パスは `atr.json` があるディレクトリから解決されます。 |
+|`templatesDir`|No| テンプレートディレクトリです。デフォルトは `.templates/` で、パスは `atr.json` があるディレクトリから解決されます。 |
 |`outDir`|No| 出力ディレクトリです。デフォルトは `dist/` で、パスは `atr.json` があるディレクトリから解決されます。 |
 |`tmpDir`|No| 一時作業ディレクトリです。デフォルトはシステムテンポラリディレクトリで、パスは `atr.json` があるディレクトリから解決されます。 |
 |`cacheDir`|No| oEmbed/OGP探索キャッシュディレクトリです。デフォルトは `$HOME/.cache/a-terra-forge/` で、パスは `atr.json` があるディレクトリから解決されます。 |

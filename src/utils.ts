@@ -386,9 +386,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
 export const defaultDocsDir = 'docs' as const;
-export const defaultTemplatesDir = 'templates' as const;
+export const defaultTemplatesDir = '.templates' as const;
 export const defaultOutDir = 'dist' as const;
-export const defaultAssetDir = 'assets/' as const;
+export const defaultAssetDir = '.assets' as const;
 export const defaultTmpDir = tmpdir();
 export const defaultCacheDir = process.env.HOME
   ? join(process.env.HOME, '.cache', name)

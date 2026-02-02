@@ -38,9 +38,9 @@ export type MermaidRenderer = 'beautiful' | 'mermaid';
 export interface ATerraForgeProcessingOptions {
   /** Markdown document directory (defaults to "docs" when omitted). */
   docsDir?: string;
-  /** Template directory (defaults to "templates" when omitted). */
+  /** Template directory (defaults to ".templates" when omitted). */
   templatesDir?: string;
-  /** Asset directory (defaults to "assets" when omitted). */
+  /** Asset directory (defaults to ".assets" when omitted). */
   assetsDir?: string;
   /** Output directory (defaults to "dist" when omitted). */
   outDir?: string;

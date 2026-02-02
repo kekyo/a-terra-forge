@@ -75,7 +75,7 @@ describe('CLI distribution', () => {
       true
     );
     expect(
-      existsSync(join(destination, 'templates', 'index-timeline.html'))
+      existsSync(join(destination, '.templates', 'index-timeline.html'))
     ).toBe(true);
     expect(existsSync(join(destination, 'vite.config.ts'))).toBe(false);
 
@@ -98,7 +98,7 @@ describe('CLI distribution', () => {
         '--docs',
         resolve(scaffoldRoot, 'docs'),
         '--templates',
-        resolve(scaffoldRoot, 'templates'),
+        resolve(scaffoldRoot, '.templates'),
         '--out',
         outDir,
       ],
@@ -114,7 +114,7 @@ describe('CLI distribution', () => {
     const scaffoldRoot = await copyScaffold(fn, 'scaffold-base-url');
 
     await writeFile(
-      join(scaffoldRoot, 'templates', 'index-category.html'),
+      join(scaffoldRoot, '.templates', 'index-category.html'),
       '<html><body>{{baseUrl}}</body></html>',
       'utf8'
     );
@@ -130,7 +130,7 @@ describe('CLI distribution', () => {
         '--docs',
         resolve(scaffoldRoot, 'docs'),
         '--templates',
-        resolve(scaffoldRoot, 'templates'),
+        resolve(scaffoldRoot, '.templates'),
         '--out',
         outDir,
         '--base-url',

@@ -53,7 +53,7 @@ describe('atrPreview', () => {
       useTempPreviewRoot ? 'root-temp' : 'root-direct'
     );
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
+    const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
 
@@ -65,7 +65,7 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
+            templatesDir: './.templates',
           },
         },
         null,
@@ -166,7 +166,7 @@ describe('atrPreview', () => {
   it('passes the dev server baseUrl into generateDocs.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-base-url');
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
+    const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
 
@@ -177,7 +177,7 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
+            templatesDir: './.templates',
           },
         },
         null,
@@ -245,7 +245,7 @@ describe('atrPreview', () => {
   it('serves from the preview base directory and rewrites to the active preview output.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-preview-base');
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
+    const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
 
@@ -256,7 +256,7 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
+            templatesDir: './.templates',
           },
         },
         null,
@@ -360,7 +360,7 @@ describe('atrPreview', () => {
     try {
       const rootDir = await createTempDir(fn, 'root-sync-cleanup');
       const docsDir = join(rootDir, 'docs');
-      const templatesDir = join(rootDir, 'templates');
+      const templatesDir = join(rootDir, '.templates');
       await mkdir(docsDir, { recursive: true });
       await mkdir(templatesDir, { recursive: true });
 
@@ -371,7 +371,7 @@ describe('atrPreview', () => {
           {
             variables: {
               docsDir: './docs',
-              templatesDir: './templates',
+              templatesDir: './.templates',
             },
           },
           null,
@@ -452,8 +452,8 @@ describe('atrPreview', () => {
   it('limits the Vite watcher to the allow-listed paths.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-watch-allow');
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
-    const assetsDir = join(rootDir, 'assets');
+    const templatesDir = join(rootDir, '.templates');
+    const assetsDir = join(rootDir, '.assets');
     const srcDir = join(rootDir, 'src');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
@@ -467,8 +467,8 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
-            assetsDir: './assets',
+            templatesDir: './.templates',
+            assetsDir: './.assets',
           },
         },
         null,

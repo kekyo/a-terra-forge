@@ -364,7 +364,7 @@ export const generateDocs = async (
     : defaultSiteTemplates;
   configVariablesRaw.set('siteTemplates', siteTemplates);
 
-  await assertDirectoryExists(templatesDir, 'templates');
+  await assertDirectoryExists(templatesDir, '.templates');
   await assertDirectoryExists(docsDir, 'docs');
   const linkTarget = '_blank';
   const userAgent = options.userAgent ?? defaultUserAgent;
