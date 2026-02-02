@@ -12,6 +12,16 @@
       }}
     </h1>
     <div class="entry-meta">
+      {{if category?}}
+      <p>
+        <span class="me-1">{{getMessage 'category'}}:</span>
+        {{if categoryPath?}}
+        <a class="badge rounded-pill text-decoration-none" href="{{categoryPath}}">{{getMessage category}}</a>
+        {{else}}
+        <span class="badge rounded-pill">{{getMessage category}}</span>
+        {{end}}
+      </p>
+      {{end}}
       {{
       if tags?
         set articleTags (distinct tags)

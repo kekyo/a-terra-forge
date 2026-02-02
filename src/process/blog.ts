@@ -76,6 +76,8 @@ export const generateBlogDocument = async (
   const blogOutputDir = dirname(destinationPath);
   const blogBodiesDir = join(blogOutputDir, 'blog-bodies');
   const prerenderCount = resolvePrerenderCount(configVariables);
+  const categoryLabel = getDirectoryLabel(directory);
+  const categoryPath = toPosixRelativePath(blogOutputDir, destinationPath);
   const indexPathFunctions = createPathFunctions({
     outDir,
     documentPath: destinationPath,
@@ -138,6 +140,8 @@ export const generateBlogDocument = async (
       const entryVariables = {
         title,
         date: entryDate,
+        category: categoryLabel,
+        categoryPath,
         anchorId,
         id: entryId,
         git,
@@ -190,6 +194,8 @@ export const generateBlogDocument = async (
           anchorId,
           git,
           date,
+          category: categoryLabel,
+          categoryPath,
           contentHtml: entryBody,
           timelineHtml,
           entryHtml,
@@ -283,8 +289,6 @@ export const generateBlogDocument = async (
   const latestDate =
     sortedEntries.find((entry) => entry.date && entry.date.length > 0)?.date ??
     dayjs().format();
-  const categoryLabel = getDirectoryLabel(directory);
-
   const contentVariables = {
     title: categoryLabel,
     description: '',
