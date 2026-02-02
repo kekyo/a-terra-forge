@@ -86,6 +86,9 @@ const getNewPreviewRootDir = async (previewBaseDir: string) => {
   return previewRootDir;
 };
 
+let runningProcessor = false;
+let queuedProcessorRequest = false;
+
 /**
  * a-terra-forge preview plugin for Vite.
  * @param options - a-terra-forge options.
@@ -381,16 +384,14 @@ export const atrPreview = (
   };
 
   // Generate preview contents
-  let running = false;
-  let queued = false;
   const runGenerate = async (): Promise<void> => {
     // Schedule delayed runner when already running
-    if (running) {
-      queued = true;
+    if (runningProcessor) {
+      queuedProcessorRequest = true;
       return;
     }
 
-    running = true;
+    runningProcessor = true;
     let failed = false;
 
     // Create next preview root directory.
@@ -417,12 +418,12 @@ export const atrPreview = (
         },
       });
     } finally {
-      running = false;
+      runningProcessor = false;
     }
 
     // Retry when scheduled.
-    if (queued) {
-      queued = false;
+    if (queuedProcessorRequest) {
+      queuedProcessorRequest = false;
       await Promise.all([
         removePreviewRootDir(nextPreviewRootDir), // Cancel it.
         runGenerate(),
@@ -494,7 +495,7 @@ export const atrPreview = (
   return {
     name: pluginName,
     apply: 'serve',
-    async config(_config, env) {
+    config: async (_config, env) => {
       if (env.command !== 'serve') {
         return;
       }
@@ -510,7 +511,7 @@ export const atrPreview = (
         },
       };
     },
-    async configureServer(devServer) {
+    configureServer: async (devServer) => {
       server = devServer;
       if (!options.configPath) {
         configPath = resolveATerraForgeConfigPathFromDir(projectRoot);
