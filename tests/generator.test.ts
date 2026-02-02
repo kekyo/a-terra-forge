@@ -2351,6 +2351,7 @@ title: Reference
     const entryHtml = await readFile(join(outDir, entryPath), 'utf8');
     expect(entryHtml).toContain('src="reference/git-versioning.png"');
     expect(entryHtml).toContain('href="reference/specs/spec.md"');
+    expect(entryHtml).toContain('loading="lazy"');
 
     const categoryHtml = await readFile(
       join(outDir, 'reference', 'index.html'),
@@ -2358,6 +2359,7 @@ title: Reference
     );
     expect(categoryHtml).toContain('src="git-versioning.png"');
     expect(categoryHtml).toContain('href="specs/spec.md"');
+    expect(categoryHtml).toContain('loading="lazy"');
   });
 
   it('Skips category pages when subcategories exist and ignores deeper levels.', async (fn) => {

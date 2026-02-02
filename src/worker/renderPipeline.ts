@@ -162,6 +162,7 @@ export const renderArticleSnapshot = async ({
     {
       headingBaseLevel: 2,
       defaultImageOuterClassName: 'article-image-outer',
+      applyLazyLoadingToImg: true,
       codeHighlight,
       linkTarget,
       preTransform: async (ctx) => {
@@ -206,6 +207,7 @@ export const renderArticleSnapshot = async ({
     await processor.process(updatedMarkdown, transformed.uniqueIdPrefix, {
       headingBaseLevel: 2,
       defaultImageOuterClassName: 'article-image-outer',
+      applyLazyLoadingToImg: true,
       codeHighlight,
       linkTarget,
       headerTitleTransform: 'none',
