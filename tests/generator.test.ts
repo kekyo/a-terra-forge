@@ -1770,10 +1770,10 @@ Details here
 
     const articleBodies = await readdir(join(outDir, 'article-bodies'));
     expect(articleBodies.some((fileName) => fileName.endsWith('.txt'))).toBe(
-      false
+      true
     );
     expect(articleBodies.some((fileName) => fileName.endsWith('.html'))).toBe(
-      true
+      false
     );
   });
 
@@ -2719,7 +2719,7 @@ Dirty edit`,
     expect(commitKey).toBe(`${shortOids[0]!.oid},${shortOids[1]!.oid}:dirty`);
 
     const entry1 = await readFile(
-      join(outDir, 'article-bodies', '1.html'),
+      join(outDir, 'article-bodies', '1.txt'),
       'utf8'
     );
     const entry1Match = entry1.match(
@@ -2730,7 +2730,7 @@ Dirty edit`,
     expect(entry1Date.isValid()).toBe(true);
 
     const entry2 = await readFile(
-      join(outDir, 'article-bodies', '2.html'),
+      join(outDir, 'article-bodies', '2.txt'),
       'utf8'
     );
     const entry2Match = entry2.match(

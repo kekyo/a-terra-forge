@@ -74,7 +74,7 @@ export const generateBlogDocument = async (
     frontPage
   );
   const blogOutputDir = dirname(destinationPath);
-  const blogBodiesDir = join(blogOutputDir, 'blog-bodies');
+  const articleBodiesDir = join(blogOutputDir, 'article-bodies');
   const prerenderCount = resolvePrerenderCount(configVariables);
   const categoryLabel = getDirectoryLabel(directory);
   const categoryPath = toPosixRelativePath(blogOutputDir, destinationPath);
@@ -84,7 +84,7 @@ export const generateBlogDocument = async (
     baseUrl,
   });
 
-  await mkdir(blogBodiesDir, { recursive: true });
+  await mkdir(articleBodiesDir, { recursive: true });
 
   const entryCandidates: {
     entry: BlogEntry;
@@ -121,13 +121,14 @@ export const generateBlogDocument = async (
           ? result.frontmatter.id
           : undefined;
       const entryDate = hasDate ? date : undefined;
-      const entryFileName = `${idValue}.html`;
-      const entryFilePath = join(blogBodiesDir, entryFileName);
+      const entryFileName = `${idValue}.txt`;
+      const entryFilePath = join(articleBodiesDir, entryFileName);
       const entryPath = toPosixRelativePath(
         dirname(destinationPath),
         entryFilePath
       );
-      const entrySingleFilePath = join(blogOutputDir, entryFileName);
+      const entrySingleFileName = `${idValue}.html`;
+      const entrySingleFilePath = join(blogOutputDir, entrySingleFileName);
       const entrySinglePath = toPosixRelativePath(
         dirname(destinationPath),
         entrySingleFilePath

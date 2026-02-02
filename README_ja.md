@@ -147,6 +147,7 @@ my-page
 └── .gitignore
 ```
 
+ディレクトリ構造やファイルの意味については、別章で解説します。
 Viteプラグインを使うには、以下のコマンドを最初の一度だけ実行します（表示される内容は多少異なる場合があります）:
 
 ```bash
@@ -179,14 +180,14 @@ $ npm run dev
 [atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
 [atr-vite] renderer: total time 2493.13ms
 [atr-vite] Finalizing now...
-[atr-vite] built: dist/about/index.html
-[atr-vite] built: dist/hello/index.html
-[atr-vite] built: dist/index.html
-[atr-vite] built: dist/site-script.js
-[atr-vite] built: dist/sitemap.xml
-[atr-vite] built: dist/atom.xml
-[atr-vite] built: dist/feed.xml
-[atr-vite] built: dist/site-style.css
+[atr-vite] built: dist-1AuQWx/about/index.html
+[atr-vite] built: dist-1AuQWx/hello/index.html
+[atr-vite] built: dist-1AuQWx/index.html
+[atr-vite] built: dist-1AuQWx/site-script.js
+[atr-vite] built: dist-1AuQWx/sitemap.xml
+[atr-vite] built: dist-1AuQWx/atom.xml
+[atr-vite] built: dist-1AuQWx/feed.xml
+[atr-vite] built: dist-1AuQWx/site-style.css
 ```
 
 ![Preview](images/preview.png)
@@ -210,10 +211,10 @@ dist/
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -283,6 +284,7 @@ my-page
 └── .gitignore
 ```
 
+ディレクトリ構造やファイルの意味については、別章で解説します。
 ドキュメントサイトをビルドする場合は、以下のコマンドを使用します:
 
 ```bash
@@ -316,10 +318,10 @@ dist
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -736,7 +738,7 @@ a-terra-forgeは、ブログを執筆するための機能も持っています�
 ```
 
 ナビゲーションメニューのどこにメニューを配置するのかは、これまで述べてきた `menuOrder` などの指定で決定されるので、配置の自由度は通常のカテゴリと同様です。
-タイムライン同様に、動的に読み込むHTMLが `blog-bodies/` に配置されます。
+タイムライン同様に、動的に読み込む断片は `article-bodies/` に配置され、拡張子は `.txt` になります。
 
 ---
 

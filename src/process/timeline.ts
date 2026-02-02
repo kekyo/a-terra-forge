@@ -133,7 +133,7 @@ export const generateTimelineDocument = async (
           : undefined;
       const entryDate = hasDate ? date : undefined;
       const entryCategory = hasCategory ? categoryLabel : undefined;
-      const entryFileName = `${idValue}.html`;
+      const entryFileName = `${idValue}.txt`;
       const entryFilePath = join(articleBodiesDir, entryFileName);
       const entryPath = toPosixRelativePath(
         dirname(destinationPath),

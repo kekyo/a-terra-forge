@@ -146,6 +146,7 @@ my-page
 └── .gitignore
 ```
 
+The directory structure and file meanings will be explained in a separate chapter.
 To use the Vite plugin, run the following command once (the output may differ slightly):
 
 ```bash
@@ -178,14 +179,14 @@ $ npm run dev
 [atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
 [atr-vite] renderer: total time 2493.13ms
 [atr-vite] Finalizing now...
-[atr-vite] built: dist/about/index.html
-[atr-vite] built: dist/hello/index.html
-[atr-vite] built: dist/index.html
-[atr-vite] built: dist/site-script.js
-[atr-vite] built: dist/sitemap.xml
-[atr-vite] built: dist/atom.xml
-[atr-vite] built: dist/feed.xml
-[atr-vite] built: dist/site-style.css
+[atr-vite] built: dist-1AuQWx/about/index.html
+[atr-vite] built: dist-1AuQWx/hello/index.html
+[atr-vite] built: dist-1AuQWx/index.html
+[atr-vite] built: dist-1AuQWx/site-script.js
+[atr-vite] built: dist-1AuQWx/sitemap.xml
+[atr-vite] built: dist-1AuQWx/atom.xml
+[atr-vite] built: dist-1AuQWx/feed.xml
+[atr-vite] built: dist-1AuQWx/site-style.css
 ```
 
 ![Preview](images/preview.png)
@@ -209,10 +210,10 @@ dist/
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -281,6 +282,7 @@ my-page
 └── .gitignore
 ```
 
+The directory structure and file meanings will be explained in a separate chapter.
 To build the document site, use the following command:
 
 ```bash
@@ -314,10 +316,10 @@ dist
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -735,7 +737,7 @@ Specify the category names to repurpose as blogs as follows:
 ```
 
 The placement of menus within the navigation menu is determined by specifications such as `menuOrder` mentioned earlier, so the placement flexibility is the same as for regular categories.
-Similar to the timeline, dynamically loaded HTML is placed in `blog-bodies/`.
+Similar to the timeline, dynamic fragments are placed in `article-bodies/` with the `.txt` extension.
 
 ---
 
