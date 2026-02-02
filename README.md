@@ -500,6 +500,8 @@ In particular, `index.md` is always placed first in that category document. Othe
 You may write all documents in `index.md`, or you may split them into multiple Markdown files.
 Splitting files allows only the edited portion to appear on the timeline when you edit a file. This makes it easier for readers to see which documents were recently updated. Especially for lengthy documents, it's advisable to split chapters into separate files.
 
+Blog categories can be created by repurposing general categories. For details, refer to a separate chapter.
+
 ### frontmatter
 
 Documents are written in markdown, and you can add "frontmatter" at the top of the file:
@@ -544,6 +546,7 @@ New article created: food/index.md
 This generates a new `docs/food/` directory and puts an `index.md` scaffold inside it.
 Note that this `index.md` has `draft: true`, so it will not be included in the preview.
 
+- If `index.md` already exists, it will be generated with a filename like `article<n>.md`.
 - If a category is no longer needed, simply delete that category directory.
 - You can create subcategories:
   - If a subcategory exists, you cannot place content in the parent category.
@@ -722,7 +725,7 @@ the author name can be replaced automatically:
 
 This is implemented by the `getMessage` function in the funcity script. If you want to apply `messages` to places that do not reference it in the existing template, or even in your own customized HTML, refer to “Customize templates” below.
 
-### Blog Categories
+### Blog categories
 
 a-terra-forge also includes functionality for writing blogs.
 However, since this is an optional feature, you must enable it using the following method:
@@ -732,6 +735,7 @@ However, since this is an optional feature, you must enable it using the followi
   Since this method repurposes existing categories, you can display any category (or multiple categories) as a blog.
 - The blog page renders very similarly to a timeline. The latest document is statically generated, while older articles use infinite scroll (demand loading).
   Therefore, even as the blog accumulates content over time, the physical HTML size of a single page can be constrained within a certain range.
+- Additionally, a separate page is generated for each individual post within the blog. These pages are embedded with appropriate OGP metadata for each document, making them useful when referenced from other sites.
 
 Specify the category names to repurpose as blogs as follows:
 
