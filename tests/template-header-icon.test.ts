@@ -13,7 +13,7 @@ describe('template header icon', () => {
       'utf8'
     );
     expect(template).toContain(
-      '<h1{{if headerIconCode?}} style="--header-icon: \'{{headerIconCode}}\';"{{end}}>{{articleEntry0.title}}</h1>'
+      '<h1{{if headerIconCode?}} style="--header-icon: \'{{headerIconCode}}\';"{{end}}{{if articleEntry0.anchorId?}} data-anchor="{{articleEntry0.anchorId}}"{{end}}>{{articleEntry0.title}}</h1>'
     );
   });
 
@@ -23,8 +23,23 @@ describe('template header icon', () => {
       'utf8'
     );
     expect(template).toContain(
-      '<h1{{if headerIconCode?}} style="--header-icon: \'{{headerIconCode}}\';"{{end}}>'
+      '<h1{{if headerIconCode?}} style="--header-icon: \'{{headerIconCode}}\';"{{end}}{{if anchorId?}} data-anchor="{{anchorId}}"{{end}}>'
     );
+  });
+
+  it('exposes entry urls on stream entries', async () => {
+    const blogTemplate = await readFile(
+      'scaffold/.templates/blog-entry.html',
+      'utf8'
+    );
+    expect(blogTemplate).toContain('data-entry-url="{{entrySinglePath}}"');
+
+    const timelineTemplate = await readFile(
+      'scaffold/.templates/timeline-entry.html',
+      'utf8'
+    );
+    expect(timelineTemplate).toContain('data-entry-url="{{entrySinglePath}}"');
+    expect(timelineTemplate).toContain('data-entry-url="{{categoryPath}}"');
   });
 
   it('renders timeline category as bootstrap pill badge', async () => {

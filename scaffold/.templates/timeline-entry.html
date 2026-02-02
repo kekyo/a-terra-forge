@@ -1,6 +1,6 @@
-<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
+<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}"{{if entrySinglePath?}} data-entry-url="{{entrySinglePath}}"{{elseif categoryPath?}} data-entry-url="{{categoryPath}}"{{end}}>
   <header class="entry-header">
-    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
+    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}{{if anchorId?}} data-anchor="{{anchorId}}"{{end}}>
       {{
       if entrySinglePath?
       }}
@@ -57,6 +57,7 @@
       {{end}}
     </div>
   </header>
+  {{if anchorId?}}<a id="{{anchorId}}"></a>{{end}}
   <div class="entry-body">
 {{contentHtml}}
   </div>

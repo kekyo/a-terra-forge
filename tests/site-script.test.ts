@@ -39,4 +39,20 @@ describe('site script', () => {
     expect(script).toMatch(/bootstrap.*Modal/);
     expect(script).toMatch(/elementsFromPoint/);
   });
+
+  it('adds heading permalink buttons', async () => {
+    const script = await readFile('scaffold/.templates/site-script.js', 'utf8');
+
+    expect(script).toMatch(/addHeadingPermalinks/);
+    expect(script).toMatch(/heading-anchor/);
+    expect(script).toMatch(/heading-link/);
+    expect(script).toMatch(/bi-link-45deg/);
+  });
+
+  it('resolves entry urls for heading permalinks', async () => {
+    const script = await readFile('scaffold/.templates/site-script.js', 'utf8');
+
+    expect(script).toMatch(/dataset\.entryUrl/);
+    expect(script).toMatch(/buildHeadingAnchorUrl/);
+  });
 });

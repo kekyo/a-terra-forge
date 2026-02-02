@@ -165,6 +165,9 @@ export const renderArticleSnapshot = async ({
       codeHighlight,
       linkTarget,
       preTransform: async (ctx) => {
+        const hasTitle =
+          typeof ctx.originalFrontmatter.title === 'string' &&
+          ctx.originalFrontmatter.title.trim().length > 0;
         const updated = {
           ...ctx.originalFrontmatter,
           id: entry.assignedId,
@@ -174,7 +177,7 @@ export const renderArticleSnapshot = async ({
           frontmatter: updated,
           uniqueIdPrefix: ctx.uniqueIdPrefix,
           // Always lift the first base-level heading into frontmatter.title.
-          headerTitleTransform: 'extractAndRemove',
+          headerTitleTransform: hasTitle ? 'none' : 'extractAndRemove',
         };
       },
     }

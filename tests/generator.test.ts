@@ -150,7 +150,7 @@ Details here`,
 
     expect(html).toContain('Fallback');
     expect(html).toContain('<p>Docs body</p>');
-    expect(html).toMatch(/<h2[^>]*>Usage<\/h2>/);
+    expect(html).toMatch(/<h1[^>]*data-anchor="article-\d+"[^>]*>Usage<\/h1>/);
     expect(html).toContain('<p>Details here</p>');
     expect(html).toContain('href="../site-style.css"');
 
@@ -1352,7 +1352,10 @@ Second body
     expect(html).toContain('<h1>First Title</h1>');
     expect(html).toContain('<p>First body</p>');
     expect(html).not.toContain('<h2>First Title</h2>');
-    expect(html).toContain('<h2>Second Title</h2>');
+    expect(html).not.toContain('<h2>Second Title</h2>');
+    expect(html).toMatch(
+      /<h1[^>]*data-anchor="article-\d+"[^>]*>Second Title<\/h1>/
+    );
     expect(html).toContain('<p>Second body</p>');
 
     const firstMd = await readFile(join(articleDir, '01-first.md'), 'utf8');
@@ -1364,6 +1367,61 @@ Second body
     expect(secondMd).toMatch(/^title:\s*Second Title$/m);
     expect(secondMd).not.toContain('# Second Title');
     expect(secondMd).toContain('Second body');
+  });
+
+  it('Keeps the first heading when title is already defined.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, '.templates');
+    const outDir = await createTempDir(fn, 'out');
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    const markdown = `---
+id: 7
+title: Frontmatter Title
+---
+
+# Body Title
+
+Body text
+`;
+    await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
+
+    const template = `
+<html>
+  <head><title>{{title}}</title></head>
+  <body>
+    <h1>{{title}}</h1>
+    {{for article articleEntries}}{{article.entryHtml}}{{end}}
+  </body>
+</html>
+`;
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      template,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'guide', 'index.html'), 'utf8');
+    expect(html).toContain('<title>Frontmatter Title</title>');
+    expect(html).toContain('<h1>Frontmatter Title</h1>');
+    expect(html).toMatch(/<h2[^>]*>Body Title<\/h2>/);
+    expect(html).toContain('<p>Body text</p>');
+
+    const savedMd = await readFile(join(markdownDir, 'index.md'), 'utf8');
+    expect(savedMd).toMatch(/^title:\s*Frontmatter Title$/m);
+    expect(savedMd).toContain('# Body Title');
   });
 
   it('If a template matching the first markdown exists, it takes precedence.', async (fn) => {

@@ -348,7 +348,9 @@ describe('template style', () => {
 
   it('clears floats on entry body headings', async () => {
     const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
-    const headingClearMatch = css.match(/\.entry-body h1[\s\S]*?\{([^}]*)\}/);
+    const headingClearMatch = css.match(
+      /\.entry-body h1,\s*\.entry-body h2,\s*\.entry-body h3,\s*\.entry-body h4,\s*\.entry-body h5,\s*\.entry-body h6\s*\{([^}]*)\}/
+    );
 
     expect(headingClearMatch).not.toBeNull();
     expect(headingClearMatch?.[1]).toMatch(/clear:\s*both;/);
@@ -360,5 +362,22 @@ describe('template style', () => {
 
     expect(h1IconMatch).not.toBeNull();
     expect(h1IconMatch?.[1]).toMatch(/font-size:\s*1em;/);
+  });
+
+  it('exposes heading permalink positioning variables', async () => {
+    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const h1Match = css.match(/h1\s*\{[^}]*--heading-anchor-left:[^}]*\}/);
+    const h2Match = css.match(/h2\s*\{[^}]*--heading-anchor-left:[^}]*\}/);
+    const anchorMatch = css.match(
+      /\.heading-anchor\s*\{[^}]*position:\s*absolute;[^}]*opacity:\s*0;[^}]*\}/
+    );
+    const mobileMatch = css.match(
+      /@media\s*\(max-width:\s*575\.98px\)\s*\{[^}]*\.heading-anchor[^}]*opacity:\s*1;/
+    );
+
+    expect(h1Match).not.toBeNull();
+    expect(h2Match).not.toBeNull();
+    expect(anchorMatch).not.toBeNull();
+    expect(mobileMatch).not.toBeNull();
   });
 });

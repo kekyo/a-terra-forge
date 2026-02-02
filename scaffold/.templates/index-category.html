@@ -30,7 +30,7 @@ if locale?
       <div class="docs">
         <div class="article-entry">
           <div class="entry-header">
-            <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>{{articleEntry0.title}}</h1>
+            <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}{{if articleEntry0.anchorId?}} data-anchor="{{articleEntry0.anchorId}}"{{end}}>{{articleEntry0.title}}</h1>
             {{if (not hideMeta?)}}
             <div class="entry-meta">
               {{if (length articleTags)}}

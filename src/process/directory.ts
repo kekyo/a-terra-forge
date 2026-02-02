@@ -127,7 +127,10 @@ export const generateDirectoryDocument = async (
         typeof result.frontmatter.title === 'string'
           ? result.frontmatter.title
           : '';
-      const heading = index > 0 && title.length > 0 ? `<h2>${title}</h2>` : '';
+      const heading =
+        index > 0 && title.length > 0
+          ? `<h1${anchorId ? ` data-anchor="${anchorId}"` : ''}>${title}</h1>`
+          : '';
       const parts = [
         anchorId ? `<a id="${anchorId}"></a>` : '',
         heading,
