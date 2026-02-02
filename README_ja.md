@@ -95,7 +95,7 @@ $ npm i -g a-terra-forge
 
 ### 編集スペースを初期化 (Viteを使用する)
 
-Viteプラグインを使用する場合は、以下のコマンドで現在のディレクトリに編集スペースを生成します:
+Viteプラグインを使用する場合は、 `atr init` コマンドで現在のディレクトリに編集スペースを生成します:
 
 ```bash
 $ mkdir my-site
@@ -114,7 +114,8 @@ Scaffold created at /home/kouji/my-site
 ```
 my-page
 ├── atr.json
-├── dist
+├── package.json
+├── vite.config.ts
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -124,33 +125,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── package.json
-├── .assets
-│   └── .gitkeep
-├── .templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── common-header.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-blog-single.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── vite.config.ts
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
 ディレクトリ構造やファイルの意味については、別章で解説します。
-Viteプラグインを使うには、以下のコマンドを最初の一度だけ実行します（表示される内容は多少異なる場合があります）:
+Viteプラグインを使うには、 `npm i` コマンドを最初の一度だけ実行します（表示される内容は多少異なる場合があります）:
 
 ```bash
 $ npm i
@@ -162,7 +144,7 @@ added 306 packages, and audited 307 packages in 16s
 found 0 vulnerabilities
 ```
 
-その後は、編集したい時に以下のコマンドでプレビューできるようにします。
+その後は、編集したい時に `npm run dev` コマンドでプレビューできるようにします。
 システム標準のウェブブラウザが自動的に開き、サイトのプレビューが表示されます:
 
 ```bash
@@ -198,7 +180,7 @@ $ npm run dev
 すでに文書が書かれていたり、全体的に真っ青だったりと不安を感じるかもしれませんが、もちろん心配無用です。
 これらをサクッと削除して、一から文書を書き始め、見た目も調整することが出来ます（少なくとも、アクセントカラーは簡単に変えられます）。
 
-プレビューが表示された時点で、ドキュメントサイトはビルドされていますが、手動でビルドする場合は、以下のコマンドを使用します:
+手動でドキュメントサイトをビルドする場合は、以下のコマンドを使用します:
 
 ```bash
 $ npm run build
@@ -236,7 +218,7 @@ GitHub Pagesなどに自動でデプロイさせるには、後述の節を参�
 
 ### 編集スペースを初期化 (CLIを使用する)
 
-Viteプラグインを使用しない場合は、以下のコマンドでドキュメントサイト編集スペースを生成します:
+Viteプラグインを使用しない場合は、 `atr init --no-vite` コマンドでドキュメントサイト編集スペースを生成します:
 
 ```bash
 $ mkdir my-site
@@ -255,7 +237,6 @@ Scaffold created at /home/kouji/my-page
 ```
 my-page
 ├── atr.json
-├── dist
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -265,31 +246,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── .assets
-│   └── .gitkeep
-├── .templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── common-header.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-blog-single.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
 ディレクトリ構造やファイルの意味については、別章で解説します。
-ドキュメントサイトをビルドする場合は、以下のコマンドを使用します:
+ドキュメントサイトをビルドする場合は、 `atr build` コマンドを使用します:
 
 ```bash
 $ atr build
@@ -360,7 +324,7 @@ GitHub Pagesなどに自動でデプロイさせるには、後述の節を参�
 まず、編集スペースをGitに管理させて、バージョン管理できるようにしましょう。
 そうすれば、誤った編集やページのカスタマイズ、気に入らない記述なども容易に元に戻せます。
 
-以下のコマンドで、編集スペースの状態をGitの最初のバージョンとして登録（コミット）します:
+以下のコマンド(`git init`, `git add -A`, `git commit ...`)で、編集スペースの状態をGitの最初のバージョンとして登録（コミット）します:
 
 ```bash
 $ git init
@@ -392,7 +356,7 @@ $ git commit -m "Initial commit"
 
 ### 全自動でページを公開する
 
-`atr init`コマンドで生成された雛形には、 [GitHub Actions](https://docs.github.com/ja/actions/get-started/understand-github-actions) のスクリプトが含まれています:
+`atr init` コマンドで生成された雛形には、 [GitHub Actions](https://docs.github.com/ja/actions/get-started/understand-github-actions) のスクリプトが含まれています:
 
 ```
 ├── .github
@@ -474,8 +438,46 @@ a-terra-forgeは、文書スペースの全体的な管理を `atr.json` とい�
 
 それでは、執筆を開始しましょう！
 
-"a-terra-forge"は、文書をカテゴリ別に扱います。例えば、何かの資料について執筆する場合は、カテゴリ名を決めて、そのカテゴリの文書として執筆すると良いでしょう。
-カテゴリは `docs/` ディレクトリの下にサブディレクトリを作ることで認識されます。例えば、以下は`atr init`で生成される雛形の一部ですが:
+"a-terra-forge"では、文書を以下のように分類します:
+
+|カテゴリ|詳細|
+|:----|:----|
+|一般|分類分けした文書です。例えば「釣り」「料理」「コード」「DIY」などの、あなたが自由に決めて分類する文書群です。同じカテゴリの文書は一つに結合され、閲覧者は単一のページとして読むことが出来ます。|
+|ブログ|時系列降順に並べられた文書群です。それぞれの文書は、結合されることはなく独立しています。|
+|タイムライン|一般カテゴリ、またはブログカテゴリの全ての変更を、時系列降順で自動的に表示できる特殊なカテゴリです。サイト内に一つしか配置できません。|
+
+```mermaid
+flowchart TB
+  C[Blog]
+  subgraph C_DIR[" "]
+    c_foo[foo.md]
+    c_bar[bar.md]
+    c_baz[baz.md]
+    c_foo --> c_bar --> c_baz
+  end
+  C --> c_foo
+  B[Category]
+  subgraph B_DIR[" "]
+    b_index["index.md<hr/>article1.md<hr/>article2.md<hr/>article3.md"]
+  end
+  B --> b_index
+  A[Timeline]
+  subgraph A_DIR[" "]
+    a_foo[foo.md]
+    a_cat[Category/index.md]
+    a_bar[bar.md]
+    a_baz[baz.md]
+    a_foo --> a_cat --> a_bar --> a_baz
+  end
+  A --> a_foo
+```
+
+- 一般カテゴリとブログカテゴリは、あなたが自由に決めて、いくらでも増やすことが出来ます。また、カテゴリは、サブカテゴリで細かく分類することも出来ます。
+- "a-terra-forge"は、読者にタイムラインで最新の更新記事を把握したり読んでもらい、もっと全体像を把握したり、最初から読みたいと思った時に各カテゴリのページを読む、というような動線を想定しています。
+- 例えば、何かの資料について執筆する場合は、一般カテゴリの名前を決めて、そのカテゴリの文書として執筆すると良いでしょう。
+- ブログカテゴリは、単独記事のような「日記」「雑記」のような文書を書く場合に適します。
+
+タイムライン以外のカテゴリは、 `docs/` ディレクトリの下にサブディレクトリを作ることで認識されます。例えば、以下は `atr init` で生成される雛形の一部ですが:
 
 ```
 my-page

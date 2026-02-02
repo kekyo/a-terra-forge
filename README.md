@@ -94,7 +94,7 @@ The following sections show the steps to initialize the editing space and prepar
 
 ### Initialize an editing space (using Vite)
 
-If you use the Vite plugin, run the following command to generate an editing space in the current directory:
+If you use the Vite plugin, run `atr init` command to generate an editing space in the current directory:
 
 ```bash
 $ mkdir my-site
@@ -113,7 +113,8 @@ This creates the following files:
 ```
 my-page
 ├── atr.json
-├── dist
+├── package.json
+├── vite.config.ts
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -123,33 +124,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── package.json
-├── .assets
-│   └── .gitkeep
-├── .templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── common-header.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-blog-single.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── vite.config.ts
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
 The directory structure and file meanings will be explained in a separate chapter.
-To use the Vite plugin, run the following command once (the output may differ slightly):
+To use the Vite plugin, run `npm i` command once (the output may differ slightly):
 
 ```bash
 $ npm i
@@ -161,7 +143,7 @@ added 306 packages, and audited 307 packages in 16s
 found 0 vulnerabilities
 ```
 
-After that, you can preview by running the following command when you want to edit.
+After that, you can preview by running `npm run dev` command when you want to edit.
 Your system's default web browser will open automatically to display a preview of the site:
 
 ```bash
@@ -197,7 +179,7 @@ The page shown includes the scaffold's sample documents and images.
 You might feel uneasy if documents already exist or everything is bright blue, but there is no need to worry.
 You can quickly delete them, start writing from scratch, and adjust the appearance (At least, the accent color can be easily changed).
 
-When the preview is displayed, the document site has already been built, but to build it manually, use the following command:
+To build document site manually, use the following command:
 
 ```bash
 $ npm run build
@@ -235,7 +217,7 @@ To automatically deploy to GitHub Pages, see the section below.
 
 ### Initialize an editing space (using the CLI)
 
-If you do not use the Vite plugin, generate the document site editing space with the following command:
+If you do not use the Vite plugin, generate the document site editing space with `atr init --no-vite` command:
 
 ```bash
 $ mkdir my-site
@@ -254,7 +236,6 @@ This creates the following files:
 ```
 my-page
 ├── atr.json
-├── dist
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -264,30 +245,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── .assets
-│   └── .gitkeep
-├── .templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-blog-single.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
 The directory structure and file meanings will be explained in a separate chapter.
-To build the document site, use the following command:
+To build the document site, use `atr build` command:
 
 ```bash
 $ atr build
@@ -358,7 +323,7 @@ Once these preparations are complete, you should have an environment that lets y
 First, manage the editing space with Git so you can perform version control.
 That way, incorrect edits, page customizations, or text you do not like can easily be reverted.
 
-Register the current state of the editing space as the first version (commit) in Git with the following commands:
+Register the current state of the editing space as the first version (commit) in Git with the following commands (`git init`, `git add -A`, `git commit ...`):
 
 ```bash
 $ git init
@@ -380,7 +345,7 @@ Now the editing space is managed by Git.
 Do you remember the preview being entirely bright blue?
 In fact, a-terra-forge uses a blue background to show documents that are being edited and have not been committed to Git.
 
-If you check after committing, you will see that the background is white (or black).
+If you check after committing, you will see that the background is light (or dark).
 The date and author name obtained from Git will also be displayed:
 
 ![After committed](images/comitted.png)
@@ -472,7 +437,45 @@ The variables above include several items for adjusting categories. These are se
 
 Alright, let's get started writing!
 
-"a-terra-forge" handles documents by category. When you write documentation, decide a category name and write it as documents of that category.
+"a-terra-forge" classifies documents as follows:
+
+|Category|Details|
+|:----|:----|
+|General|Documents categorized by you. Examples include "Fishing," "Cooking," "Code," "DIY," etc. Documents within the same category are combined into a single page for readers. |
+|Blog|Documents arranged in reverse chronological order. Each document remains independent and is not merged.|
+|Timeline|A special category that automatically displays all changes from either the General or Blog categories in reverse chronological order. Only one can be placed on the site.|
+
+```mermaid
+flowchart TB
+  C[Blog]
+  subgraph C_DIR[" "]
+    c_foo[foo.md]
+    c_bar[bar.md]
+    c_baz[baz.md]
+    c_foo --> c_bar --> c_baz
+  end
+  C --> c_foo
+  B[Category]
+  subgraph B_DIR[" "]
+    b_index["index.md<hr/>article1.md<hr/>article2.md<hr/>article3.md"]
+  end
+  B --> b_index
+  A[Timeline]
+  subgraph A_DIR[" "]
+    a_foo[foo.md]
+    a_cat[Category/index.md]
+    a_bar[bar.md]
+    a_baz[baz.md]
+    a_foo --> a_cat --> a_bar --> a_baz
+  end
+  A --> a_foo
+```
+
+- You can freely create as many general categories and blog categories as you like. Additionally, categories can be further subdivided into subcategories.
+- "a-terra-forge" is designed with a user flow in mind: readers can follow the timeline to see the latest updates, read them, get a broader overview, or read category pages when they want to start from the beginning.
+- For example, when writing about a specific topic, it's best to decide on a general category name and write it as a document within that category.
+- Blog categories are suitable for writing standalone articles like "diary" or "miscellaneous notes" entries.
+
 Categories are recognized by creating subdirectories under the `docs/` directory. For example, the following is part of the scaffold generated by `atr init`:
 
 ```
