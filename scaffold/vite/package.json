@@ -7,7 +7,7 @@
     "build": "atr build"
   },
   "devDependencies": {
-    "a-terra-forge": ">=0.0.1",
+    "a-terra-forge": ">=0.4.0",
     "vite": ">=5.0.0"
   }
 }
