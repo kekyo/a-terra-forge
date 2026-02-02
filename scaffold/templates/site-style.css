@@ -993,6 +993,11 @@ h6 {
   clear: both;
 }
 
+.entry-body .mermaid-wrapper,
+.entry-body .beautiful-mermaid-wrapper {
+  cursor: pointer;
+}
+
 .mermaid-wrapper .mermaid {
   display: block;
   padding: 0.5rem;
@@ -1072,6 +1077,11 @@ p.article-image-outer > img {
   background-clip: padding-box;
   box-shadow: 0 0 0 0.1rem var(--panel-preview-border);  /* overlapped border */
   box-sizing: border-box;
+}
+
+.entry-body p.article-image-outer,
+.entry-body p.article-image-outer > img {
+  cursor: pointer;
 }
 
 @media (min-width: 920px) {

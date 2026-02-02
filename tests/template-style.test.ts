@@ -122,6 +122,28 @@ describe('template style', () => {
     ).toBe(true);
   });
 
+  it('uses pointer cursors for media panels', async () => {
+    const css = await readFile('scaffold/templates/site-style.css', 'utf8');
+
+    const mermaidMatch = css.match(
+      /\.entry-body\s+\.mermaid-wrapper[^}]*\{[^}]*cursor:\s*pointer;/
+    );
+    const beautifulMermaidMatch = css.match(
+      /\.entry-body\s+\.beautiful-mermaid-wrapper[^}]*\{[^}]*cursor:\s*pointer;/
+    );
+    const imageMatch = css.match(
+      /\.entry-body\s+p\.article-image-outer[^}]*\{[^}]*cursor:\s*pointer;/
+    );
+    const imageChildMatch = css.match(
+      /\.entry-body\s+p\.article-image-outer\s*>\s*img[^}]*\{[^}]*cursor:\s*pointer;/
+    );
+
+    expect(mermaidMatch).not.toBeNull();
+    expect(beautifulMermaidMatch).not.toBeNull();
+    expect(imageMatch).not.toBeNull();
+    expect(imageChildMatch).not.toBeNull();
+  });
+
   it('renders blockquotes with the bootstrap quote icon', async () => {
     const css = await readFile('scaffold/templates/site-style.css', 'utf8');
     const blockquoteMatch = css.match(/\.entry-body blockquote\s*\{([^}]*)\}/);
