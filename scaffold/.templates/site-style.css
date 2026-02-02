@@ -459,28 +459,6 @@ body {
   background-color: rgba(7, 77, 255, 0.2);
 }
 
-.entry-header {
-  margin-bottom: 0.75rem;
-}
-
-.entry-header h2 {
-  margin: 0;
-}
-
-.entry-header h1 a,
-.entry-meta a {
-  color: inherit;
-  text-decoration: none;
-}
-
-.entry-header h1 a:hover,
-.entry-header h1 a:focus-visible,
-.entry-meta a:hover,
-.entry-meta a:focus-visible {
-  color: var(--bs-link-hover-color);
-  text-decoration: none;
-}
-
 /* Metadata list */
 .entry-meta {
   color: var(--bs-secondary-color);
@@ -527,13 +505,17 @@ body {
 
 h1 {
   position: relative;
-  margin-left: 0.4em;
+  margin-left: 0.4em;  /* For H1 icon */
   padding-top: 0.4rem;
-  padding-left: 1em;
+  padding-left: 1em;  /* For H1 icon */
   padding-bottom: 0.6rem;
   border-bottom: 0.15rem solid var(--primary-alpha-50);
+  --heading-anchor-left: -1.6em;  /* For H1 link icon */
+  --heading-anchor-size: 1em;  /* For H1 link icon */
+  --heading-anchor-hitbox: 0.5em;  /* For H1 link icon */
 }
 
+/* Display H1 icon */
 h1::before {
   position: absolute;
   left: -0.4em;
@@ -545,12 +527,31 @@ h1::before {
   content: var(--header-icon, var(--header-icon-default));
 }
 
+h1.heading-has-link::before {
+  content: none;
+}
+
+h1.heading-has-link > .heading-link::before {
+  position: absolute;
+  left: -0.4em;
+  top: 0.6rem;
+  font-family: "bootstrap-icons";
+  font-size: 1em;
+  line-height: 1;
+  color: var(--primary);
+  content: var(--header-icon, var(--header-icon-default));
+}
+
 h2 {
+  position: relative;
   margin-bottom: 1rem;
   padding-top: 0.4rem;
-  padding-left: 0.8rem;
+  padding-left: 0.9rem;
   padding-bottom: 0.4rem;
   border-left: 0.7rem solid var(--primary-alpha-75);
+  --heading-anchor-left: -1.5em;  /* For H2 link icon */
+  --heading-anchor-size: 1em;  /* For H2 link icon */
+  --heading-anchor-hitbox: 0.4em;  /* For H2 link icon */
 }
 
 h3 {
@@ -583,6 +584,104 @@ h6 {
   padding-left: 0.48rem;
   padding-bottom: 0.23rem;
   border-left: 0.38rem solid var(--primary-alpha-75);
+}
+
+/* -------------------------------------------------------------------- */
+/* Heading permalinks */
+
+.entry-header {
+  margin-bottom: 0.75rem;
+}
+
+.entry-header h2 {
+  margin: 0;
+}
+
+.heading-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.heading-link:hover,
+.heading-link:focus-visible {
+  color: inherit;
+  text-decoration: none;
+}
+
+.entry-header h1 .heading-link,
+.entry-header h2 .heading-link,
+.entry-meta a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.entry-header h1 .heading-link:hover,
+.entry-header h1 .heading-link:focus-visible,
+.entry-header h2 .heading-link:hover,
+.entry-header h2 .heading-link:focus-visible,
+.entry-body h1 .heading-link:hover,
+.entry-body h1 .heading-link:focus-visible,
+.entry-body h2 .heading-link:hover,
+.entry-body h2 .heading-link:focus-visible,
+.entry-meta a:hover,
+.entry-meta a:focus-visible {
+  color: var(--bs-link-hover-color);
+  text-decoration: none;
+}
+
+.heading-anchor {
+  position: absolute;
+  left: var(--heading-anchor-left, -1.2em);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: var(--heading-anchor-size, 0.9em);
+  height: var(--heading-anchor-size, 0.9em);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  padding-right: var(--heading-anchor-hitbox, 0.4em);
+  line-height: 1;
+  font-size: var(--heading-anchor-size, 0.9em);
+  color: var(--heading-anchor-color, var(--bs-link-color));
+  text-decoration: none;
+  opacity: 0;
+  pointer-events: auto;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.heading-anchor:hover,
+.heading-anchor:focus-visible {
+  color: var(--bs-link-hover-color);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.entry-header h1:hover .heading-anchor,
+.entry-header h1:focus-within .heading-anchor,
+.entry-header h2:hover .heading-anchor,
+.entry-header h2:focus-within .heading-anchor,
+.entry-body h1:hover .heading-anchor,
+.entry-body h1:focus-within .heading-anchor,
+.entry-body h2:hover .heading-anchor,
+.entry-body h2:focus-within .heading-anchor {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.heading-anchor--copied {
+  color: var(--bs-success);
+}
+
+@media (max-width: 575.98px) {
+  .heading-anchor {
+    opacity: 1;
+    pointer-events: auto;
+  }
 }
 
 /* -------------------------------------------------------------------- */
@@ -993,6 +1092,11 @@ h6 {
   clear: both;
 }
 
+.entry-body .mermaid-wrapper,
+.entry-body .beautiful-mermaid-wrapper {
+  cursor: pointer;
+}
+
 .mermaid-wrapper .mermaid {
   display: block;
   padding: 0.5rem;
@@ -1072,6 +1176,11 @@ p.article-image-outer > img {
   background-clip: padding-box;
   box-shadow: 0 0 0 0.1rem var(--panel-preview-border);  /* overlapped border */
   box-sizing: border-box;
+}
+
+.entry-body p.article-image-outer,
+.entry-body p.article-image-outer > img {
+  cursor: pointer;
 }
 
 @media (min-width: 920px) {

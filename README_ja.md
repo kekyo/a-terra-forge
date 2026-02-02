@@ -95,7 +95,7 @@ $ npm i -g a-terra-forge
 
 ### 編集スペースを初期化 (Viteを使用する)
 
-Viteプラグインを使用する場合は、以下のコマンドで現在のディレクトリに編集スペースを生成します:
+Viteプラグインを使用する場合は、 `atr init` コマンドで現在のディレクトリに編集スペースを生成します:
 
 ```bash
 $ mkdir my-site
@@ -114,7 +114,8 @@ Scaffold created at /home/kouji/my-site
 ```
 my-page
 ├── atr.json
-├── dist
+├── package.json
+├── vite.config.ts
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -124,28 +125,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── package.json
-├── templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── vite.config.ts
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
-Viteプラグインを使うには、以下のコマンドを最初の一度だけ実行します（表示される内容は多少異なる場合があります）:
+ディレクトリ構造やファイルの意味については、別章で解説します。
+Viteプラグインを使うには、 `npm i` コマンドを最初の一度だけ実行します（表示される内容は多少異なる場合があります）:
 
 ```bash
 $ npm i
@@ -157,7 +144,7 @@ added 306 packages, and audited 307 packages in 16s
 found 0 vulnerabilities
 ```
 
-その後は、編集したい時に以下のコマンドでプレビューできるようにします。
+その後は、編集したい時に `npm run dev` コマンドでプレビューできるようにします。
 システム標準のウェブブラウザが自動的に開き、サイトのプレビューが表示されます:
 
 ```bash
@@ -177,14 +164,14 @@ $ npm run dev
 [atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
 [atr-vite] renderer: total time 2493.13ms
 [atr-vite] Finalizing now...
-[atr-vite] built: dist/about/index.html
-[atr-vite] built: dist/hello/index.html
-[atr-vite] built: dist/index.html
-[atr-vite] built: dist/site-script.js
-[atr-vite] built: dist/sitemap.xml
-[atr-vite] built: dist/atom.xml
-[atr-vite] built: dist/feed.xml
-[atr-vite] built: dist/site-style.css
+[atr-vite] built: dist-1AuQWx/about/index.html
+[atr-vite] built: dist-1AuQWx/hello/index.html
+[atr-vite] built: dist-1AuQWx/index.html
+[atr-vite] built: dist-1AuQWx/site-script.js
+[atr-vite] built: dist-1AuQWx/sitemap.xml
+[atr-vite] built: dist-1AuQWx/atom.xml
+[atr-vite] built: dist-1AuQWx/feed.xml
+[atr-vite] built: dist-1AuQWx/site-style.css
 ```
 
 ![Preview](images/preview.png)
@@ -193,7 +180,7 @@ $ npm run dev
 すでに文書が書かれていたり、全体的に真っ青だったりと不安を感じるかもしれませんが、もちろん心配無用です。
 これらをサクッと削除して、一から文書を書き始め、見た目も調整することが出来ます（少なくとも、アクセントカラーは簡単に変えられます）。
 
-プレビューが表示された時点で、ドキュメントサイトはビルドされていますが、手動でビルドする場合は、以下のコマンドを使用します:
+手動でドキュメントサイトをビルドする場合は、以下のコマンドを使用します:
 
 ```bash
 $ npm run build
@@ -208,10 +195,10 @@ dist/
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -231,7 +218,7 @@ GitHub Pagesなどに自動でデプロイさせるには、後述の節を参�
 
 ### 編集スペースを初期化 (CLIを使用する)
 
-Viteプラグインを使用しない場合は、以下のコマンドでドキュメントサイト編集スペースを生成します:
+Viteプラグインを使用しない場合は、 `atr init --no-vite` コマンドでドキュメントサイト編集スペースを生成します:
 
 ```bash
 $ mkdir my-site
@@ -250,7 +237,6 @@ Scaffold created at /home/kouji/my-page
 ```
 my-page
 ├── atr.json
-├── dist
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -260,26 +246,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
-ドキュメントサイトをビルドする場合は、以下のコマンドを使用します:
+ディレクトリ構造やファイルの意味については、別章で解説します。
+ドキュメントサイトをビルドする場合は、 `atr build` コマンドを使用します:
 
 ```bash
 $ atr build
@@ -312,10 +286,10 @@ dist
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -350,7 +324,7 @@ GitHub Pagesなどに自動でデプロイさせるには、後述の節を参�
 まず、編集スペースをGitに管理させて、バージョン管理できるようにしましょう。
 そうすれば、誤った編集やページのカスタマイズ、気に入らない記述なども容易に元に戻せます。
 
-以下のコマンドで、編集スペースの状態をGitの最初のバージョンとして登録（コミット）します:
+以下のコマンド(`git init`, `git add -A`, `git commit ...`)で、編集スペースの状態をGitの最初のバージョンとして登録（コミット）します:
 
 ```bash
 $ git init
@@ -382,7 +356,7 @@ $ git commit -m "Initial commit"
 
 ### 全自動でページを公開する
 
-`atr init`コマンドで生成された雛形には、 [GitHub Actions](https://docs.github.com/ja/actions/get-started/understand-github-actions) のスクリプトが含まれています:
+`atr init` コマンドで生成された雛形には、 [GitHub Actions](https://docs.github.com/ja/actions/get-started/understand-github-actions) のスクリプトが含まれています:
 
 ```
 ├── .github
@@ -464,8 +438,46 @@ a-terra-forgeは、文書スペースの全体的な管理を `atr.json` とい�
 
 それでは、執筆を開始しましょう！
 
-"a-terra-forge"は、文書をカテゴリ別に扱います。例えば、何かの資料について執筆する場合は、カテゴリ名を決めて、そのカテゴリの文書として執筆すると良いでしょう。
-カテゴリは `docs/` ディレクトリの下にサブディレクトリを作ることで認識されます。例えば、以下は`atr init`で生成される雛形の一部ですが:
+"a-terra-forge"では、文書を以下のように分類します:
+
+|カテゴリ|詳細|
+|:----|:----|
+|一般|分類分けした文書です。例えば「釣り」「料理」「コード」「DIY」などの、あなたが自由に決めて分類する文書群です。同じカテゴリの文書は一つに結合され、閲覧者は単一のページとして読むことが出来ます。|
+|ブログ|時系列降順に並べられた文書群です。それぞれの文書は、結合されることはなく独立しています。|
+|タイムライン|一般カテゴリ、またはブログカテゴリの全ての変更を、時系列降順で自動的に表示できる特殊なカテゴリです。サイト内に一つしか配置できません。|
+
+```mermaid
+flowchart TB
+  C[Blog]
+  subgraph C_DIR[" "]
+    c_foo[foo.md]
+    c_bar[bar.md]
+    c_baz[baz.md]
+    c_foo --> c_bar --> c_baz
+  end
+  C --> c_foo
+  B[Category]
+  subgraph B_DIR[" "]
+    b_index["index.md<hr/>article1.md<hr/>article2.md<hr/>article3.md"]
+  end
+  B --> b_index
+  A[Timeline]
+  subgraph A_DIR[" "]
+    a_foo[foo.md]
+    a_cat[Category/index.md]
+    a_bar[bar.md]
+    a_baz[baz.md]
+    a_foo --> a_cat --> a_bar --> a_baz
+  end
+  A --> a_foo
+```
+
+- 一般カテゴリとブログカテゴリは、あなたが自由に決めて、いくらでも増やすことが出来ます。また、カテゴリは、サブカテゴリで細かく分類することも出来ます。
+- "a-terra-forge"は、読者にタイムラインで最新の更新記事を把握したり読んでもらい、もっと全体像を把握したり、最初から読みたいと思った時に各カテゴリのページを読む、というような動線を想定しています。
+- 例えば、何かの資料について執筆する場合は、一般カテゴリの名前を決めて、そのカテゴリの文書として執筆すると良いでしょう。
+- ブログカテゴリは、単独記事のような「日記」「雑記」のような文書を書く場合に適します。
+
+タイムライン以外のカテゴリは、 `docs/` ディレクトリの下にサブディレクトリを作ることで認識されます。例えば、以下は `atr init` で生成される雛形の一部ですが:
 
 ```
 my-page
@@ -488,6 +500,8 @@ my-page
 
 全ての文書を `index.md` に記述しても良いですし、複数のmarkdownファイルに分割して記述しても構いません。
 ファイルを分割しておくと、ファイルを編集した場合にその部分だけがタイムラインに掲載されます。読者は最近どの文書が更新されたのかを把握しやすくなるため、特に長文となる場合は、章をファイル単位に分割すると良いでしょう。
+
+ブログカテゴリは、一般カテゴリを転用することで生成出来ます。詳細は別章を参照してください。
 
 ### frontmatter
 
@@ -534,6 +548,7 @@ New article created: food/index.md
 これで新たに `docs/food/` ディレクトリが生成され、その中に `index.md` の雛形が配置されます。
 但し、この `index.md` は `draft: true` が指定されているため、プレビューに文書が含まれないことに注意してください。
 
+- 既に `index.md` が存在する場合は、 `article<n>.md` のようなファイル名で生成されます。
 - もし、あるカテゴリがもう不要であるなら、そのカテゴリディレクトリを単純に削除すれば消えてなくなります。
 - カテゴリにサブカテゴリを作ることが出来ます:
   - サブカテゴリが存在する場合は、親のカテゴリにコンテンツを配置できないことに注意してください。
@@ -656,7 +671,7 @@ New article created: food/index.md
       "timeline": "Timeline",
       "hello": "Hello World",
       "about": "About",
-      "endOfTimeline": "End of timeline.",
+      "endOfArticle": "End of article.",
       "noArticlesYet": "No articles yet.",
       "uncommitted": "uncommitted"
     },
@@ -667,7 +682,7 @@ New article created: food/index.md
       "timeline": "タイムライン",
       "hello": "ハローワールド",
       "about": "About",
-      "endOfTimeline": "タイムラインは以上です",
+      "endOfArticle": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
     }
@@ -720,6 +735,7 @@ a-terra-forgeは、ブログを執筆するための機能も持っています�
   カテゴリを転用する、という方法なので、任意のカテゴリ（複数可）をブログのように描画することが出来ます。
 - ブログページは、タイムラインにかなり近い描画を行います。最新の文書はスタティック生成され、古い記事は無限スクロール（デマンド読み込み）が行われます。
   従って、ブログが長期に渡って蓄積されても、1ページの物理的なHTMLサイズを一定の範囲に制約できます。
+- また、ブログ内の一つの記事毎に、独立したページが生成されます。このページは、それぞれの文書に適したOGPメタデータが埋め込まれているので、他のサイトから参照する場合に有用です。
 
 以下のように、ブログに転用するカテゴリ名を指定します:
 
@@ -732,7 +748,7 @@ a-terra-forgeは、ブログを執筆するための機能も持っています�
 ```
 
 ナビゲーションメニューのどこにメニューを配置するのかは、これまで述べてきた `menuOrder` などの指定で決定されるので、配置の自由度は通常のカテゴリと同様です。
-タイムライン同様に、動的に読み込むHTMLが `blog-bodies/` に配置されます。
+タイムライン同様に、動的に読み込む断片は `article-bodies/` に配置され、拡張子は `.txt` になります。
 
 ---
 
@@ -906,9 +922,9 @@ a-terra-forgeの雛形にはこのコードが含まれているため、すぐ�
 |`codeHighlight`|No| Shikiのコードハイライト設定です。詳細は「コードハイライト設定」を参照してください。 |
 |`siteTemplates`|No| サイト共通のアセットファイルで、funcityによるスクリプト処理を行うテンプレートファイル群を指定します。CSSやJavaScriptファイル、RSS/Atom、サイトマップなどは、全てスクリプトとして処理されて出力されます。追加のスクリプト処理が必要なファイルはこのリストに追加することで、同じようにスクリプト処理の対象として認識させることが出来ます。デフォルトは、`site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`です。|
 |`contentFiles`|No| ビルド時に文書ディレクトリ以下から追加でコピーする静的ファイルの glob パターンを指定します。画像などの補助ファイルを出力先に展開したい場合に使います。デフォルトは、`./**/*.png`, `./**/*.jpg`です。 |
-|`assetsDir`|No| アセットを配置するディレクトリパスです。デフォルトは `assets/` で、パスは `atr.json` があるディレクトリから解決されます。この配下のファイルはディレクトリ構造を保ったまま `outDir` にコピーされます（例: `assets/favicon.ico` → `dist/favicon.ico`）。 |
+|`assetsDir`|No| アセットを配置するディレクトリパスです。デフォルトは `.assets/` で、パスは `atr.json` があるディレクトリから解決されます。この配下のファイルはディレクトリ構造を保ったまま `outDir` にコピーされます（例: `.assets/favicon.ico` → `dist/favicon.ico`）。 |
 |`docsDir`|No| 文書ディレクトリです。デフォルトは `docs/` で、パスは `atr.json` があるディレクトリから解決されます。 |
-|`templatesDir`|No| テンプレートディレクトリです。デフォルトは `templates/` で、パスは `atr.json` があるディレクトリから解決されます。 |
+|`templatesDir`|No| テンプレートディレクトリです。デフォルトは `.templates/` で、パスは `atr.json` があるディレクトリから解決されます。 |
 |`outDir`|No| 出力ディレクトリです。デフォルトは `dist/` で、パスは `atr.json` があるディレクトリから解決されます。 |
 |`tmpDir`|No| 一時作業ディレクトリです。デフォルトはシステムテンポラリディレクトリで、パスは `atr.json` があるディレクトリから解決されます。 |
 |`cacheDir`|No| oEmbed/OGP探索キャッシュディレクトリです。デフォルトは `$HOME/.cache/a-terra-forge/` で、パスは `atr.json` があるディレクトリから解決されます。 |

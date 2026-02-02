@@ -22,9 +22,11 @@ import {
 import {
   applyHeaderIconCode,
   buildArticleAnchorId,
+  createPathFunctions,
   scriptVariables,
   toPosixPath,
 } from './helpers';
+import { type CategoryEntry, createEntryGetter } from './entries';
 import { renderTemplateWithImportHandler } from './templates';
 import {
   buildNavItems,
@@ -82,6 +84,7 @@ export const generateDirectoryDocument = async (
   frontPage: string,
   includeTimeline: boolean,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  baseUrl: URL,
   signal: AbortSignal
 ): Promise<void> => {
   const destinationPath = resolveCategoryDestinationPath(
@@ -89,6 +92,11 @@ export const generateDirectoryDocument = async (
     directory,
     frontPage
   );
+  const pathFunctions = createPathFunctions({
+    outDir,
+    documentPath: destinationPath,
+    baseUrl,
+  });
 
   const sortedResults = [...renderedResults].sort((a, b) => {
     const aIsIndex = isIndexMarkdown(a.articleFile.relativePath);
@@ -112,14 +120,17 @@ export const generateDirectoryDocument = async (
     return aPath.localeCompare(bPath);
   });
 
-  const articleEntries = sortedResults.map(
-    ({ articleFile, result, git }, index) => {
+  const renderedEntries = sortedResults.map(
+    ({ articleFile, result, timelineHtml, git }, index) => {
       const anchorId = buildArticleAnchorId(result.frontmatter.id);
       const title =
         typeof result.frontmatter.title === 'string'
           ? result.frontmatter.title
           : '';
-      const heading = index > 0 && title.length > 0 ? `<h2>${title}</h2>` : '';
+      const heading =
+        index > 0 && title.length > 0
+          ? `<h1${anchorId ? ` data-anchor="${anchorId}"` : ''}>${title}</h1>`
+          : '';
       const parts = [
         anchorId ? `<a id="${anchorId}"></a>` : '',
         heading,
@@ -127,9 +138,11 @@ export const generateDirectoryDocument = async (
       ].filter((part) => part.length > 0);
       const filePath = toPosixPath(articleFile.relativePath);
       const fileName = posix.basename(filePath);
+      const contentHtml = parts.join('\n');
       return {
         articleFile,
         result,
+        timelineHtml,
         git,
         index,
         title,
@@ -137,7 +150,7 @@ export const generateDirectoryDocument = async (
         filePath,
         fileName,
         directory: toPosixPath(articleFile.directory),
-        body: parts.join('\n'),
+        contentHtml,
       };
     }
   );
@@ -146,7 +159,7 @@ export const generateDirectoryDocument = async (
 
   const entryHtmlList = categoryEntryTemplate
     ? await Promise.all(
-        articleEntries.map(async (entry) => {
+        renderedEntries.map(async (entry) => {
           const entryFrontmatter = entry.result.frontmatter as Record<
             string,
             unknown
@@ -164,14 +177,15 @@ export const generateDirectoryDocument = async (
             directory: entry.directory,
             anchorId: entry.anchorId,
             git: entry.git,
-            contentHtml: entry.body,
+            contentHtml: entry.contentHtml,
           };
 
           const entryTemplateVariables = applyHeaderIconCode(
             buildCandidateVariables(
               scriptVariables,
               configVariables,
-              entryVariables
+              entryVariables,
+              pathFunctions
             ),
             configVariables
           );
@@ -189,32 +203,47 @@ export const generateDirectoryDocument = async (
             categoryEntryTemplate.path,
             entryErrors
           );
-          return entryHasError ? entry.body : entryRendered;
+          return entryHasError ? entry.contentHtml : entryRendered;
         })
       )
     : undefined;
 
-  const articles = articleEntries.map((entry, index) => {
-    const entryFrontmatter = entry.result.frontmatter as Record<
-      string,
-      unknown
-    >;
-    const entryHtml = entryHtmlList ? entryHtmlList[index] : entry.body;
-    return {
-      id: entry.result.frontmatter.id,
-      title: entry.title,
-      fileName: entry.fileName,
-      ...entryFrontmatter,
-      index: entry.index,
-      filePath: entry.filePath,
-      directory: entry.directory,
-      anchorId: entry.anchorId,
-      git: entry.git,
-      entryHtml,
-    };
-  });
+  const articleEntries: CategoryEntry[] = renderedEntries.map(
+    (entry, index) => {
+      const entryFrontmatter = entry.result.frontmatter as Record<
+        string,
+        unknown
+      >;
+      const entryId =
+        typeof entry.result.frontmatter.id === 'number'
+          ? entry.result.frontmatter.id
+          : undefined;
+      const fileName =
+        typeof entryFrontmatter.fileName === 'string'
+          ? entryFrontmatter.fileName
+          : entry.fileName;
+      const entryHtml = entryHtmlList
+        ? (entryHtmlList[index] ?? entry.contentHtml)
+        : entry.contentHtml;
+      return {
+        ...entryFrontmatter,
+        id: entryId,
+        title: entry.title,
+        fileName,
+        index: entry.index,
+        filePath: entry.filePath,
+        directory: entry.directory,
+        anchorId: entry.anchorId,
+        git: entry.git,
+        date: entry.git?.committer?.date,
+        contentHtml: entry.contentHtml,
+        timelineHtml: entry.timelineHtml,
+        entryHtml,
+      };
+    }
+  );
 
-  const commitIds = articleEntries
+  const commitIds = renderedEntries
     .map((entry) => entry.git?.shortOid)
     .filter((oid): oid is string => typeof oid === 'string' && oid.length > 0);
   const categoryCommitKeyWithDirty =
@@ -257,8 +286,10 @@ export const generateDirectoryDocument = async (
     includeTimeline
   );
   const contentVariables = {
-    articles,
+    articleEntries,
+    entryMode: 'category',
     getSiteTemplatePath,
+    getEntry: createEntryGetter(destinationPath),
     navItems,
     ...(navItemsAfter.length > 0 ? { navItemsAfter } : {}),
     ...(categoryCommitKeyWithDirty ? { categoryCommitKeyWithDirty } : {}),
@@ -269,7 +300,8 @@ export const generateDirectoryDocument = async (
       scriptVariables,
       configVariables,
       baseResult.frontmatter,
-      contentVariables
+      contentVariables,
+      pathFunctions
     ),
     configVariables
   );

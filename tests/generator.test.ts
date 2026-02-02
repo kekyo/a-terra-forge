@@ -32,7 +32,7 @@ const writeRequiredTemplates = async (
     options.indexTemplate ?? '<html><body>{{timelineIndexPath}}</body></html>';
   const entryTemplate =
     options.entryTemplate ??
-    '<article><header>{{title}}</header><section>{{body}}</section></article>';
+    '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>';
   await writeFile(
     join(templatesDir, 'index-timeline.html'),
     indexTemplate,
@@ -50,7 +50,12 @@ const writeRequiredTemplates = async (
   );
   await writeFile(
     join(templatesDir, 'blog-entry.html'),
-    '<article><header>{{title}}</header><section>{{body}}</section></article>',
+    '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>',
+    'utf8'
+  );
+  await writeFile(
+    join(templatesDir, 'index-blog-single.html'),
+    '<html><body>{{for article articleEntries}}{{article.title}}{{end}}</body></html>',
     'utf8'
   );
 };
@@ -85,10 +90,15 @@ const pickOEmbedSample = () => {
   throw new Error('No suitable oEmbed provider found for tests.');
 };
 
+const extractHeaderTitle = (html: string): string => {
+  const match = html.match(/<header>([^<]+)<\/header>/);
+  return match?.[1] ?? '';
+};
+
 describe('generateDocs', () => {
   it('Converts each directory into a single HTML using the fallback template.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'guide');
@@ -115,7 +125,7 @@ Details here`,
     );
 
     const fallbackTemplate =
-      '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" /></head><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" /></head><body>Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -140,7 +150,7 @@ Details here`,
 
     expect(html).toContain('Fallback');
     expect(html).toContain('<p>Docs body</p>');
-    expect(html).toMatch(/<h2[^>]*>Usage<\/h2>/);
+    expect(html).toMatch(/<h1[^>]*data-anchor="article-\d+"[^>]*>Usage<\/h1>/);
     expect(html).toContain('<p>Details here</p>');
     expect(html).toContain('href="../site-style.css"');
 
@@ -151,7 +161,7 @@ Details here`,
   it('logs built paths relative to the config directory.', async (fn) => {
     const projectDir = await createTempDir(fn, 'built-log-paths');
     const docsDir = join(projectDir, 'docs');
-    const templatesDir = join(projectDir, 'templates');
+    const templatesDir = join(projectDir, '.templates');
     const outDir = join(projectDir, 'dist');
 
     const markdownDir = join(docsDir, 'guide');
@@ -168,10 +178,13 @@ Details here`,
     await mkdir(templatesDir, { recursive: true });
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html>{{for article articles}}{{article.entryHtml}}{{end}}</html>',
+      '<html>{{for article articleEntries}}{{article.entryHtml}}{{end}}</html>',
       'utf8'
     );
-    await writeRequiredTemplates(templatesDir);
+    await writeRequiredTemplates(templatesDir, {
+      entryTemplate:
+        '<article data-title="{{title}}" data-category-path="{{categoryPath}}">{{title}}</article>',
+    });
 
     const configPath = join(projectDir, 'atr.json');
     await writeFile(configPath, '{}', 'utf8');
@@ -200,12 +213,12 @@ Details here`,
 
   it('Renders assets even when no markdown files exist.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
     const fallbackTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -282,7 +295,7 @@ Details here`,
   it('Copies target contents based on glob patterns.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-contents');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     const markdownDir = join(docsDir, 'develop');
@@ -299,7 +312,7 @@ Details here`,
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -374,7 +387,7 @@ Details here`,
 
   it('Copies assetsDir contents into the output root.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -387,7 +400,7 @@ Details here`,
     );
     await writeRequiredTemplates(templatesDir);
 
-    const assetsDir = join(configDir, 'assets');
+    const assetsDir = join(configDir, '.assets');
     const imagesDir = join(assetsDir, 'images');
     await mkdir(imagesDir, { recursive: true });
     await writeFile(join(assetsDir, 'favicon.ico'), 'icon', 'utf8');
@@ -420,14 +433,14 @@ Details here`,
     expect(copiedLogo).toBe('logo');
 
     await expect(
-      readFile(join(outDir, 'assets', 'favicon.ico'), 'utf8')
+      readFile(join(outDir, '.assets', 'favicon.ico'), 'utf8')
     ).rejects.toThrow();
   });
 
   it('Moves a category front page to root and relocates timeline assets.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-category');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -453,7 +466,10 @@ Details here`,
       '<html><body>CAT:{{title}}</body></html>',
       'utf8'
     );
-    await writeRequiredTemplates(templatesDir);
+    await writeRequiredTemplates(templatesDir, {
+      entryTemplate:
+        '<article data-title="{{title}}" data-category-path="{{categoryPath}}">{{title}}</article>',
+    });
 
     await writeFile(
       join(siteRoot, 'atr.json'),
@@ -493,15 +509,22 @@ Details here`,
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline', 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, 'timeline', entry.entryPath), 'utf8')
+      )
     );
-    const guideEntry = timelineIndex.find(
-      (entry: { title: string }) => entry.title === 'Guide'
+    const guideHtml = entryHtmlList.find((html) =>
+      html.includes('data-title="Guide"')
     );
-    const referenceEntry = timelineIndex.find(
-      (entry: { title: string }) => entry.title === 'Reference'
+    const referenceHtml = entryHtmlList.find((html) =>
+      html.includes('data-title="Reference"')
     );
-    expect(guideEntry?.categoryPath).toBe('../index.html');
-    expect(referenceEntry?.categoryPath).toBe('../reference/index.html');
+    expect(guideHtml).toContain('data-category-path="../index.html"');
+    expect(referenceHtml).toContain(
+      'data-category-path="../reference/index.html"'
+    );
 
     const guideAsset = await readFile(
       join(outDir, 'images', 'logo.png'),
@@ -521,7 +544,7 @@ Details here`,
   it('Skips timeline output when timeline is not selected.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-no-timeline');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -568,7 +591,7 @@ Details here`,
   it('Throws when front page category has subcategories.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-subcategory');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     const apiDir = join(docsDir, 'guide', 'api');
@@ -606,7 +629,7 @@ Details here`,
   it('Throws when front page category does not exist.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-missing');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -642,7 +665,7 @@ Details here`,
   it('Keeps previous output when generation fails.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'output-rollback');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -684,7 +707,7 @@ Details here`,
   it('Throws on content file collisions after front page relocation.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'front-page-collision');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -729,7 +752,7 @@ Details here`,
 
   it('Uses the first markdown frontmatter for placeholders while concatenating directory markdown.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `---
@@ -764,7 +787,7 @@ More text
   </head>
   <body>
     <header>{{description}}</header>
-    <main class="article">{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main class="article">{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -805,7 +828,7 @@ More text
   it('Applies atr.json variables as template placeholders but allows frontmatter to override them.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -827,7 +850,7 @@ title: Frontmatter Title
     <header>{{siteName}}</header>
     <h1>{{title}}</h1>
     <p class="tagline">{{tagline}}</p>
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -876,7 +899,7 @@ title: Frontmatter Title
 
   it('Exposes frontmatter values on articles while protecting internal keys.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `---
@@ -904,7 +927,7 @@ Body text
     const template = `
 <html>
   <body>
-    {{for article articles}}
+    {{for article articleEntries}}
       <div
         data-index="{{article.index}}"
         data-file-path="{{article.filePath}}"
@@ -953,7 +976,7 @@ Body text
   it('Renders conditional template blocks for optional config variables.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-conditional');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -977,7 +1000,7 @@ title: Entry
     {{else}}
     <header>Missing</header>
     {{end}}
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1018,7 +1041,7 @@ title: Entry
 
   it('Assigns new article IDs in relative path order when frontmatter id is missing.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'article');
@@ -1050,7 +1073,7 @@ title: Beta
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -1086,7 +1109,7 @@ title: Beta
 
   it('Skips draft articles but reserves their IDs.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'notes');
@@ -1110,7 +1133,7 @@ title: Beta
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.title}};{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.title}};{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1137,7 +1160,7 @@ title: Beta
 
   it('Orders category articles by frontmatter order with index first.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'guide');
@@ -1185,7 +1208,7 @@ title: Gamma
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.title}};{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.title}};{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1206,7 +1229,7 @@ title: Gamma
 
   it('Renders category entries with index and file name metadata.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'guide');
@@ -1234,7 +1257,7 @@ title: Note
     const categoryTemplate = `
 <html>
   <body>
-    {{for article articles}}<section data-idx="{{article.index}}" data-file="{{article.fileName}}">{{article.entryHtml}}</section>{{end}}
+    {{for article articleEntries}}<section data-idx="{{article.index}}" data-file="{{article.fileName}}">{{article.entryHtml}}</section>{{end}}
   </body>
 </html>
 `;
@@ -1274,7 +1297,7 @@ title: Note
 
   it('Extracts titles from headings and injects H2 for subsequent articles.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const articleDir = join(docsDir, 'article');
@@ -1303,7 +1326,7 @@ Second body
   <head><title>{{title}}</title></head>
   <body>
     <h1>{{title}}</h1>
-    {{for article articles}}{{article.entryHtml}}{{end}}
+    {{for article articleEntries}}{{article.entryHtml}}{{end}}
   </body>
 </html>
 `;
@@ -1329,7 +1352,10 @@ Second body
     expect(html).toContain('<h1>First Title</h1>');
     expect(html).toContain('<p>First body</p>');
     expect(html).not.toContain('<h2>First Title</h2>');
-    expect(html).toContain('<h2>Second Title</h2>');
+    expect(html).not.toContain('<h2>Second Title</h2>');
+    expect(html).toMatch(
+      /<h1[^>]*data-anchor="article-\d+"[^>]*>Second Title<\/h1>/
+    );
     expect(html).toContain('<p>Second body</p>');
 
     const firstMd = await readFile(join(articleDir, '01-first.md'), 'utf8');
@@ -1343,9 +1369,64 @@ Second body
     expect(secondMd).toContain('Second body');
   });
 
+  it('Keeps the first heading when title is already defined.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, '.templates');
+    const outDir = await createTempDir(fn, 'out');
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    const markdown = `---
+id: 7
+title: Frontmatter Title
+---
+
+# Body Title
+
+Body text
+`;
+    await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
+
+    const template = `
+<html>
+  <head><title>{{title}}</title></head>
+  <body>
+    <h1>{{title}}</h1>
+    {{for article articleEntries}}{{article.entryHtml}}{{end}}
+  </body>
+</html>
+`;
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      template,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'guide', 'index.html'), 'utf8');
+    expect(html).toContain('<title>Frontmatter Title</title>');
+    expect(html).toContain('<h1>Frontmatter Title</h1>');
+    expect(html).toMatch(/<h2[^>]*>Body Title<\/h2>/);
+    expect(html).toContain('<p>Body text</p>');
+
+    const savedMd = await readFile(join(markdownDir, 'index.md'), 'utf8');
+    expect(savedMd).toMatch(/^title:\s*Frontmatter Title$/m);
+    expect(savedMd).toContain('# Body Title');
+  });
+
   it('If a template matching the first markdown exists, it takes precedence.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'guide');
@@ -1354,7 +1435,7 @@ Second body
     await writeFile(join(markdownDir, 'overview.md'), '# Overview', 'utf8');
 
     const fallbackTemplate =
-      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body>';
+      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -1370,7 +1451,7 @@ Second body
     const specificTemplateDir = join(templatesDir, 'guide');
     await mkdir(specificTemplateDir, { recursive: true });
     const specificTemplate =
-      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Specific template {{for article articles}}{{article.entryHtml}}{{end}} End</body>';
+      '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Specific template {{for article articleEntries}}{{article.entryHtml}}{{end}} End</body>';
     await writeFile(
       join(specificTemplateDir, 'intro.html'),
       specificTemplate,
@@ -1405,7 +1486,7 @@ Second body
 
   it('Templates without placeholders will result in an error.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'guide');
@@ -1435,7 +1516,7 @@ Second body
 
   it('Provides formatDate helper in template scripts.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `
@@ -1451,7 +1532,7 @@ Details here
 <html>
   <body>
     <div class="date">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</div>
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1478,9 +1559,114 @@ Details here
     expect(htmlMatch?.[1]).toBe('2024/03/05');
   });
 
+  it('Resolves relative and absolute paths based on output documents.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs-paths');
+    const templatesDir = await createTempDir(fn, 'templates-paths');
+    const outDir = await createTempDir(fn, 'out-paths');
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), '# Guide', 'utf8');
+
+    const template = `<html><body>{{toRelativePath siteImage}}|{{toRelativePath siteIcon}}|{{toAbsolutePath siteImage}}|{{toAbsolutePath siteIcon}}</body></html>`;
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      template,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir, { indexTemplate: template });
+
+    const config = {
+      variables: {
+        baseUrl: 'https://example.com/docs',
+        siteImage: './images/og.png',
+        siteIcon: '/icons/icon.png',
+      },
+    };
+    const configPath = join(outDir, 'atr.json');
+    await writeFile(configPath, JSON.stringify(config), 'utf8');
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath,
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const timelineHtml = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(timelineHtml).toContain(
+      'images/og.png|icons/icon.png|https://example.com/docs/images/og.png|https://example.com/docs/icons/icon.png'
+    );
+
+    const categoryHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain(
+      '../images/og.png|../icons/icon.png|https://example.com/docs/images/og.png|https://example.com/docs/icons/icon.png'
+    );
+  });
+
+  it('Falls back to localhost baseUrl when invalid.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs-baseurl');
+    const templatesDir = await createTempDir(fn, 'templates-baseurl');
+    const outDir = await createTempDir(fn, 'out-baseurl');
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), '# Guide', 'utf8');
+
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html><body>{{toAbsolutePath siteImage}}</body></html>',
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const config = {
+      variables: {
+        baseUrl: 'not a url',
+        siteImage: '/images/og.png',
+      },
+    };
+    const configPath = join(outDir, 'atr.json');
+    await writeFile(configPath, JSON.stringify(config), 'utf8');
+
+    const warnings: string[] = [];
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath,
+      logger: {
+        debug: () => undefined,
+        info: () => undefined,
+        warn: (message: string) => warnings.push(message),
+        error: () => undefined,
+      },
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const categoryHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain('http://localhost/images/og.png');
+    expect(
+      warnings.some((message) => message.includes('Invalid baseUrl'))
+    ).toBe(true);
+  });
+
   it('Imports templates and executes scripts in them.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `
@@ -1492,14 +1678,15 @@ Details here
     await mkdir(markdownDir, { recursive: true });
     await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
 
-    const partial = `<section class="partial">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
+    const partial = `<section class="partial">{{greeting}} {{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
     await writeFile(join(templatesDir, 'partial.html'), partial, 'utf8');
 
     const template = `
 <html>
   <body>
+    {{set greeting 'Hello'}}
     {{import 'partial.html'}}
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -1524,12 +1711,60 @@ Details here
     const htmlMatch = html.match(/<section class="partial">([^<]+)<\/section>/);
     expect(htmlMatch).not.toBeNull();
 
-    expect(htmlMatch?.[1]).toBe('2024/03/05');
+    expect(htmlMatch?.[1]).toBe('Hello 2024/03/05');
+  });
+
+  it('Silently ignores missing templates with tryImport.', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs');
+    const templatesDir = await createTempDir(fn, '.templates');
+    const outDir = await createTempDir(fn, 'out');
+
+    const markdown = `
+# Body
+
+Details here
+`;
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
+
+    const partial = `<section class="partial">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
+    await writeFile(join(templatesDir, 'partial.html'), partial, 'utf8');
+
+    const template = `
+<html>
+  <body>
+    {{tryImport 'missing.html'}}
+    {{tryImport 'partial.html'}}
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
+  </body>
+</html>
+`;
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      template,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'guide', 'index.html'), 'utf8');
+    expect(html).toContain('2024/03/05');
+    expect(html).not.toContain('missing.html');
   });
 
   it('Renders timeline entry templates at build time.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdown = `---
@@ -1543,7 +1778,7 @@ Details here
     await writeFile(join(docsDir, 'index.md'), markdown, 'utf8');
 
     const pageTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       pageTemplate,
@@ -1560,7 +1795,7 @@ Details here
     const entryTemplate = `
 <article>
   <header>{{title}}</header>
-  <section>{{body}}</section>
+  <section>{{contentHtml}}</section>
 </article>
 `;
     await writeFile(
@@ -1593,17 +1828,17 @@ Details here
 
     const articleBodies = await readdir(join(outDir, 'article-bodies'));
     expect(articleBodies.some((fileName) => fileName.endsWith('.txt'))).toBe(
-      false
+      true
     );
     expect(articleBodies.some((fileName) => fileName.endsWith('.html'))).toBe(
-      true
+      false
     );
   });
 
   it('Prerenders timeline entries when prerenderCount is set.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-prerender');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1621,14 +1856,14 @@ Details here
     );
 
     const categoryTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       categoryTemplate,
       'utf8'
     );
     const indexTemplate =
-      '<html><body><div id="timeline-list" class="stream-list"{{if prerenderCount?}} data-timeline-prerender="{{prerenderCount}}"{{end}}>{{if prerenderCount?}}{{for entry (slice 0 prerenderCount timelineEntries)}}{{getTimelineEntry entry.entryPath}}{{end}}{{end}}</div></body></html>';
+      '<html><body><div id="timeline-list" class="stream-list"{{if prerenderCount?}} data-timeline-prerender="{{prerenderCount}}"{{end}}>{{if prerenderCount?}}{{for entry (slice 0 prerenderCount articleEntries)}}{{getEntry entry}}{{end}}{{end}}</div></body></html>';
     await writeRequiredTemplates(templatesDir, { indexTemplate });
 
     const config = {
@@ -1658,7 +1893,7 @@ Details here
   it('Orders timeline entries by committer date.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-committer');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1688,7 +1923,7 @@ title: Second
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -1730,8 +1965,13 @@ title: Second
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(titles[0]).toBe('Second');
     expect(titles[1]).toBe('First');
   });
@@ -1739,7 +1979,7 @@ title: Second
   it('Places dirty entries at the top of the timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-dirty');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1769,7 +2009,7 @@ title: Second
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1818,15 +2058,20 @@ Dirty edit`,
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(titles[0]).toBe('First');
   });
 
   it('Places uncommitted entries at the top of the timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-timeline-uncommitted');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1856,7 +2101,7 @@ title: Uncommitted
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -1888,8 +2133,13 @@ title: Uncommitted
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(titles[0]).toBe('Uncommitted');
     expect(titles[1]).toBe('Committed');
   });
@@ -1897,7 +2147,7 @@ title: Uncommitted
   it('Renders blog categories with blog.json ordering by git date.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-blog-category');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -1939,7 +2189,7 @@ title: Draft
     );
 
     const fallbackTemplate =
-      '<html><body>Fallback {{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       fallbackTemplate,
@@ -1951,7 +2201,7 @@ title: Draft
       'BLOG_INDEX {{blogIndexPath}}',
       '<div class="docs" data-blog-index="{{blogIndexPath}}">',
       '<div id="blog-list" class="stream-list"{{if prerenderCount?}} data-blog-prerender="{{prerenderCount}}"{{end}}>',
-      '{{for entry (slice 0 prerenderCount blogEntries)}}{{getBlogEntry entry.entryPath}}{{end}}',
+      '{{for entry (slice 0 prerenderCount articleEntries)}}{{getEntry entry}}{{end}}',
       '</div>',
       '<div id="blog-status"></div>',
       '<div id="blog-sentinel"></div>',
@@ -1965,7 +2215,12 @@ title: Draft
     );
     await writeFile(
       join(templatesDir, 'blog-entry.html'),
-      '<article>BLOG_ENTRY:{{title}}</article>',
+      '<article>BLOG_ENTRY:{{title}}|{{entrySinglePath}}</article>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'index-blog-single.html'),
+      '<html><body>SINGLE:{{for entry articleEntries}}{{entry.title}}{{end}}</body></html>',
       'utf8'
     );
 
@@ -2010,12 +2265,25 @@ title: Draft
 
     const blogIndex = JSON.parse(
       await readFile(join(outDir, 'blog', 'blog.json'), 'utf8')
-    ) as { title: string; entryPath: string }[];
-    const titles = blogIndex.map((entry) => entry.title);
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      blogIndex.map((entry) =>
+        readFile(join(outDir, 'blog', entry.entryPath), 'utf8')
+      )
+    );
+    const entries = entryHtmlList.map((html) => {
+      const match = html.match(/BLOG_ENTRY:([^|<]+)\|([^<]+)/);
+      return {
+        title: match ? match[1] : '',
+        entrySinglePath: match ? match[2] : '',
+      };
+    });
     expect(blogIndex).toHaveLength(3);
-    expect(titles[0]).toBe('Draft');
-    expect(titles[1]).toBe('New');
-    expect(titles[2]).toBe('Old');
+    expect(entries[0]?.title).toBe('Draft');
+    expect(entries[1]?.title).toBe('New');
+    expect(entries[2]?.title).toBe('Old');
+    const firstEntrySinglePath = entries[0]?.entrySinglePath;
+    expect(firstEntrySinglePath).toMatch(/\.html$/);
 
     const blogHtml = await readFile(join(outDir, 'blog', 'index.html'), 'utf8');
     expect(blogHtml).toContain('BLOG_INDEX');
@@ -2025,12 +2293,20 @@ title: Draft
       join(outDir, 'blog', firstEntry!.entryPath),
       'utf8'
     );
-    expect(entryHtml).toContain('BLOG_ENTRY:Draft');
+    expect(entryHtml).toContain('BLOG_ENTRY:Draft|');
+    if (!firstEntrySinglePath) {
+      throw new Error('Missing entrySinglePath for blog entry.');
+    }
+    const singleHtml = await readFile(
+      join(outDir, 'blog', firstEntrySinglePath),
+      'utf8'
+    );
+    expect(singleHtml).toContain('SINGLE:Draft');
   });
 
   it('Resolves relative URLs for timeline article-bodies.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const markdownDir = join(docsDir, 'reference');
@@ -2050,7 +2326,7 @@ title: Reference
     await writeFile(join(markdownDir, 'git-versioning.png'), 'image', 'utf8');
 
     const pageTemplate =
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>';
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
       join(templatesDir, 'index-category.html'),
       pageTemplate,
@@ -2075,6 +2351,7 @@ title: Reference
     const entryHtml = await readFile(join(outDir, entryPath), 'utf8');
     expect(entryHtml).toContain('src="reference/git-versioning.png"');
     expect(entryHtml).toContain('href="reference/specs/spec.md"');
+    expect(entryHtml).toContain('loading="lazy"');
 
     const categoryHtml = await readFile(
       join(outDir, 'reference', 'index.html'),
@@ -2082,11 +2359,12 @@ title: Reference
     );
     expect(categoryHtml).toContain('src="git-versioning.png"');
     expect(categoryHtml).toContain('href="specs/spec.md"');
+    expect(categoryHtml).toContain('loading="lazy"');
   });
 
   it('Skips category pages when subcategories exist and ignores deeper levels.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     const guideDir = join(docsDir, 'guide');
@@ -2156,7 +2434,7 @@ title: Reference
       '{{end}}',
       '{{end}}',
       '</nav>',
-      '<main>{{for article articles}}{{article.entryHtml}}{{end}}</main>',
+      '<main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>',
       '</body></html>',
     ].join('\n');
     await writeFile(
@@ -2198,8 +2476,13 @@ title: Reference
 
     const timelineIndex = JSON.parse(
       await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtmlList = await Promise.all(
+      timelineIndex.map((entry) =>
+        readFile(join(outDir, entry.entryPath), 'utf8')
+      )
     );
-    const titles = timelineIndex.map((entry: { title: string }) => entry.title);
+    const titles = entryHtmlList.map(extractHeaderTitle);
     expect(timelineIndex).toHaveLength(3);
     expect(titles).toEqual(expect.arrayContaining(['API', 'CLI', 'Reference']));
     expect(titles).not.toContain('Guide Top');
@@ -2216,7 +2499,7 @@ title: Reference
   it('Orders navigation items using the menu order lists, including timeline.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-nav-order');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2308,7 +2591,7 @@ title: ${title}
   it('Highlights code blocks with Shiki and line numbers.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-highlight');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2331,7 +2614,7 @@ console.log(value);
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2361,10 +2644,10 @@ console.log(value);
     expect(html).toContain('data-highlighted-line');
   });
 
-  it('Embeds git metadata into templates when enabled.', async (fn) => {
+  it('Embeds git metadata into templates.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-git-metadata');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2437,10 +2720,10 @@ Dirty edit`,
 <html>
   <body>
     <div id="git-list">
-      {{for article articles}}{{article.title}}|{{article.git.shortOid}}|{{article.git.summary}}|{{article.git.committer.email}}|{{article.git.file.path}}|{{article.git.dirty}}|{{article.git.status.head}}|{{article.git.status.workdir}}|{{article.git.status.stage}};{{end}}
+      {{for article articleEntries}}{{article.title}}|{{article.git.shortOid}}|{{article.git.summary}}|{{article.git.committer.email}}|{{article.git.file.path}}|{{article.git.dirty}}|{{article.git.status.head}}|{{article.git.status.workdir}}|{{article.git.status.stage}};{{end}}
     </div>
     <div id="commit-key">COMMITKEY:{{categoryCommitKeyWithDirty}}</div>
-    <main>{{for article articles}}{{article.entryHtml}}{{end}}</main>
+    <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
 `;
@@ -2453,7 +2736,7 @@ Dirty edit`,
     await writeRequiredTemplates(templatesDir, {
       indexTemplate: '<html><body>{{timelineIndexPath}}</body></html>',
       entryTemplate:
-        '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}</section></article>',
+        '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}</section><section>{{contentHtml}}</section></article>',
     });
 
     const options: ATerraForgeProcessingOptions = {
@@ -2461,7 +2744,6 @@ Dirty edit`,
       templatesDir: resolve(templatesDir),
       outDir: resolve(outDir),
       cacheDir: '.cache',
-      enableGitMetadata: true,
     };
 
     const abortController = new AbortController();
@@ -2497,7 +2779,7 @@ Dirty edit`,
     expect(commitKey).toBe(`${shortOids[0]!.oid},${shortOids[1]!.oid}:dirty`);
 
     const entry1 = await readFile(
-      join(outDir, 'article-bodies', '1.html'),
+      join(outDir, 'article-bodies', '1.txt'),
       'utf8'
     );
     const entry1Match = entry1.match(
@@ -2508,7 +2790,7 @@ Dirty edit`,
     expect(entry1Date.isValid()).toBe(true);
 
     const entry2 = await readFile(
-      join(outDir, 'article-bodies', '2.html'),
+      join(outDir, 'article-bodies', '2.txt'),
       'utf8'
     );
     const entry2Match = entry2.match(
@@ -2522,7 +2804,7 @@ Dirty edit`,
   it('Generates sitemap.xml with all HTML files when baseUrl is configured.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-sitemap');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2543,7 +2825,7 @@ Body
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2594,7 +2876,7 @@ Body
   it('Generates RSS/Atom feeds with markdown summaries and excludes uncommitted entries.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-feeds');
     const docsDir = join(siteRoot, 'docs');
-    const templatesDir = join(siteRoot, 'templates');
+    const templatesDir = join(siteRoot, '.templates');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
@@ -2636,7 +2918,7 @@ Draft body
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2773,7 +3055,7 @@ Draft body
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2823,7 +3105,7 @@ ${sampleUrl}
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
@@ -2899,7 +3181,7 @@ ${sampleUrl}
 
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(

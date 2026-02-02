@@ -46,7 +46,7 @@
     "build": "npm run metadata && vite build",
     "dev": "npm run build && vite",
     "test": "npm run build && vitest run",
-    "gen": "npm run build && node dist/index.cjs --docs demo/docs --templates scaffold/templates --out demo/dist --config demo/atr.json",
+    "gen": "npm run build && node dist/index.cjs --docs demo/docs --templates scaffold/.templates --assets scaffold/.assets --out demo/dist --config demo/atr.json",
     "pack": "npm run build && screw-up pack --pack-destination ./artifacts/"
   },
   "dependencies": {
@@ -59,7 +59,7 @@
     "isomorphic-git": ">=1.26.0",
     "js-yaml": ">=4.1.0",
     "json5": ">=2.2.0",
-    "mark-deco": ">=1.2.0"
+    "mark-deco": ">=1.3.0"
   },
   "peerDependencies": {
     "vite": ">=5.0.0"

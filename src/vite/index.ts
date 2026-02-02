@@ -86,6 +86,9 @@ const getNewPreviewRootDir = async (previewBaseDir: string) => {
   return previewRootDir;
 };
 
+let runningProcessor = false;
+let queuedProcessorRequest = false;
+
 /**
  * a-terra-forge preview plugin for Vite.
  * @param options - a-terra-forge options.
@@ -130,6 +133,39 @@ export const atrPreview = (
 
   const withTrailingSlash = (value: string): string =>
     value.endsWith('/') ? value : `${value}/`;
+
+  const resolveServerBaseUrl = (): string => {
+    const resolved = server?.resolvedUrls?.local?.[0];
+    if (typeof resolved === 'string' && resolved.length > 0) {
+      return withTrailingSlash(resolved);
+    }
+    if (!server) {
+      return 'http://localhost/';
+    }
+    const protocol = server.config.server.https ? 'https' : 'http';
+    let host = server.config.server.host;
+    if (host === true || host === undefined || host === null) {
+      host = 'localhost';
+    }
+    if (host === '0.0.0.0' || host === '::') {
+      host = 'localhost';
+    }
+    const hostname =
+      typeof host === 'string' && host.trim().length > 0 ? host : 'localhost';
+    const port = server.config.server.port ?? 5173;
+    return `${protocol}://${hostname}:${port}/`;
+  };
+
+  const buildRuntimeOverrides = (
+    baseUrl: string
+  ): ATerraForgeConfigOverrides => {
+    const nextVariables = new Map(configOverrides.variables ?? []);
+    nextVariables.set('baseUrl', baseUrl);
+    return {
+      ...configOverrides,
+      variables: nextVariables,
+    };
+  };
 
   const resolvePreviewOutDirName = (): string =>
     activePreviewRootDir ? basename(activePreviewRootDir) : '';
@@ -242,14 +278,8 @@ export const atrPreview = (
   };
 
   const updateGitWatchTargets = async (
-    targetDocsDir: string,
-    enableGitMetadata: boolean
+    targetDocsDir: string
   ): Promise<void> => {
-    if (!enableGitMetadata) {
-      closeGitWatchers();
-      return;
-    }
-
     const gitDir = await resolveGitDir(targetDocsDir);
     if (!gitDir) {
       closeGitWatchers();
@@ -313,10 +343,7 @@ export const atrPreview = (
       ...extraWatchDirs,
       ...extraWatchFiles,
     ]);
-    await updateGitWatchTargets(
-      docsDir,
-      variableOptions.enableGitMetadata ?? true
-    );
+    await updateGitWatchTargets(docsDir);
 
     return {
       docsDir,
@@ -325,7 +352,6 @@ export const atrPreview = (
       outDir,
       tmpDir,
       cacheDir,
-      enableGitMetadata: variableOptions.enableGitMetadata ?? true,
       userAgent: variableOptions.userAgent,
       configPath,
     };
@@ -358,16 +384,14 @@ export const atrPreview = (
   };
 
   // Generate preview contents
-  let running = false;
-  let queued = false;
   const runGenerate = async (): Promise<void> => {
     // Schedule delayed runner when already running
-    if (running) {
-      queued = true;
+    if (runningProcessor) {
+      queuedProcessorRequest = true;
       return;
     }
 
-    running = true;
+    runningProcessor = true;
     let failed = false;
 
     // Create next preview root directory.
@@ -378,7 +402,8 @@ export const atrPreview = (
     try {
       const atrOptions = await resolveRuntimeOptions(nextPreviewRootDir);
       atrOptions.logger = logger;
-      await generateDocs(atrOptions, abortController.signal, configOverrides);
+      const runtimeOverrides = buildRuntimeOverrides(resolveServerBaseUrl());
+      await generateDocs(atrOptions, abortController.signal, runtimeOverrides);
     } catch (error) {
       failed = true;
       const message = error instanceof Error ? error.message : String(error);
@@ -393,12 +418,12 @@ export const atrPreview = (
         },
       });
     } finally {
-      running = false;
+      runningProcessor = false;
     }
 
     // Retry when scheduled.
-    if (queued) {
-      queued = false;
+    if (queuedProcessorRequest) {
+      queuedProcessorRequest = false;
       await Promise.all([
         removePreviewRootDir(nextPreviewRootDir), // Cancel it.
         runGenerate(),
@@ -470,7 +495,7 @@ export const atrPreview = (
   return {
     name: pluginName,
     apply: 'serve',
-    async config(_config, env) {
+    config: async (_config, env) => {
       if (env.command !== 'serve') {
         return;
       }
@@ -486,7 +511,7 @@ export const atrPreview = (
         },
       };
     },
-    async configureServer(devServer) {
+    configureServer: async (devServer) => {
       server = devServer;
       if (!options.configPath) {
         configPath = resolveATerraForgeConfigPathFromDir(projectRoot);

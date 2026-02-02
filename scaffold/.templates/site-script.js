@@ -11,10 +11,14 @@
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   const copyButtonClass = 'code-copy-button';
   const copiedClass = 'code-copy-button-copied';
+  const headingAnchorClass = 'heading-anchor';
+  const headingAnchorCopiedClass = 'heading-anchor--copied';
+  const headingLinkClass = 'heading-link';
+  const headingHasLinkClass = 'heading-has-link';
   const imageModalId = 'imageModal';
   const imageModalImageClass = 'image-modal-image';
   const imageModalContentClass = 'image-modal-content-body';
-  const endOfTimeline = "{{getMessage 'endOfTimeline' 'End of timeline.'}}";
+  const endOfArticle = "{{getMessage 'endOfArticle' 'End of article.'}}";
   const noArticlesYet = "{{getMessage 'noArticlesYet' 'No articles yet.'}}";
   let mermaidInitialized = false;
   let mermaidThemeKey = '';
@@ -173,6 +177,18 @@
     return button;
   };
 
+  const createHeadingAnchorButton = (anchorId, href) => {
+    const link = document.createElement('a');
+    link.className = headingAnchorClass;
+    link.dataset.anchor = anchorId;
+    link.setAttribute('aria-label', 'Copy link');
+    link.setAttribute('title', 'Copy link');
+    link.href = href || `#${anchorId}`;
+    link.innerHTML =
+      '<i class="bi bi-link-45deg" aria-hidden="true"></i><span class="visually-hidden">Copy link</span>';
+    return link;
+  };
+
   const ensureImageModal = () => {
     const existing = document.getElementById(imageModalId);
     if (existing instanceof HTMLElement) {
@@ -235,6 +251,7 @@
     img.className = `img-fluid ${imageModalImageClass}`;
     img.src = image.currentSrc || image.src;
     img.alt = image.alt || '';
+    img.loading = 'lazy';
     openModalWithContent(img, undefined, 'image');
   };
 
@@ -253,6 +270,43 @@
         return;
       }
       pre.appendChild(createCopyButton());
+    });
+  };
+
+  const addHeadingPermalinks = (root) => {
+    const scope =
+      root && typeof root.querySelectorAll === 'function' ? root : document;
+    const headings = scope.querySelectorAll(
+      '.entry-body h1, .entry-body h2, .entry-header h1, .entry-header h2'
+    );
+    headings.forEach((heading) => {
+      if (!(heading instanceof HTMLElement)) {
+        return;
+      }
+      if (heading.querySelector(`.${headingAnchorClass}`)) {
+        return;
+      }
+      const explicitId = heading.id?.trim();
+      const dataAnchor = heading.dataset.anchor?.trim();
+      const anchorId = explicitId || dataAnchor;
+      if (!anchorId) {
+        return;
+      }
+      if (!explicitId && dataAnchor) {
+        const existing = document.getElementById(anchorId);
+        if (!existing) {
+          heading.id = anchorId;
+        }
+      }
+      const headingUrl = buildHeadingAnchorUrl(heading, anchorId);
+      const headingLink = ensureHeadingLink(heading, headingUrl);
+      if (headingLink) {
+        heading.classList.add(headingHasLinkClass);
+      }
+      heading.insertBefore(
+        createHeadingAnchorButton(anchorId, headingUrl),
+        heading.firstChild
+      );
     });
   };
 
@@ -337,6 +391,110 @@
     button.setAttribute('title', copied ? 'Copied' : 'Copy code');
   };
 
+  const setHeadingCopyState = (button, copied) => {
+    const icon = button.querySelector('i');
+    if (icon) {
+      icon.className = copied ? 'bi bi-check' : 'bi bi-link-45deg';
+    }
+    button.classList.toggle(headingAnchorCopiedClass, copied);
+    button.setAttribute('aria-label', copied ? 'Copied' : 'Copy link');
+    button.setAttribute('title', copied ? 'Copied' : 'Copy link');
+  };
+
+  const getDirectHeadingLinks = (heading) =>
+    Array.from(heading.children).filter(
+      (child) => child instanceof HTMLAnchorElement
+    );
+
+  const isIgnorableTextNode = (node) =>
+    node.nodeType === Node.TEXT_NODE &&
+    (!node.textContent || node.textContent.trim().length === 0);
+
+  const hasOnlyAnchorChild = (heading, anchor) => {
+    const meaningfulNodes = Array.from(heading.childNodes).filter(
+      (node) => !isIgnorableTextNode(node)
+    );
+    return meaningfulNodes.length === 1 && meaningfulNodes[0] === anchor;
+  };
+
+  const resolveHeadingLinkUrl = (heading) => {
+    const directLinks = getDirectHeadingLinks(heading);
+    const explicit = directLinks.find((link) =>
+      link.classList.contains(headingLinkClass)
+    );
+    if (explicit) {
+      return explicit.href;
+    }
+    const fallback = directLinks.find(
+      (link) => !link.classList.contains(headingAnchorClass)
+    );
+    if (fallback) {
+      return fallback.href;
+    }
+    return '';
+  };
+
+  const ensureHeadingLink = (heading, href) => {
+    if (!href) {
+      return null;
+    }
+    const directLinks = getDirectHeadingLinks(heading);
+    const existing = directLinks.find((link) =>
+      link.classList.contains(headingLinkClass)
+    );
+    if (existing) {
+      if (!existing.getAttribute('href')) {
+        existing.href = href;
+      }
+      return existing;
+    }
+    const directCandidate = directLinks.find(
+      (link) => !link.classList.contains(headingAnchorClass)
+    );
+    if (directCandidate && hasOnlyAnchorChild(heading, directCandidate)) {
+      directCandidate.classList.add(headingLinkClass);
+      if (!directCandidate.getAttribute('href')) {
+        directCandidate.href = href;
+      }
+      return directCandidate;
+    }
+    if (heading.querySelector('a')) {
+      return null;
+    }
+    const link = document.createElement('a');
+    link.className = headingLinkClass;
+    link.href = href;
+    const nodes = Array.from(heading.childNodes);
+    nodes.forEach((node) => link.appendChild(node));
+    heading.appendChild(link);
+    return link;
+  };
+
+  const resolveEntryBaseUrl = (heading) => {
+    const entry = heading.closest('.article-entry');
+    if (entry instanceof HTMLElement) {
+      const entryUrl = entry.dataset.entryUrl?.trim();
+      if (entryUrl) {
+        try {
+          return new URL(entryUrl, window.location.href).toString();
+        } catch {}
+      }
+    }
+    return window.location.href.split('#')[0];
+  };
+
+  const buildHeadingAnchorUrl = (heading, anchorId) => {
+    if (heading.tagName.toLowerCase() === 'h1') {
+      const linkUrl = resolveHeadingLinkUrl(heading);
+      if (linkUrl) {
+        return linkUrl;
+      }
+    }
+    const baseUrl = resolveEntryBaseUrl(heading);
+    const baseWithoutHash = baseUrl.split('#')[0];
+    return `${baseWithoutHash}#${anchorId}`;
+  };
+
   const handleCopyClick = async (event) => {
     const target = event.target instanceof Element ? event.target : null;
     const button = target?.closest(`.${copyButtonClass}`);
@@ -360,6 +518,43 @@
     }
     const timeoutId = window.setTimeout(() => {
       setCopyState(button, false);
+      delete button.dataset.copyTimeoutId;
+    }, 2000);
+    button.dataset.copyTimeoutId = String(timeoutId);
+  };
+
+  const handleHeadingAnchorClick = async (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    const button = target?.closest(`.${headingAnchorClass}`);
+    if (!(button instanceof HTMLAnchorElement)) {
+      return;
+    }
+    const anchorId = button.dataset.anchor;
+    event.preventDefault();
+    const heading = button.closest('h1, h2');
+    const href = button.getAttribute('href');
+    const url =
+      href && href.length > 0
+        ? new URL(href, window.location.href).toString()
+        : heading instanceof HTMLElement && anchorId
+          ? buildHeadingAnchorUrl(heading, anchorId)
+          : anchorId
+            ? `${window.location.href.split('#')[0]}#${anchorId}`
+            : '';
+    if (!url) {
+      return;
+    }
+    const copied = await copyText(url);
+    if (!copied) {
+      return;
+    }
+    setHeadingCopyState(button, true);
+    const existingTimeout = button.dataset.copyTimeoutId;
+    if (existingTimeout) {
+      window.clearTimeout(Number(existingTimeout));
+    }
+    const timeoutId = window.setTimeout(() => {
+      setHeadingCopyState(button, false);
       delete button.dataset.copyTimeoutId;
     }, 2000);
     button.dataset.copyTimeoutId = String(timeoutId);
@@ -450,6 +645,10 @@
 
   document.addEventListener('click', (event) => {
     void handleCopyClick(event);
+  });
+
+  document.addEventListener('click', (event) => {
+    void handleHeadingAnchorClick(event);
   });
 
   const createTemplateFragment = (html) => {
@@ -557,7 +756,7 @@
         return;
       }
       if (cursor >= entries.length) {
-        updateStatus(entries.length === 0 ? noArticlesYet : endOfTimeline);
+        updateStatus(entries.length === 0 ? noArticlesYet : endOfArticle);
         return;
       }
 
@@ -570,10 +769,11 @@
       const nodes = await Promise.all(slice.map((entry) => buildEntry(entry)));
       nodes.forEach((node) => listElement.appendChild(node));
       addCopyButtons(listElement);
+      addHeadingPermalinks(listElement);
       renderMermaid(listElement);
 
       loading = false;
-      updateStatus(cursor >= entries.length ? endOfTimeline : '');
+      updateStatus(cursor >= entries.length ? endOfArticle : '');
 
       if (cursor < entries.length && isSentinelVisible()) {
         requestAnimationFrame(() => {
@@ -626,6 +826,7 @@
       });
     }
     addCopyButtons(document);
+    addHeadingPermalinks(document);
     renderMermaid(document);
     void initInfiniteListLoader({
       listId: 'timeline-list',

@@ -386,9 +386,9 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
 export const defaultDocsDir = 'docs' as const;
-export const defaultTemplatesDir = 'templates' as const;
+export const defaultTemplatesDir = '.templates' as const;
 export const defaultOutDir = 'dist' as const;
-export const defaultAssetDir = 'assets/' as const;
+export const defaultAssetDir = '.assets' as const;
 export const defaultTmpDir = tmpdir();
 export const defaultCacheDir = process.env.HOME
   ? join(process.env.HOME, '.cache', name)
@@ -975,9 +975,6 @@ const getTrimmedStringValue = (value: unknown): string | undefined => {
   return trimmed.length > 0 ? trimmed : undefined;
 };
 
-const getBooleanValue = (value: unknown): boolean | undefined =>
-  typeof value === 'boolean' ? value : undefined;
-
 const resolveVariablePath = (
   variables: FunCityVariables,
   baseDir: string,
@@ -1024,11 +1021,6 @@ export const resolveATerraForgeProcessingOptionsFromVariables = (
   const userAgent = getTrimmedStringValue(variables.get('userAgent'));
   if (userAgent) {
     resolved.userAgent = userAgent;
-  }
-
-  const enableGitMetadata = getBooleanValue(variables.get('enableGitMetadata'));
-  if (enableGitMetadata !== undefined) {
-    resolved.enableGitMetadata = enableGitMetadata;
   }
 
   return resolved;

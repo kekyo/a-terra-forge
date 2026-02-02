@@ -35,13 +35,12 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const baseDir = resolve('test_results', 'options');
     const variables = new Map<string, unknown>([
       ['docsDir', './docs'],
-      ['templatesDir', 'templates'],
-      ['assetsDir', './assets'],
+      ['templatesDir', '.templates'],
+      ['assetsDir', './.assets'],
       ['outDir', '../out'],
       ['tmpDir', './tmp'],
       ['cacheDir', '.cache'],
       ['userAgent', 'agent'],
-      ['enableGitMetadata', false],
       ['siteName', 'Sample'],
     ]);
 
@@ -51,13 +50,12 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     );
 
     expect(resolved.docsDir).toBe(resolve(baseDir, './docs'));
-    expect(resolved.templatesDir).toBe(resolve(baseDir, 'templates'));
-    expect(resolved.assetsDir).toBe(resolve(baseDir, './assets'));
+    expect(resolved.templatesDir).toBe(resolve(baseDir, '.templates'));
+    expect(resolved.assetsDir).toBe(resolve(baseDir, './.assets'));
     expect(resolved.outDir).toBe(resolve(baseDir, '../out'));
     expect(resolved.tmpDir).toBe(resolve(baseDir, './tmp'));
     expect(resolved.cacheDir).toBe(resolve(baseDir, '.cache'));
     expect(resolved.userAgent).toBe('agent');
-    expect(resolved.enableGitMetadata).toBe(false);
   });
 
   it('ignores non-string values for option variables.', () => {
@@ -69,7 +67,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
       ['outDir', null],
       ['tmpDir', 123],
       ['cacheDir', {}],
-      ['enableGitMetadata', 'yes'],
     ]);
 
     const resolved = resolveATerraForgeProcessingOptionsFromVariables(
@@ -83,7 +80,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     expect(resolved.outDir).toBeUndefined();
     expect(resolved.tmpDir).toBeUndefined();
     expect(resolved.cacheDir).toBeUndefined();
-    expect(resolved.enableGitMetadata).toBeUndefined();
   });
 });
 

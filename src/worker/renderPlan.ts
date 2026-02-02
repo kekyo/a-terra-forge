@@ -253,7 +253,7 @@ export const runRenderWorkers = async ({
     logger.info(
       `renderer: entry time max=${formatDuration(
         entryMaxMs
-      )} avg=${formatDuration(averageMs)} (${entryCount} entries)`
+      )} avg=${formatDuration(averageMs)} (${entryCount} entries, ${cpus().length} threads)`
     );
   };
 

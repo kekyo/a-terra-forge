@@ -162,9 +162,13 @@ export const renderArticleSnapshot = async ({
     {
       headingBaseLevel: 2,
       defaultImageOuterClassName: 'article-image-outer',
+      applyLazyLoadingToImg: true,
       codeHighlight,
       linkTarget,
       preTransform: async (ctx) => {
+        const hasTitle =
+          typeof ctx.originalFrontmatter.title === 'string' &&
+          ctx.originalFrontmatter.title.trim().length > 0;
         const updated = {
           ...ctx.originalFrontmatter,
           id: entry.assignedId,
@@ -174,7 +178,7 @@ export const renderArticleSnapshot = async ({
           frontmatter: updated,
           uniqueIdPrefix: ctx.uniqueIdPrefix,
           // Always lift the first base-level heading into frontmatter.title.
-          headerTitleTransform: 'extractAndRemove',
+          headerTitleTransform: hasTitle ? 'none' : 'extractAndRemove',
         };
       },
     }
@@ -203,6 +207,7 @@ export const renderArticleSnapshot = async ({
     await processor.process(updatedMarkdown, transformed.uniqueIdPrefix, {
       headingBaseLevel: 2,
       defaultImageOuterClassName: 'article-image-outer',
+      applyLazyLoadingToImg: true,
       codeHighlight,
       linkTarget,
       headerTitleTransform: 'none',

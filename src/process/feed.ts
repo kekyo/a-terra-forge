@@ -4,14 +4,17 @@
 // https://github.com/kekyo/a-terra-forge
 
 import { readFile } from 'fs/promises';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import dayjs from 'dayjs';
 import type { FunCityVariables } from 'funcity';
 import type { Logger } from 'mark-deco';
 
 import type { RenderedArticleInfo } from './directory';
 import { buildArticleAnchorId } from './helpers';
-import { resolveCategoryDestinationPath } from './navigation';
+import {
+  getDirectoryLabel,
+  resolveCategoryDestinationPath,
+} from './navigation';
 import { toPosixRelativePath } from '../utils';
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -130,6 +133,7 @@ const buildFeedEntries = async ({
   renderedResults,
   summaryLength,
   frontPage,
+  blogCategoryNames,
 }: {
   logger: Logger;
   outDir: string;
@@ -137,6 +141,7 @@ const buildFeedEntries = async ({
   renderedResults: readonly RenderedArticleInfo[];
   summaryLength: number;
   frontPage: string;
+  blogCategoryNames: ReadonlySet<string>;
 }): Promise<FeedTemplateEntry[]> => {
   const entries = await Promise.all(
     renderedResults.map(async (rendered) => {
@@ -150,24 +155,43 @@ const buildFeedEntries = async ({
         );
         return undefined;
       }
-      const anchorId = buildArticleAnchorId(rendered.result.frontmatter.id);
-      if (!anchorId) {
+      const entryId = rendered.result.frontmatter.id;
+      const anchorId = buildArticleAnchorId(entryId);
+      const categoryLabel = getDirectoryLabel(rendered.articleFile.directory);
+      const isBlogCategory = blogCategoryNames.has(categoryLabel);
+
+      let link = '';
+      if (
+        isBlogCategory &&
+        typeof entryId === 'number' &&
+        Number.isFinite(entryId)
+      ) {
+        const categoryPath = resolveCategoryDestinationPath(
+          outDir,
+          rendered.articleFile.directory,
+          frontPage
+        );
+        const blogOutputDir = dirname(categoryPath);
+        const singleFilePath = join(blogOutputDir, `${entryId}.html`);
+        const singleRelativePath = toPosixRelativePath(outDir, singleFilePath);
+        link = new URL(singleRelativePath, baseUrl).toString();
+      } else if (anchorId) {
+        const categoryPath = resolveCategoryDestinationPath(
+          outDir,
+          rendered.articleFile.directory,
+          frontPage
+        );
+        const categoryRelativePath = toPosixRelativePath(outDir, categoryPath);
+        link = new URL(
+          `${categoryRelativePath}#${anchorId}`,
+          baseUrl
+        ).toString();
+      } else {
         logger.warn(
           `warning: Missing article id for ${rendered.articleFile.relativePath}`
         );
         return undefined;
       }
-
-      const categoryPath = resolveCategoryDestinationPath(
-        outDir,
-        rendered.articleFile.directory,
-        frontPage
-      );
-      const categoryRelativePath = toPosixRelativePath(outDir, categoryPath);
-      const link = new URL(
-        `${categoryRelativePath}#${anchorId}`,
-        baseUrl
-      ).toString();
 
       const title =
         typeof rendered.result.frontmatter.title === 'string'
@@ -217,6 +241,7 @@ export const buildFeedTemplateData = async ({
   renderedResults,
   variables,
   frontPage,
+  blogCategoryNames,
   siteTemplateOutputMap,
 }: {
   logger: Logger;
@@ -225,6 +250,7 @@ export const buildFeedTemplateData = async ({
   renderedResults: readonly RenderedArticleInfo[];
   variables: FunCityVariables;
   frontPage: string;
+  blogCategoryNames: ReadonlySet<string>;
   siteTemplateOutputMap: ReadonlyMap<string, string>;
 }): Promise<FeedTemplateData> => {
   const summaryLength = resolveFeedSummaryLength(variables);
@@ -235,6 +261,7 @@ export const buildFeedTemplateData = async ({
     renderedResults,
     summaryLength,
     frontPage,
+    blogCategoryNames,
   });
   const sortedEntries = sortFeedEntries(entries);
 

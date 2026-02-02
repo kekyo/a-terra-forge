@@ -51,13 +51,13 @@ describe('generateDocs', () => {
     mockState.loadRenderedSnapshotsMock.mockReset();
 
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
 
     await writeFile(join(docsDir, 'entry.md'), '# Title', 'utf8');
     await writeFile(
       join(templatesDir, 'index-category.html'),
-      '<html><body>{{for article articles}}{{article.entryHtml}}{{end}}</body></html>',
+      '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
@@ -67,7 +67,7 @@ describe('generateDocs', () => {
     );
     await writeFile(
       join(templatesDir, 'timeline-entry.html'),
-      '<article>{{body}}</article>',
+      '<article>{{contentHtml}}</article>',
       'utf8'
     );
 
@@ -116,7 +116,6 @@ describe('generateDocs', () => {
         templatesDir: resolve(templatesDir),
         outDir: resolve(outDir),
         cacheDir: '.cache',
-        enableGitMetadata: true,
       },
       abortController.signal
     );

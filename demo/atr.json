@@ -26,10 +26,12 @@
       "date": "Date",
       "author": "Author",
       "category": "Category",
+      "tags": "Tags",
       "timeline": "Timeline",
       "hello": "Hello World",
+      "blog": "Diary",
       "about": "About",
-      "endOfTimeline": "End of timeline.",
+      "endOfArticle": "End of article.",
       "noArticlesYet": "No articles yet.",
       "uncommitted": "uncommitted"
     },
@@ -37,10 +39,12 @@
       "date": "日時",
       "author": "執筆者",
       "category": "カテゴリ",
+      "tags": "タグ",
       "timeline": "タイムライン",
       "hello": "ハローワールド",
+      "blog": "日記",
       "about": "About",
-      "endOfTimeline": "タイムラインは以上です",
+      "endOfArticle": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
     }

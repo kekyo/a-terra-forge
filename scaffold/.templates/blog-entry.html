@@ -1,8 +1,10 @@
-<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}">
+<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}"{{if entrySinglePath?}} data-entry-url="{{entrySinglePath}}"{{end}}>
   <header class="entry-header">
-      <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}>
-      {{if categoryPath?}}
-      <a href="{{categoryPath}}{{if anchorId?}}#{{anchorId}}{{end}}">{{title}}</a>
+    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}{{if anchorId?}} data-anchor="{{anchorId}}"{{end}}>
+      {{
+      if entrySinglePath?
+      }}
+      <a href="{{entrySinglePath}}">{{title}}</a>
       {{
       else
         title
@@ -20,6 +22,19 @@
         {{end}}
       </p>
       {{end}}
+      {{
+      if tags?
+        set articleTags (distinct tags)
+        if (length articleTags)
+      }}
+      <p>
+        <span class="me-1">{{getMessage 'tags'}}:</span>
+        {{join ',' (map (fun tag (concat '<span class="badge rounded-pill">' tag '</span>')) articleTags)}}
+      </p>
+      {{
+        end
+      end
+      }}
       {{
       if git?
         if git.committer.date?
@@ -40,7 +55,8 @@
       {{end}}
     </div>
   </header>
+  {{if anchorId?}}<a id="{{anchorId}}"></a>{{end}}
   <div class="entry-body">
-{{body}}
+{{contentHtml}}
   </div>
 </article>

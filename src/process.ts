@@ -41,7 +41,11 @@ import {
   writeContentFile,
   type ArticleFileInfo,
 } from './utils';
-import { applyHeaderIconCode, scriptVariables } from './process/helpers';
+import {
+  applyHeaderIconCode,
+  createPathFunctions,
+  scriptVariables,
+} from './process/helpers';
 import { defaultUserAgent, parseFrontmatterInfo } from './process/frontmatter';
 import {
   readFileIfExists,
@@ -219,7 +223,9 @@ const resolveSiteTemplateEntries = async (
 
 const renderSiteTemplates = async (
   entries: readonly SiteTemplateEntry[],
-  variables: FunCityVariables,
+  configVariables: FunCityVariables,
+  siteTemplateData: Record<string, unknown>,
+  baseUrl: URL,
   configDir: string,
   outDir: string,
   finalOutDir: string,
@@ -228,6 +234,20 @@ const renderSiteTemplates = async (
 ): Promise<void> => {
   await Promise.all(
     entries.map(async (entry) => {
+      const pathFunctions = createPathFunctions({
+        outDir,
+        documentPath: entry.outputPath,
+        baseUrl,
+      });
+      const variables = applyHeaderIconCode(
+        buildCandidateVariables(
+          scriptVariables,
+          configVariables,
+          siteTemplateData,
+          pathFunctions
+        ),
+        configVariables
+      );
       const logs: FunCityLogEntry[] = [];
       const rendered = await renderTemplateWithImportHandler(
         entry.templatePath,
@@ -344,7 +364,7 @@ export const generateDocs = async (
     : defaultSiteTemplates;
   configVariablesRaw.set('siteTemplates', siteTemplates);
 
-  await assertDirectoryExists(templatesDir, 'templates');
+  await assertDirectoryExists(templatesDir, '.templates');
   await assertDirectoryExists(docsDir, 'docs');
   const linkTarget = '_blank';
   const userAgent = options.userAgent ?? defaultUserAgent;
@@ -445,36 +465,32 @@ export const generateDocs = async (
     outDir,
     siteTemplates
   );
-  const baseUrlDependentTemplates = new Set([
-    'feed.xml',
-    'atom.xml',
-    'sitemap.xml',
-  ]);
-  const needsBaseUrl = siteTemplateEntries.some((entry) =>
-    baseUrlDependentTemplates.has(entry.name)
-  );
   const baseUrlRaw = configVariablesRaw.get('baseUrl');
   const trimmedBaseUrl =
     typeof baseUrlRaw === 'string' ? baseUrlRaw.trim() : '';
-  let resolvedBaseUrl: URL | undefined;
-  if (needsBaseUrl && trimmedBaseUrl.length > 0) {
+  const fallbackBaseUrl = 'http://localhost/';
+  let resolvedBaseUrl: URL;
+  if (trimmedBaseUrl.length > 0) {
     const normalizedBaseUrl = ensureTrailingSlash(trimmedBaseUrl);
     try {
       resolvedBaseUrl = new URL(normalizedBaseUrl);
+      configVariablesRaw.set('baseUrl', normalizedBaseUrl);
     } catch {
       logger.warn(
-        `warning: Invalid baseUrl "${baseUrlRaw}", feed.xml/atom.xml/sitemap.xml were not generated.`
+        `warning: Invalid baseUrl "${baseUrlRaw}", using default "${fallbackBaseUrl}".`
       );
+      resolvedBaseUrl = new URL(fallbackBaseUrl);
+      configVariablesRaw.set('baseUrl', fallbackBaseUrl);
     }
+  } else {
+    logger.warn(
+      `warning: baseUrl is not configured, using default "${fallbackBaseUrl}".`
+    );
+    resolvedBaseUrl = new URL(fallbackBaseUrl);
+    configVariablesRaw.set('baseUrl', fallbackBaseUrl);
   }
-  const filteredSiteTemplateEntries =
-    needsBaseUrl && !resolvedBaseUrl
-      ? siteTemplateEntries.filter(
-          (entry) => !baseUrlDependentTemplates.has(entry.name)
-        )
-      : siteTemplateEntries;
   const siteTemplateOutputMap = new Map(
-    filteredSiteTemplateEntries.map((entry) => [entry.name, entry.outputPath])
+    siteTemplateEntries.map((entry) => [entry.name, entry.outputPath])
   );
   let outputSwapped = false;
   try {
@@ -553,6 +569,7 @@ export const generateDocs = async (
     const timelineEntryTemplatePath = join(templatesDir, 'timeline-entry.html');
     const blogIndexTemplatePath = join(templatesDir, 'index-blog.html');
     const blogEntryTemplatePath = join(templatesDir, 'blog-entry.html');
+    const blogSingleTemplatePath = join(templatesDir, 'index-blog-single.html');
 
     const frontPagePrefix =
       frontPage !== timelineKey ? `${frontPage.replaceAll('\\', '/')}/` : '';
@@ -573,6 +590,7 @@ export const generateDocs = async (
       categoryEntryTemplateScript,
       blogIndexTemplateScript,
       blogEntryTemplateScript,
+      blogSingleTemplateScript,
     ] = await Promise.all([
       readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
       includeTimeline
@@ -587,6 +605,9 @@ export const generateDocs = async (
         : Promise.resolve(undefined),
       hasBlogCategories
         ? readFile(blogEntryTemplatePath, { encoding: 'utf-8' })
+        : Promise.resolve(undefined),
+      hasBlogCategories
+        ? readFile(blogSingleTemplatePath, { encoding: 'utf-8' })
         : Promise.resolve(undefined),
       copyTargetContentFiles(docsDir, config.contentFiles, outDir, {
         rewritePath: rewriteContentPath,
@@ -635,13 +656,19 @@ export const generateDocs = async (
             path: blogEntryTemplatePath,
           }
         : undefined;
+    const blogSingleTemplate: PageTemplateInfo | undefined =
+      blogSingleTemplateScript
+        ? {
+            script: blogSingleTemplateScript,
+            path: blogSingleTemplatePath,
+          }
+        : undefined;
 
     const articleFileInfos = Array.from(
       filteredGroupedArticleFiles.values()
     ).flat();
     const codeHighlight = config.codeHighlight;
     const beautifulMermaid = config.beautifulMermaid;
-    const enableGitMetadata = options.enableGitMetadata ?? true;
     let renderedResults: RenderedArticleInfo[] = [];
 
     if (articleFileInfos.length > 0) {
@@ -649,10 +676,7 @@ export const generateDocs = async (
 
       const gitMetadataPromise: Promise<
         ReadonlyMap<string, GitCommitMetadata | undefined>
-      > =
-        enableGitMetadata && articleFileInfos.length > 0
-          ? collectGitMetadata(docsDir, articleFileInfos, logger)
-          : Promise.resolve(new Map<string, GitCommitMetadata | undefined>());
+      > = collectGitMetadata(docsDir, articleFileInfos, logger);
 
       const workDir = await createWorkDir(tmpDir);
       let cleanup = true;
@@ -739,38 +763,64 @@ export const generateDocs = async (
       configVariablesRaw
     );
 
-    await Promise.all(
-      articleDirs.map((articleDir) => {
-        if ((articleDir === '.' || articleDir === '') && includeTimeline) {
-          return Promise.resolve();
-        }
+    const blogSinglePages = (
+      await Promise.all(
+        articleDirs.map(async (articleDir) => {
+          if ((articleDir === '.' || articleDir === '') && includeTimeline) {
+            return Promise.resolve([]);
+          }
 
-        const renderedArticles = renderedByDir.get(articleDir) ?? [];
-        if (renderedArticles.length === 0) {
-          return Promise.resolve();
-        }
+          const renderedArticles = renderedByDir.get(articleDir) ?? [];
+          if (renderedArticles.length === 0) {
+            return Promise.resolve([]);
+          }
 
-        documentPaths.add(
-          resolveCategoryDestinationPath(outDir, articleDir, frontPage)
-        );
-        const isBlogCategory = blogCategoryNames.has(
-          getDirectoryLabel(articleDir)
-        );
-        if (isBlogCategory) {
-          if (!blogIndexTemplate || !blogEntryTemplate) {
-            throw new Error(
-              'Blog templates are missing: index-blog.html or blog-entry.html'
+          documentPaths.add(
+            resolveCategoryDestinationPath(outDir, articleDir, frontPage)
+          );
+          const isBlogCategory = blogCategoryNames.has(
+            getDirectoryLabel(articleDir)
+          );
+          if (isBlogCategory) {
+            if (
+              !blogIndexTemplate ||
+              !blogEntryTemplate ||
+              !blogSingleTemplate
+            ) {
+              throw new Error(
+                'Blog templates are missing: index-blog.html, blog-entry.html, or index-blog-single.html'
+              );
+            }
+            return generateBlogDocument(
+              logger,
+              configDir,
+              outDir,
+              finalOutDir,
+              articleDir,
+              renderedArticles,
+              blogIndexTemplate,
+              blogEntryTemplate,
+              blogSingleTemplate,
+              configVariables,
+              navOrderBefore,
+              navOrderAfter,
+              navCategoryMap,
+              frontPage,
+              includeTimeline,
+              siteTemplateOutputMap,
+              resolvedBaseUrl,
+              signal
             );
           }
-          return generateBlogDocument(
+          await generateDirectoryDocument(
             logger,
             configDir,
             outDir,
             finalOutDir,
             articleDir,
             renderedArticles,
-            blogIndexTemplate,
-            blogEntryTemplate,
+            pageTemplate,
+            categoryEntryTemplate,
             configVariables,
             navOrderBefore,
             navOrderAfter,
@@ -778,29 +828,17 @@ export const generateDocs = async (
             frontPage,
             includeTimeline,
             siteTemplateOutputMap,
+            resolvedBaseUrl,
             signal
           );
-        }
-        return generateDirectoryDocument(
-          logger,
-          configDir,
-          outDir,
-          finalOutDir,
-          articleDir,
-          renderedArticles,
-          pageTemplate,
-          categoryEntryTemplate,
-          configVariables,
-          navOrderBefore,
-          navOrderAfter,
-          navCategoryMap,
-          frontPage,
-          includeTimeline,
-          siteTemplateOutputMap,
-          signal
-        );
-      })
-    );
+          return [];
+        })
+      )
+    ).flat();
+
+    blogSinglePages.forEach((singlePath) => {
+      documentPaths.add(singlePath);
+    });
 
     if (includeTimeline) {
       if (!timelineIndexTemplate || !timelineEntryTemplate) {
@@ -819,54 +857,48 @@ export const generateDocs = async (
         navOrderBefore,
         navOrderAfter,
         navCategoryMap,
+        blogCategoryNames,
         timelineEntryTemplate,
         frontPage,
         siteTemplateOutputMap,
+        resolvedBaseUrl,
         signal
       );
     }
 
     const siteTemplateData: Record<string, unknown> = {};
-    const hasFeedTemplates = filteredSiteTemplateEntries.some(
+    const hasFeedTemplates = siteTemplateEntries.some(
       (entry) => entry.name === 'feed.xml' || entry.name === 'atom.xml'
     );
-    const hasSitemapTemplate = filteredSiteTemplateEntries.some(
+    const hasSitemapTemplate = siteTemplateEntries.some(
       (entry) => entry.name === 'sitemap.xml'
     );
-    if (resolvedBaseUrl) {
-      if (hasFeedTemplates) {
-        const feedData = await buildFeedTemplateData({
-          logger,
-          outDir,
-          baseUrl: resolvedBaseUrl,
-          renderedResults,
-          variables: configVariables,
-          frontPage,
-          siteTemplateOutputMap,
-        });
-        Object.assign(siteTemplateData, feedData);
-      }
-      if (hasSitemapTemplate) {
-        siteTemplateData.sitemapUrls = buildSitemapUrls({
-          outDir,
-          baseUrl: resolvedBaseUrl,
-          documentPaths: Array.from(documentPaths),
-        });
-      }
+    if (hasFeedTemplates) {
+      const feedData = await buildFeedTemplateData({
+        logger,
+        outDir,
+        baseUrl: resolvedBaseUrl,
+        renderedResults,
+        variables: configVariables,
+        frontPage,
+        blogCategoryNames,
+        siteTemplateOutputMap,
+      });
+      Object.assign(siteTemplateData, feedData);
+    }
+    if (hasSitemapTemplate) {
+      siteTemplateData.sitemapUrls = buildSitemapUrls({
+        outDir,
+        baseUrl: resolvedBaseUrl,
+        documentPaths: Array.from(documentPaths),
+      });
     }
 
-    const siteTemplateVariables = applyHeaderIconCode(
-      buildCandidateVariables(
-        scriptVariables,
-        configVariables,
-        siteTemplateData
-      ),
-      configVariables
-    );
-
     await renderSiteTemplates(
-      filteredSiteTemplateEntries,
-      siteTemplateVariables,
+      siteTemplateEntries,
+      configVariables,
+      siteTemplateData,
+      resolvedBaseUrl,
       configDir,
       outDir,
       finalOutDir,

@@ -1,0 +1,64 @@
+<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}"{{if entrySinglePath?}} data-entry-url="{{entrySinglePath}}"{{elseif categoryPath?}} data-entry-url="{{categoryPath}}"{{end}}>
+  <header class="entry-header">
+    <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}{{if anchorId?}} data-anchor="{{anchorId}}"{{end}}>
+      {{
+      if entrySinglePath?
+      }}
+      <a href="{{entrySinglePath}}">{{title}}</a>
+      {{elseif categoryPath?}}
+      <a href="{{categoryPath}}{{if anchorId?}}#{{anchorId}}{{end}}">{{title}}</a>
+      {{
+      else
+        title
+      end
+      }}
+    </h1>
+    <div class="entry-meta">
+      {{if category?}}
+      <p>
+        <span class="me-1">{{getMessage 'category'}}:</span>
+        {{if categoryPath?}}
+        <a class="badge rounded-pill text-decoration-none" href="{{categoryPath}}">{{getMessage category}}</a>
+        {{else}}
+        <span class="badge rounded-pill">{{getMessage category}}</span>
+        {{end}}
+      </p>
+      {{end}}
+      {{
+      if tags?
+        set articleTags (distinct (map (fun tag (getMessage tag)) tags?))
+        if (length articleTags) 
+      }}
+      <p>
+        <span class="me-1">{{getMessage 'tags'}}:</span>
+        {{join ',' (map (fun tag (concat '<span class="badge rounded-pill">' tag '</span>')) articleTags)}}
+      </p>
+      {{
+        end
+      end
+      }}
+      {{
+      if git?
+        if git.committer.date?
+      }}
+      <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' git.committer.date}}</p>
+      {{
+        end
+        if git.author.name?
+      }}
+      <p>{{getMessage 'author'}}: {{git.author.name}}</p>
+      {{elseif git.author.email?}}
+      <p>{{getMessage 'author'}}: {{git.author.email}}</p>
+      {{
+        end
+      else
+      }}
+      <p>({{getMessage 'uncommitted'}})</p>
+      {{end}}
+    </div>
+  </header>
+  {{if anchorId?}}<a id="{{anchorId}}"></a>{{end}}
+  <div class="entry-body">
+{{contentHtml}}
+  </div>
+</article>

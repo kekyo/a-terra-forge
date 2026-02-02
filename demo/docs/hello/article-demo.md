@@ -4,7 +4,7 @@ id: 1
 title: Article demos
 ---
 
-## Block quote demo
+# Block quote demo
 
 "async-primitives":
 A collection of primitive functions for asynchronous operations in TypeScript/JavaScript.
@@ -14,7 +14,7 @@ A collection of primitive functions for asynchronous operations in TypeScript/Ja
 > - Works in both browser and Node.js environments (16 or later, tested only 22).
 > - No external dependencies.
 
-## Code block demo
+# Code block demo
 
 Writing the whole operation in code gives a minimal example like this:
 

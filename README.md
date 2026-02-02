@@ -94,7 +94,7 @@ The following sections show the steps to initialize the editing space and prepar
 
 ### Initialize an editing space (using Vite)
 
-If you use the Vite plugin, run the following command to generate an editing space in the current directory:
+If you use the Vite plugin, run `atr init` command to generate an editing space in the current directory:
 
 ```bash
 $ mkdir my-site
@@ -113,7 +113,8 @@ This creates the following files:
 ```
 my-page
 ├── atr.json
-├── dist
+├── package.json
+├── vite.config.ts
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -123,28 +124,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── package.json
-├── templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── vite.config.ts
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
-To use the Vite plugin, run the following command once (the output may differ slightly):
+The directory structure and file meanings will be explained in a separate chapter.
+To use the Vite plugin, run `npm i` command once (the output may differ slightly):
 
 ```bash
 $ npm i
@@ -156,7 +143,7 @@ added 306 packages, and audited 307 packages in 16s
 found 0 vulnerabilities
 ```
 
-After that, you can preview by running the following command when you want to edit.
+After that, you can preview by running `npm run dev` command when you want to edit.
 Your system's default web browser will open automatically to display a preview of the site:
 
 ```bash
@@ -176,14 +163,14 @@ $ npm run dev
 [atr-vite] renderer: entry time max=2144.04ms avg=686.66ms (4 entries)
 [atr-vite] renderer: total time 2493.13ms
 [atr-vite] Finalizing now...
-[atr-vite] built: dist/about/index.html
-[atr-vite] built: dist/hello/index.html
-[atr-vite] built: dist/index.html
-[atr-vite] built: dist/site-script.js
-[atr-vite] built: dist/sitemap.xml
-[atr-vite] built: dist/atom.xml
-[atr-vite] built: dist/feed.xml
-[atr-vite] built: dist/site-style.css
+[atr-vite] built: dist-1AuQWx/about/index.html
+[atr-vite] built: dist-1AuQWx/hello/index.html
+[atr-vite] built: dist-1AuQWx/index.html
+[atr-vite] built: dist-1AuQWx/site-script.js
+[atr-vite] built: dist-1AuQWx/sitemap.xml
+[atr-vite] built: dist-1AuQWx/atom.xml
+[atr-vite] built: dist-1AuQWx/feed.xml
+[atr-vite] built: dist-1AuQWx/site-style.css
 ```
 
 ![Preview](images/preview.png)
@@ -192,7 +179,7 @@ The page shown includes the scaffold's sample documents and images.
 You might feel uneasy if documents already exist or everything is bright blue, but there is no need to worry.
 You can quickly delete them, start writing from scratch, and adjust the appearance (At least, the accent color can be easily changed).
 
-When the preview is displayed, the document site has already been built, but to build it manually, use the following command:
+To build document site manually, use the following command:
 
 ```bash
 $ npm run build
@@ -207,10 +194,10 @@ dist/
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -230,7 +217,7 @@ To automatically deploy to GitHub Pages, see the section below.
 
 ### Initialize an editing space (using the CLI)
 
-If you do not use the Vite plugin, generate the document site editing space with the following command:
+If you do not use the Vite plugin, generate the document site editing space with `atr init --no-vite` command:
 
 ```bash
 $ mkdir my-site
@@ -249,7 +236,6 @@ This creates the following files:
 ```
 my-page
 ├── atr.json
-├── dist
 ├── docs
 │   ├── about
 │   │   ├── a-terra-forge.png
@@ -259,26 +245,14 @@ my-page
 │       ├── demo-image.jpg
 │       ├── index.md
 │       └── rich-demo.md
-├── templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── feed.xml
-│   ├── index-blog.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── sitemap.xml
-│   ├── site-script.js
-│   ├── site-style.css
-│   └── timeline-entry.html
-├── .github
-│   └── workflows
-│       └── build.yml
-└── .gitignore
+├── .gitignore
+├── .assets/  ...
+├── .templates/  ...
+└── .github/  ...
 ```
 
-To build the document site, use the following command:
+The directory structure and file meanings will be explained in a separate chapter.
+To build the document site, use `atr build` command:
 
 ```bash
 $ atr build
@@ -311,10 +285,10 @@ dist
 │   ├── a-terra-forge.png
 │   └── index.html
 ├── article-bodies
-│   ├── 0.html
-│   ├── 1.html
-│   ├── 2.html
-│   └── 3.html
+│   ├── 0.txt
+│   ├── 1.txt
+│   ├── 2.txt
+│   └── 3.txt
 ├── atom.xml
 ├── feed.xml
 ├── hello
@@ -349,7 +323,7 @@ Once these preparations are complete, you should have an environment that lets y
 First, manage the editing space with Git so you can perform version control.
 That way, incorrect edits, page customizations, or text you do not like can easily be reverted.
 
-Register the current state of the editing space as the first version (commit) in Git with the following commands:
+Register the current state of the editing space as the first version (commit) in Git with the following commands (`git init`, `git add -A`, `git commit ...`):
 
 ```bash
 $ git init
@@ -371,7 +345,7 @@ Now the editing space is managed by Git.
 Do you remember the preview being entirely bright blue?
 In fact, a-terra-forge uses a blue background to show documents that are being edited and have not been committed to Git.
 
-If you check after committing, you will see that the background is white (or black).
+If you check after committing, you will see that the background is light (or dark).
 The date and author name obtained from Git will also be displayed:
 
 ![After committed](images/comitted.png)
@@ -463,7 +437,45 @@ The variables above include several items for adjusting categories. These are se
 
 Alright, let's get started writing!
 
-"a-terra-forge" handles documents by category. When you write documentation, decide a category name and write it as documents of that category.
+"a-terra-forge" classifies documents as follows:
+
+|Category|Details|
+|:----|:----|
+|General|Documents categorized by you. Examples include "Fishing," "Cooking," "Code," "DIY," etc. Documents within the same category are combined into a single page for readers. |
+|Blog|Documents arranged in reverse chronological order. Each document remains independent and is not merged.|
+|Timeline|A special category that automatically displays all changes from either the General or Blog categories in reverse chronological order. Only one can be placed on the site.|
+
+```mermaid
+flowchart TB
+  C[Blog]
+  subgraph C_DIR[" "]
+    c_foo[foo.md]
+    c_bar[bar.md]
+    c_baz[baz.md]
+    c_foo --> c_bar --> c_baz
+  end
+  C --> c_foo
+  B[Category]
+  subgraph B_DIR[" "]
+    b_index["index.md<hr/>article1.md<hr/>article2.md<hr/>article3.md"]
+  end
+  B --> b_index
+  A[Timeline]
+  subgraph A_DIR[" "]
+    a_foo[foo.md]
+    a_cat[Category/index.md]
+    a_bar[bar.md]
+    a_baz[baz.md]
+    a_foo --> a_cat --> a_bar --> a_baz
+  end
+  A --> a_foo
+```
+
+- You can freely create as many general categories and blog categories as you like. Additionally, categories can be further subdivided into subcategories.
+- "a-terra-forge" is designed with a user flow in mind: readers can follow the timeline to see the latest updates, read them, get a broader overview, or read category pages when they want to start from the beginning.
+- For example, when writing about a specific topic, it's best to decide on a general category name and write it as a document within that category.
+- Blog categories are suitable for writing standalone articles like "diary" or "miscellaneous notes" entries.
+
 Categories are recognized by creating subdirectories under the `docs/` directory. For example, the following is part of the scaffold generated by `atr init`:
 
 ```
@@ -487,6 +499,8 @@ In particular, `index.md` is always placed first in that category document. Othe
 
 You may write all documents in `index.md`, or you may split them into multiple Markdown files.
 Splitting files allows only the edited portion to appear on the timeline when you edit a file. This makes it easier for readers to see which documents were recently updated. Especially for lengthy documents, it's advisable to split chapters into separate files.
+
+Blog categories can be created by repurposing general categories. For details, refer to a separate chapter.
 
 ### frontmatter
 
@@ -532,6 +546,7 @@ New article created: food/index.md
 This generates a new `docs/food/` directory and puts an `index.md` scaffold inside it.
 Note that this `index.md` has `draft: true`, so it will not be included in the preview.
 
+- If `index.md` already exists, it will be generated with a filename like `article<n>.md`.
 - If a category is no longer needed, simply delete that category directory.
 - You can create subcategories:
   - If a subcategory exists, you cannot place content in the parent category.
@@ -655,7 +670,7 @@ To customize this, define the `messages` variable in `atr.json`:
       "timeline": "Timeline",
       "hello": "Hello World",
       "about": "About",
-      "endOfTimeline": "End of timeline.",
+      "endOfArticle": "End of article.",
       "noArticlesYet": "No articles yet.",
       "uncommitted": "uncommitted"
     },
@@ -666,7 +681,7 @@ To customize this, define the `messages` variable in `atr.json`:
       "timeline": "タイムライン",
       "hello": "ハローワールド",
       "about": "About",
-      "endOfTimeline": "タイムラインは以上です",
+      "endOfArticle": "タイムラインは以上です",
       "noArticlesYet": "文書はありません",
       "uncommitted": "未コミット"
     }
@@ -710,7 +725,7 @@ the author name can be replaced automatically:
 
 This is implemented by the `getMessage` function in the funcity script. If you want to apply `messages` to places that do not reference it in the existing template, or even in your own customized HTML, refer to “Customize templates” below.
 
-### Blog Categories
+### Blog categories
 
 a-terra-forge also includes functionality for writing blogs.
 However, since this is an optional feature, you must enable it using the following method:
@@ -720,6 +735,7 @@ However, since this is an optional feature, you must enable it using the followi
   Since this method repurposes existing categories, you can display any category (or multiple categories) as a blog.
 - The blog page renders very similarly to a timeline. The latest document is statically generated, while older articles use infinite scroll (demand loading).
   Therefore, even as the blog accumulates content over time, the physical HTML size of a single page can be constrained within a certain range.
+- Additionally, a separate page is generated for each individual post within the blog. These pages are embedded with appropriate OGP metadata for each document, making them useful when referenced from other sites.
 
 Specify the category names to repurpose as blogs as follows:
 
@@ -732,7 +748,7 @@ Specify the category names to repurpose as blogs as follows:
 ```
 
 The placement of menus within the navigation menu is determined by specifications such as `menuOrder` mentioned earlier, so the placement flexibility is the same as for regular categories.
-Similar to the timeline, dynamically loaded HTML is placed in `blog-bodies/`.
+Similar to the timeline, dynamic fragments are placed in `article-bodies/` with the `.txt` extension.
 
 ---
 
@@ -906,9 +922,9 @@ Below are all values defined in `atr.json`:
 |`codeHighlight`|No|Code highlight settings used by Shiki. See "Code highlighting settings" for details. |
 |`siteTemplates`|No|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
 |`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
-|`assetsDir`|No|Asset directory path. Default is `assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `assets/favicon.ico` → `dist/favicon.ico`). |
+|`assetsDir`|No|Asset directory path. Default is `.assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `.assets/favicon.ico` → `dist/favicon.ico`). |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
-|`templatesDir`|No|Overrides the templates directory. Default is `templates/`. The path is resolved relative to the directory containing `atr.json`. |
+|`templatesDir`|No|Overrides the templates directory. Default is `.templates/`. The path is resolved relative to the directory containing `atr.json`. |
 |`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
 |`tmpDir`|No|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
 |`cacheDir`|No|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |

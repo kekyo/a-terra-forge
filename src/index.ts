@@ -20,7 +20,10 @@ import {
 import { generateDocs } from './process';
 import { initScaffold } from './init';
 import { createNewArticle } from './new';
-import type { ATerraForgeProcessingOptions } from './types';
+import type {
+  ATerraForgeConfigOverrides,
+  ATerraForgeProcessingOptions,
+} from './types';
 import {
   type ConsoleLogLevel,
   defaultAssetDir,
@@ -56,11 +59,12 @@ const resolveCliPath = (value: unknown): string | undefined => {
 type BuildCliOptions = {
   docs?: string;
   templates?: string;
+  assets?: string;
   out?: string;
-  tmpDir?: string;
+  temp?: string;
   cache?: string;
+  baseUrl?: string;
   config?: string;
-  git?: boolean;
   log?: ConsoleLogLevel;
 };
 
@@ -98,13 +102,10 @@ const resolveBuildOptions = async (
   const configDir = dirname(configPath);
   const defaultDocsDirResolved = resolve(configDir, defaultDocsDir);
   const defaultTemplatesDirResolved = resolve(configDir, defaultTemplatesDir);
-  const defaultOutDirResolved = resolve(configDir, defaultOutDir);
   const defaultAssetsDirResolved = resolve(configDir, defaultAssetDir);
+  const defaultOutDirResolved = resolve(configDir, defaultOutDir);
   const defaultTmpDirResolved = resolve(configDir, defaultTmpDir);
   const defaultCacheDirResolved = resolve(configDir, defaultCacheDir);
-  const enableGitMetadata =
-    opts.git === false ? false : (variableOptions.enableGitMetadata ?? true);
-
   return {
     docsDir:
       resolveCliPath(opts.docs) ??
@@ -114,20 +115,22 @@ const resolveBuildOptions = async (
       resolveCliPath(opts.templates) ??
       variableOptions.templatesDir ??
       defaultTemplatesDirResolved,
-    assetsDir: variableOptions.assetsDir ?? defaultAssetsDirResolved,
+    assetsDir:
+      resolveCliPath(opts.assets) ??
+      variableOptions.assetsDir ??
+      defaultAssetsDirResolved,
     outDir:
       resolveCliPath(opts.out) ??
       variableOptions.outDir ??
       defaultOutDirResolved,
     tmpDir:
-      resolveCliPath(opts.tmpDir) ??
+      resolveCliPath(opts.temp) ??
       variableOptions.tmpDir ??
       defaultTmpDirResolved,
     cacheDir:
       resolveCliPath(opts.cache) ??
       variableOptions.cacheDir ??
       defaultCacheDirResolved,
-    enableGitMetadata,
     userAgent: variableOptions.userAgent,
     configPath,
   };
@@ -172,12 +175,14 @@ if (isDirectExecution) {
   const abortController = new AbortController();
   program
     .command('build', { isDefault: true })
-    .summary('Build static assets for deployment')
+    .summary('Build static site contents for deployment')
     .addOption(new Option('-d, --docs <dir>', 'Markdown document directory'))
     .addOption(new Option('-t, --templates <dir>', 'Template directory'))
+    .addOption(new Option('-a, --assets <dir>', 'Asset directory'))
     .addOption(new Option('-o, --out <dir>', 'Output directory'))
-    .addOption(new Option('--tmp-dir <dir>', 'Temporary working directory'))
+    .addOption(new Option('--temp <dir>', 'Temporary working directory'))
     .addOption(new Option('--cache <dir>', 'Cache directory'))
+    .addOption(new Option('--base-url <url>', 'Override baseUrl variable'))
     .addOption(
       new Option('--log <level>', 'Log level').choices(logLevelChoices)
     )
@@ -187,17 +192,25 @@ if (isDirectExecution) {
         'Config file path (atr.json5 / atr.jsonc / atr.json)'
       )
     )
-    .addOption(new Option('--no-git', 'Disable Git metadata'))
     .action(async (opts: BuildCliOptions) => {
       banner();
       const options = await resolveBuildOptions(opts);
       const logLevel = resolveLogLevel(opts.log);
+      const baseUrlOverride =
+        typeof opts.baseUrl === 'string' ? opts.baseUrl.trim() : '';
+      const overrides: ATerraForgeConfigOverrides | undefined =
+        baseUrlOverride.length > 0
+          ? {
+              variables: new Map([['baseUrl', baseUrlOverride]]),
+            }
+          : undefined;
       await generateDocs(
         {
           ...options,
           logger: getTrimmingConsoleLogger(logLevel),
         },
-        abortController.signal
+        abortController.signal,
+        overrides
       );
     });
 
@@ -205,7 +218,7 @@ if (isDirectExecution) {
     .command('init')
     .summary('Initialize a new atr scaffold in the current directory')
     .addOption(
-      new Option('--targetDir <dir>', 'Target directory to scaffold into')
+      new Option('--target <dir>', 'Target directory to scaffold into')
     )
     .addOption(new Option('--no-vite', 'Skip Vite scaffold files'))
     .addOption(new Option('-f, --force', 'Overwrite existing files'))
@@ -214,7 +227,7 @@ if (isDirectExecution) {
     )
     .action(
       async (opts: {
-        targetDir?: string;
+        target?: string;
         vite?: boolean;
         force?: boolean;
         log?: ConsoleLogLevel;
@@ -222,7 +235,7 @@ if (isDirectExecution) {
         banner();
         const logLevel = resolveLogLevel(opts.log);
         await initScaffold({
-          targetDir: opts.targetDir ? resolve(opts.targetDir) : process.cwd(),
+          targetDir: opts.target ? resolve(opts.target) : process.cwd(),
           includeVite: opts.vite ?? true,
           force: opts.force ?? false,
           logger: getTrimmingConsoleLogger(logLevel),

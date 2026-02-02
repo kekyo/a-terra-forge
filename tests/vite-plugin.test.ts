@@ -53,7 +53,7 @@ describe('atrPreview', () => {
       useTempPreviewRoot ? 'root-temp' : 'root-direct'
     );
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
+    const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
 
@@ -65,8 +65,7 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
-            enableGitMetadata: false,
+            templatesDir: './.templates',
           },
         },
         null,
@@ -164,10 +163,10 @@ describe('atrPreview', () => {
     await runOpenDelayScenario(fn, false);
   });
 
-  it('serves from the preview base directory and rewrites to the active preview output.', async (fn) => {
-    const rootDir = await createTempDir(fn, 'root-preview-base');
+  it('passes the dev server baseUrl into generateDocs.', async (fn) => {
+    const rootDir = await createTempDir(fn, 'root-base-url');
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
+    const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
 
@@ -178,8 +177,86 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
-            enableGitMetadata: false,
+            templatesDir: './.templates',
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    mockState.generateDocsMock.mockResolvedValue(undefined);
+
+    const httpServer = new EventEmitter();
+    const devServer = {
+      config: {
+        root: rootDir,
+        logLevel: 'info',
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+        server: {
+          open: false,
+          hmr: false,
+        },
+      },
+      middlewares: {
+        use: vi.fn(),
+      },
+      watcher: {
+        add: vi.fn(),
+        unwatch: vi.fn(),
+        on: vi.fn(),
+      },
+      ws: {
+        send: vi.fn(),
+      },
+      httpServer,
+      openBrowser: vi.fn(),
+      resolvedUrls: { local: ['http://localhost:5173/'] },
+    } as unknown as ViteDevServer;
+
+    vi.resetModules();
+    const { atrPreview } = await import('../src/vite');
+    const plugin = atrPreview({ configPath });
+    const configureServerHook = plugin.configureServer;
+    if (!configureServerHook) {
+      throw new Error('configureServer is not defined.');
+    }
+    const pluginContext = {} as any;
+    if (typeof configureServerHook === 'function') {
+      await configureServerHook.call(pluginContext, devServer);
+    } else {
+      await configureServerHook.handler.call(pluginContext, devServer);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const [, , overrides] = mockState.generateDocsMock.mock.calls[0] ?? [];
+    expect(overrides?.variables instanceof Map).toBe(true);
+    expect(overrides?.variables?.get('baseUrl')).toBe('http://localhost:5173/');
+
+    httpServer.emit('close');
+  });
+
+  it('serves from the preview base directory and rewrites to the active preview output.', async (fn) => {
+    const rootDir = await createTempDir(fn, 'root-preview-base');
+    const docsDir = join(rootDir, 'docs');
+    const templatesDir = join(rootDir, '.templates');
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+
+    const configPath = join(rootDir, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify(
+        {
+          variables: {
+            docsDir: './docs',
+            templatesDir: './.templates',
           },
         },
         null,
@@ -283,7 +360,7 @@ describe('atrPreview', () => {
     try {
       const rootDir = await createTempDir(fn, 'root-sync-cleanup');
       const docsDir = join(rootDir, 'docs');
-      const templatesDir = join(rootDir, 'templates');
+      const templatesDir = join(rootDir, '.templates');
       await mkdir(docsDir, { recursive: true });
       await mkdir(templatesDir, { recursive: true });
 
@@ -294,8 +371,7 @@ describe('atrPreview', () => {
           {
             variables: {
               docsDir: './docs',
-              templatesDir: './templates',
-              enableGitMetadata: false,
+              templatesDir: './.templates',
             },
           },
           null,
@@ -376,8 +452,8 @@ describe('atrPreview', () => {
   it('limits the Vite watcher to the allow-listed paths.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-watch-allow');
     const docsDir = join(rootDir, 'docs');
-    const templatesDir = join(rootDir, 'templates');
-    const assetsDir = join(rootDir, 'assets');
+    const templatesDir = join(rootDir, '.templates');
+    const assetsDir = join(rootDir, '.assets');
     const srcDir = join(rootDir, 'src');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
@@ -391,9 +467,8 @@ describe('atrPreview', () => {
         {
           variables: {
             docsDir: './docs',
-            templatesDir: './templates',
-            assetsDir: './assets',
-            enableGitMetadata: false,
+            templatesDir: './.templates',
+            assetsDir: './.assets',
           },
         },
         null,

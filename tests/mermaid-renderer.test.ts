@@ -23,7 +23,7 @@ const createTempDir = async (fn: TestContext, name: string) => {
 const writeCategoryTemplate = async (templatesDir: string) => {
   await writeFile(
     join(templatesDir, 'index-category.html'),
-    "<html><body>{{if (eq mermaidRenderer 'mermaid')}}mermaid-runtime{{end}}{{for article articles}}{{article.entryHtml}}{{end}}</body></html>",
+    "<html><body>{{if (eq mermaidRenderer 'mermaid')}}mermaid-runtime{{end}}{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>",
     'utf8'
   );
 };
@@ -73,7 +73,7 @@ const writeConfig = async (
 describe('mermaid renderer', () => {
   it('uses beautiful-mermaid by default', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -103,7 +103,7 @@ describe('mermaid renderer', () => {
 
   it('renders with mermaid.js when configured', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 
@@ -134,7 +134,7 @@ describe('mermaid renderer', () => {
 
   it('forces css-vars for beautiful-mermaid', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
-    const templatesDir = await createTempDir(fn, 'templates');
+    const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
     const configDir = await createTempDir(fn, 'config');
 

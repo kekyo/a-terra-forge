@@ -1,0 +1,55 @@
+<!doctype html>
+<!--
+a-terra-forge - Universal document-oriented markdown site generator
+Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
+Under MIT.
+https://github.com/kekyo/a-terra-forge
+-->
+{{
+set articleEntry0 (first articleEntries)
+set pageTitle articleEntry0.title
+set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
+set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
+set committerDates (map (fun date (formatDate date)) (sort (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
+}}
+{{
+if locale?
+}}
+<html lang="{{locale}}">
+{{else}}
+<html>
+{{end}}
+  <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# article: http://ogp.me/ns/article#">
+    {{import 'common-header.html'}}
+    <meta property="og:type" content="blog">
+  </head>
+  <body>
+{{import 'navigation-bar.html'}}
+    <div class="docs-outer">
+      <div class="docs">
+        {{
+        for articleEntry articleEntries
+          getEntry articleEntry
+        end
+        }}
+      </div>
+    </div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz"
+      crossorigin="anonymous"
+    ></script>
+    {{if (eq mermaidRenderer 'mermaid')}}
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
+      crossorigin="anonymous"
+    ></script>
+    {{
+    end
+    set scriptPath (getSiteTemplatePath 'site-script.js')
+    if scriptPath?
+    }}
+    <script src="{{scriptPath}}"></script>
+    {{end}}
+  </body>
+</html>

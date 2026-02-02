@@ -3,7 +3,7 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { sep } from 'path';
+import { dirname, resolve, sep } from 'path';
 import dayjs from 'dayjs';
 import {
   combineVariables,
@@ -12,7 +12,7 @@ import {
 } from 'funcity';
 
 import { bootstrapIcons } from '../generated/bootstrapIcons';
-import { toRgbString } from '../utils';
+import { toPosixRelativePath, toRgbString } from '../utils';
 import type {
   ATerraForgeMessageList,
   ATerraForgeMessageListByLocale,
@@ -117,6 +117,78 @@ export const scriptVariables = combineVariables({
  */
 export const toPosixPath = (value: string): string =>
   value.split(sep).join('/');
+
+const isAbsoluteUrl = (value: string): boolean =>
+  value.startsWith('//') || /^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(value);
+
+const isHashOrQuery = (value: string): boolean =>
+  value.startsWith('#') || value.startsWith('?');
+
+const normalizePathValue = (value: unknown): string | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+  const stringValue = typeof value === 'string' ? value : String(value);
+  const trimmed = stringValue.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+};
+
+const resolveOutputPath = (outDir: string, target: string): string => {
+  if (target.startsWith('/') || target.startsWith('\\')) {
+    return resolve(outDir, target.slice(1));
+  }
+  return resolve(outDir, target);
+};
+
+export const createPathFunctions = ({
+  outDir,
+  documentPath,
+  baseUrl,
+}: {
+  outDir: string;
+  documentPath: string;
+  baseUrl: URL;
+}): {
+  toRelativePath: (value: unknown) => string;
+  toAbsolutePath: (value: unknown) => string;
+} => {
+  const resolvedOutDir = resolve(outDir);
+  const documentDir = dirname(resolve(documentPath));
+  const resolvedBaseUrl = new URL(baseUrl.toString());
+
+  const toRelativePath = (value: unknown): string => {
+    const normalized = normalizePathValue(value);
+    if (!normalized) {
+      return '';
+    }
+    if (isAbsoluteUrl(normalized) || isHashOrQuery(normalized)) {
+      return normalized;
+    }
+    const targetPath = resolveOutputPath(resolvedOutDir, normalized);
+    return toPosixRelativePath(documentDir, targetPath);
+  };
+
+  const toAbsolutePath = (value: unknown): string => {
+    const normalized = normalizePathValue(value);
+    if (!normalized) {
+      return '';
+    }
+    if (isAbsoluteUrl(normalized)) {
+      return normalized;
+    }
+    if (isHashOrQuery(normalized)) {
+      return new URL(normalized, resolvedBaseUrl).toString();
+    }
+    const targetPath = resolveOutputPath(resolvedOutDir, normalized);
+    const relativePath = toPosixRelativePath(resolvedOutDir, targetPath);
+    return new URL(relativePath, resolvedBaseUrl).toString();
+  };
+
+  return {
+    toRelativePath,
+    toAbsolutePath,
+  };
+};
 
 /**
  * Trim a string or return undefined when empty.

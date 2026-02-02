@@ -75,7 +75,7 @@ describe('CLI distribution', () => {
       true
     );
     expect(
-      existsSync(join(destination, 'templates', 'index-timeline.html'))
+      existsSync(join(destination, '.templates', 'index-timeline.html'))
     ).toBe(true);
     expect(existsSync(join(destination, 'vite.config.ts'))).toBe(false);
 
@@ -98,7 +98,7 @@ describe('CLI distribution', () => {
         '--docs',
         resolve(scaffoldRoot, 'docs'),
         '--templates',
-        resolve(scaffoldRoot, 'templates'),
+        resolve(scaffoldRoot, '.templates'),
         '--out',
         outDir,
       ],
@@ -107,6 +107,44 @@ describe('CLI distribution', () => {
     expectSuccess(result);
 
     expect(existsSync(join(outDir, 'index.html'))).toBe(true);
+  });
+
+  it('overrides baseUrl via --base-url.', async (fn) => {
+    const outDir = await createTempDir(fn, 'build-base-url');
+    const scaffoldRoot = await copyScaffold(fn, 'scaffold-base-url');
+
+    await writeFile(
+      join(scaffoldRoot, '.templates', 'index-category.html'),
+      '<html><body>{{baseUrl}}</body></html>',
+      'utf8'
+    );
+
+    const result = runNode(
+      [
+        distIndex,
+        'build',
+        '--log',
+        'error',
+        '--config',
+        resolve(scaffoldRoot, 'atr.json'),
+        '--docs',
+        resolve(scaffoldRoot, 'docs'),
+        '--templates',
+        resolve(scaffoldRoot, '.templates'),
+        '--out',
+        outDir,
+        '--base-url',
+        'https://example.com/custom',
+      ],
+      process.cwd()
+    );
+    expectSuccess(result);
+
+    const categoryHtml = await readFile(
+      join(outDir, 'hello', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain('https://example.com/custom/');
   });
 
   it('builds immediately after init without git metadata.', async (fn) => {
