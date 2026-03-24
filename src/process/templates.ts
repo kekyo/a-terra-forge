@@ -6,19 +6,16 @@
 import { readFile } from 'fs/promises';
 import { dirname, resolve } from 'path';
 import {
+  compileScriptCached,
   createIncludeFunction,
-  convertToString,
+  createReducerContext,
+  createSharedDCodegenExecutor,
   FunCityReducerError,
   makeFunCityFunction,
   outputErrors,
-  runParser,
-  runReducer,
-  runTokenizer,
-  type FunCityBlockNode,
   type FunCityExpressionNode,
   type FunCityFunctionContext,
   type FunCityLogEntry,
-  type FunCityToken,
   type FunCityVariables,
   type FunCityWarningEntry,
 } from 'funcity';
@@ -27,43 +24,17 @@ import { writeContentFile } from '../utils';
 
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * Cached parsed template artifacts.
- */
-interface ParsedTemplateCacheEntry {
-  readonly tokens: readonly FunCityToken[];
-  readonly nodes: readonly FunCityBlockNode[];
-  readonly logs: readonly FunCityLogEntry[];
-}
+const templateExecutionBackend = 'source' as const;
+const templateAggressiveOptimize = false;
 
-/**
- * Cache for parsed FunCity templates.
- */
-const parsedTemplateCache = new Map<string, ParsedTemplateCacheEntry>();
-
-/**
- * Parse a template script into tokens and AST nodes with caching.
- */
-const parseTemplate = (
-  sourceId: string,
-  templateScript: string
-): ParsedTemplateCacheEntry => {
-  const cacheKey = `${sourceId}\u0000${templateScript}`;
-  const cached = parsedTemplateCache.get(cacheKey);
-  if (cached) {
-    return cached;
-  }
-  const parseErrors: FunCityLogEntry[] = [];
-  const tokens = runTokenizer(templateScript, parseErrors, sourceId);
-  const nodes = runParser(tokens, parseErrors);
-  const parsed: ParsedTemplateCacheEntry = {
-    tokens,
-    nodes,
-    logs: parseErrors,
-  };
-  parsedTemplateCache.set(cacheKey, parsed);
-  return parsed;
-};
+const compileTemplate = (sourceId: string, templateScript: string) =>
+  compileScriptCached(
+    templateScript,
+    sourceId,
+    'template',
+    templateExecutionBackend,
+    templateAggressiveOptimize
+  );
 
 type ImportHandlers = {
   readonly includeTemplate: Function;
@@ -130,24 +101,26 @@ const renderFunCity = async (
   logs: FunCityLogEntry[],
   signal: AbortSignal
 ): Promise<string> => {
-  const parsed = parseTemplate(sourceId, templateScript);
-  if (parsed.logs.length > 0) {
-    logs.push(...parsed.logs);
+  const compiled = compileTemplate(sourceId, templateScript);
+  if (compiled.logs.length > 0) {
+    logs.push(...compiled.logs);
   }
   if (logs.some((error) => error.type === 'error')) {
     return '';
   }
 
   const warningLogs: FunCityWarningEntry[] = [];
+  const reducerContext = createReducerContext(
+    variables,
+    warningLogs,
+    createSharedDCodegenExecutor(
+      templateExecutionBackend,
+      templateAggressiveOptimize
+    )
+  );
   try {
-    const reducedList = await runReducer(
-      parsed.nodes,
-      variables,
-      warningLogs,
-      signal
-    );
+    const rendered = await compiled.textProgram(reducerContext, signal);
     logs.push(...warningLogs);
-    const rendered = reducedList.map((r) => convertToString(r)).join('');
     return rendered;
   } catch (e: unknown) {
     if (e instanceof FunCityReducerError) {
