@@ -18,6 +18,8 @@ import {
   type FunCityExpressionNode,
   type FunCityFunctionContext,
   type FunCityLogEntry,
+  type FunCityRange,
+  type FunCityRangedObject,
   type FunCityToken,
   type FunCityVariables,
   type FunCityWarningEntry,
@@ -40,6 +42,30 @@ interface ParsedTemplateCacheEntry {
  * Cache for parsed FunCity templates.
  */
 const parsedTemplateCache = new Map<string, ParsedTemplateCacheEntry>();
+
+const createFallbackRange = (sourceId: string): FunCityRange => ({
+  sourceId,
+  start: { line: 1, column: 1 },
+  end: { line: 1, column: 1 },
+});
+
+const resolveLogRange = (
+  node: FunCityRangedObject | undefined,
+  fallbackSourceId: string
+): FunCityRange => node?.range ?? createFallbackRange(fallbackSourceId);
+
+const appendTemplateError = (
+  logs: FunCityLogEntry[],
+  node: FunCityRangedObject | undefined,
+  fallbackSourceId: string,
+  description: string
+): void => {
+  logs.push({
+    type: 'error',
+    description,
+    range: resolveLogRange(node, fallbackSourceId),
+  });
+};
 
 /**
  * Parse a template script into tokens and AST nodes with caching.
@@ -87,21 +113,31 @@ const createImportHandlers = (
     const importPath = resolve(templateDir, String(resolvedArg));
 
     if (importStack.includes(importPath)) {
-      logs.push({
-        type: 'error',
-        description: `circular import detected: ${importPath}`,
-        range: context.thisNode?.range ?? {
-          sourceId: templatePath,
-          start: { line: 1, column: 1 },
-          end: { line: 1, column: 1 },
-        },
-      });
+      appendTemplateError(
+        logs,
+        context.thisNode,
+        templatePath,
+        `circular import detected: ${importPath}`
+      );
       return '';
     }
 
-    const importScript = allowMissing
-      ? await readFileIfExists(importPath)
-      : await readFile(importPath, 'utf8');
+    let importScript: string | undefined;
+    try {
+      importScript = allowMissing
+        ? await readFileIfExists(importPath)
+        : await readFile(importPath, 'utf8');
+    } catch (error: unknown) {
+      appendTemplateError(
+        logs,
+        context.thisNode,
+        templatePath,
+        `failed to read imported template: ${importPath} (${
+          error instanceof Error ? error.message : String(error)
+        })`
+      );
+      return '';
+    }
     if (importScript === undefined) {
       return '';
     }
