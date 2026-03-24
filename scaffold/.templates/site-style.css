@@ -18,6 +18,41 @@
   --header-icon-default: '{{cond headerIconCode? headerIconCode '\\F66B'}}';
   /* Max document area width  */
   --docs-max-width: {{cond maxWidth? maxWidth 'inherit'}};
+  /* Stepwise heading sizes derived from Bootstrap 5.3.0 heading maxima */
+  --heading-h1-size: 2.5rem;
+  --heading-h2-size: 2rem;
+  --heading-h3-size: 1.75rem;
+  --heading-h4-size: 1.5rem;
+  --heading-h5-size: 1.25rem;
+  --heading-h6-size: 1rem;
+  --heading-h1-margin-left: calc(var(--heading-h1-size) * 0.4);
+  --heading-h1-padding-left: var(--heading-h1-size);
+  --heading-h1-icon-left: calc(var(--heading-h1-size) * -0.4);
+  --heading-h1-icon-size: var(--heading-h1-size);
+  --heading-h1-anchor-left: calc(var(--heading-h1-size) * -1.6);
+  --heading-h1-anchor-size: var(--heading-h1-size);
+  --heading-h1-anchor-hitbox: calc(var(--heading-h1-size) * 0.5);
+  --heading-h2-anchor-left: calc(var(--heading-h2-size) * -1.5);
+  --heading-h2-anchor-size: var(--heading-h2-size);
+  --heading-h2-anchor-hitbox: calc(var(--heading-h2-size) * 0.4);
+}
+
+@media (max-width: 915.98px) {
+  :root {
+    --heading-h1-size: 2.234rem;
+    --heading-h2-size: 1.84rem;
+    --heading-h3-size: 1.643rem;
+    --heading-h4-size: 1.447rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  :root {
+    --heading-h1-size: 1.915rem;
+    --heading-h2-size: 1.649rem;
+    --heading-h3-size: 1.516rem;
+    --heading-h4-size: 1.383rem;
+  }
 }
 
 :root {
@@ -461,9 +496,22 @@ body {
 
 /* Metadata list */
 .entry-meta {
+  margin-top: 1rem;
   color: var(--bs-secondary-color);
   font-size: 0.93rem;
   line-height: 1.15rem;
+}
+
+@media (max-width: 575.98px) {
+  .entry-meta {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 915.98px) {
+  .entry-meta {
+    margin-top: 0.5rem;
+  }
 }
 
 /* Metadata list */
@@ -504,24 +552,25 @@ body {
 }
 
 h1 {
+  font-size: var(--heading-h1-size);
   position: relative;
-  margin-left: 0.4em;  /* For H1 icon */
+  margin-left: var(--heading-h1-margin-left);  /* For H1 icon */
   padding-top: 0.4rem;
-  padding-left: 1em;  /* For H1 icon */
+  padding-left: var(--heading-h1-padding-left);  /* For H1 icon */
   padding-bottom: 0.6rem;
-  border-bottom: 0.15rem solid var(--primary-alpha-50);
-  --heading-anchor-left: -1.6em;  /* For H1 link icon */
-  --heading-anchor-size: 1em;  /* For H1 link icon */
-  --heading-anchor-hitbox: 0.5em;  /* For H1 link icon */
+  border-bottom: 0.15rem solid var(--primary-alpha-75);
+  --heading-anchor-left: var(--heading-h1-anchor-left);  /* For H1 link icon */
+  --heading-anchor-size: var(--heading-h1-anchor-size);  /* For H1 link icon */
+  --heading-anchor-hitbox: var(--heading-h1-anchor-hitbox);  /* For H1 link icon */
 }
 
 /* Display H1 icon */
 h1::before {
   position: absolute;
-  left: -0.4em;
+  left: var(--heading-h1-icon-left);
   top: 0.6rem;
   font-family: "bootstrap-icons";
-  font-size: 1em;
+  font-size: var(--heading-h1-icon-size);
   line-height: 1;
   color: var(--primary);
   content: var(--header-icon, var(--header-icon-default));
@@ -533,29 +582,33 @@ h1.heading-has-link::before {
 
 h1.heading-has-link > .heading-link::before {
   position: absolute;
-  left: -0.4em;
+  left: var(--heading-h1-icon-left);
   top: 0.6rem;
   font-family: "bootstrap-icons";
-  font-size: 1em;
+  font-size: var(--heading-h1-icon-size);
   line-height: 1;
   color: var(--primary);
   content: var(--header-icon, var(--header-icon-default));
 }
 
 h2 {
+  font-size: var(--heading-h2-size);
   position: relative;
-  margin-bottom: 1rem;
+  margin-top: 2rem;
+  margin-bottom: 1.5rem;
   padding-top: 0.4rem;
   padding-left: 0.9rem;
   padding-bottom: 0.4rem;
   border-left: 0.7rem solid var(--primary-alpha-75);
-  --heading-anchor-left: -1.5em;  /* For H2 link icon */
-  --heading-anchor-size: 1em;  /* For H2 link icon */
-  --heading-anchor-hitbox: 0.4em;  /* For H2 link icon */
+  --heading-anchor-left: var(--heading-h2-anchor-left);  /* For H2 link icon */
+  --heading-anchor-size: var(--heading-h2-anchor-size);  /* For H2 link icon */
+  --heading-anchor-hitbox: var(--heading-h2-anchor-hitbox);  /* For H2 link icon */
 }
 
 h3 {
-  margin-bottom: 0.9rem;
+  font-size: var(--heading-h3-size);
+  margin-top: 1.5rem;
+  margin-bottom: 1.2rem;
   padding-top: 0.4rem;
   padding-left: 0.65rem;
   padding-bottom: 0.4rem;
@@ -563,7 +616,9 @@ h3 {
 }
 
 h4 {
-  margin-bottom: 0.8rem;
+  font-size: var(--heading-h4-size);
+  margin-top: 1.2rem;
+  margin-bottom: 1rem;
   padding-top: 0.35rem;
   padding-left: 0.6rem;
   padding-bottom: 0.35rem;
@@ -571,7 +626,9 @@ h4 {
 }
 
 h5 {
-  margin-bottom: 0.7rem;
+  font-size: var(--heading-h5-size);
+  margin-top: 1rem;
+  margin-bottom: 0.8rem;
   padding-top: 0.3rem;
   padding-left: 0.5rem;
   padding-bottom: 0.3rem;
@@ -579,7 +636,9 @@ h5 {
 }
 
 h6 {
-  margin-bottom: 0.6rem;
+  font-size: var(--heading-h6-size);
+  margin-top: 0.8rem;
+  margin-bottom: 0.65rem;
   padding-top: 0.23rem;
   padding-left: 0.48rem;
   padding-bottom: 0.23rem;
@@ -590,7 +649,22 @@ h6 {
 /* Heading permalinks */
 
 .entry-header {
-  margin-bottom: 0.75rem;
+  margin-top: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 575.98px) {
+  .entry-header {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+}
+
+@media (max-width: 915.98px) {
+  .entry-header {
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+  }
 }
 
 .entry-header h2 {
@@ -694,8 +768,9 @@ h6 {
 }
 
 .stream-entry {
-  padding-bottom: 2em;
-  border-bottom: 2px solid var(--primary-alpha-75);
+  margin-bottom: 0.5rem;
+  padding-bottom: 2.5em;
+  border-bottom: 2px solid var(--primary-alpha-25);
 }
 
 .stream-entry-error {
