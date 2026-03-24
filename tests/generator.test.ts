@@ -1664,7 +1664,7 @@ Details here
     ).toBe(true);
   });
 
-  it('Imports templates and executes scripts in them.', async (fn) => {
+  it('Includes templates and executes scripts in them.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
@@ -1685,7 +1685,7 @@ Details here
 <html>
   <body>
     {{set greeting 'Hello'}}
-    {{import 'partial.html'}}
+    {{include 'partial.html'}}
     <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>
@@ -1714,7 +1714,7 @@ Details here
     expect(htmlMatch?.[1]).toBe('Hello 2024/03/05');
   });
 
-  it('Silently ignores missing templates with tryImport.', async (fn) => {
+  it('Silently ignores missing templates with tryInclude.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
@@ -1734,8 +1734,8 @@ Details here
     const template = `
 <html>
   <body>
-    {{tryImport 'missing.html'}}
-    {{tryImport 'partial.html'}}
+    {{tryInclude 'missing.html'}}
+    {{tryInclude 'partial.html'}}
     <main>{{for article articleEntries}}{{article.entryHtml}}{{end}}</main>
   </body>
 </html>

@@ -181,10 +181,7 @@ export const generateTimelineDocument = async (
         [timelineEntryTemplate.path],
         signal
       );
-      const entryHasError = outputErrors(
-        timelineEntryTemplate.path,
-        entryErrors
-      );
+      const entryHasError = outputErrors(entryErrors);
       const entryHtml = entryHasError ? timelineHtml : entryRendered;
       await writeContentFile(entryFilePath, entryHtml);
 
@@ -324,7 +321,7 @@ export const generateTimelineDocument = async (
     signal
   );
 
-  const isError = outputErrors(indexTemplate.path, logs);
+  const isError = outputErrors(logs);
 
   if (!isError) {
     await writeContentFile(destinationPath, rendered);

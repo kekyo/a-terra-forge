@@ -33,25 +33,23 @@ const fileExists = async (path: string): Promise<boolean> => {
  * Resolve the worker bundle entry path.
  */
 export const resolveWorkerEntry = async (): Promise<string | undefined> => {
-  const currentDir = dirname(fileURLToPath(import.meta.url));
-  const parentDir = dirname(currentDir);
-  const candidates = new Set<string>([
-    join(currentDir, 'worker.cjs'),
-    join(currentDir, 'worker.mjs'),
-    join(parentDir, 'worker.cjs'),
-    join(parentDir, 'worker.mjs'),
-    join(parentDir, '..', 'dist', 'worker.cjs'),
-    join(parentDir, '..', 'dist', 'worker.mjs'),
-  ]);
+  const candidates = new Set<string>();
 
-  if (typeof __dirname === 'string') {
-    const parent = dirname(__dirname);
-    candidates.add(join(__dirname, 'worker.cjs'));
-    candidates.add(join(__dirname, 'worker.mjs'));
-    candidates.add(join(parent, 'worker.cjs'));
-    candidates.add(join(parent, 'worker.mjs'));
-    candidates.add(join(parent, '..', 'dist', 'worker.cjs'));
-    candidates.add(join(parent, '..', 'dist', 'worker.mjs'));
+  const currentDir =
+    typeof __dirname === 'string'
+      ? __dirname
+      : typeof import.meta.url === 'string'
+        ? dirname(fileURLToPath(import.meta.url))
+        : undefined;
+
+  if (currentDir) {
+    const parentDir = dirname(currentDir);
+    candidates.add(join(currentDir, 'worker.cjs'));
+    candidates.add(join(currentDir, 'worker.mjs'));
+    candidates.add(join(parentDir, 'worker.cjs'));
+    candidates.add(join(parentDir, 'worker.mjs'));
+    candidates.add(join(parentDir, '..', 'dist', 'worker.cjs'));
+    candidates.add(join(parentDir, '..', 'dist', 'worker.mjs'));
   }
 
   for (const candidate of candidates) {

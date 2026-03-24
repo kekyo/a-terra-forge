@@ -175,7 +175,7 @@ export const generateBlogDocument = async (
         [blogEntryTemplate.path],
         signal
       );
-      const entryHasError = outputErrors(blogEntryTemplate.path, entryErrors);
+      const entryHasError = outputErrors(entryErrors);
       const entryHtml = entryHasError ? entryBody : entryRendered;
       await writeContentFile(entryFilePath, entryHtml);
 
@@ -325,7 +325,7 @@ export const generateBlogDocument = async (
     signal
   );
 
-  const isError = outputErrors(pageTemplate.path, logs);
+  const isError = outputErrors(logs);
 
   if (!isError) {
     await writeContentFile(destinationPath, rendered);
@@ -394,7 +394,7 @@ export const generateBlogDocument = async (
         [blogSingleTemplate.path],
         signal
       );
-      const singleHasError = outputErrors(blogSingleTemplate.path, singleLogs);
+      const singleHasError = outputErrors(singleLogs);
       if (singleHasError) {
         return undefined;
       }

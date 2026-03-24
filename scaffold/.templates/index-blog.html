@@ -19,11 +19,11 @@ if locale?
 <html>
 {{end}}
   <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# article: http://ogp.me/ns/article#">
-    {{import 'common-header.html'}}
+    {{include 'common-header.html'}}
     <meta property="og:type" content="blog">
   </head>
   <body>
-{{import 'navigation-bar.html'}}
+{{include 'navigation-bar.html'}}
     <div class="docs-outer">
       <div class="docs" data-blog-index="{{blogIndexPath}}">
         <div id="blog-list" class="stream-list"{{if tpc}} data-blog-prerender="{{tpc}}"{{end}}>

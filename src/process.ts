@@ -257,7 +257,7 @@ const renderSiteTemplates = async (
         [entry.templatePath],
         signal
       );
-      const isError = outputErrors(entry.templatePath, logs);
+      const isError = outputErrors(logs);
       if (!isError) {
         await writeContentFile(entry.outputPath, rendered);
         const builtPath = resolveBuiltLogPath(

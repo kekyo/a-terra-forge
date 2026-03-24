@@ -169,7 +169,11 @@ const executedUrl = (() => {
     return pathToFileURL(resolve(process.argv[1])).href;
   }
 })();
-const isDirectExecution = import.meta.url === executedUrl;
+const isDirectExecution =
+  (typeof require === 'function' &&
+    typeof module !== 'undefined' &&
+    require.main === module) ||
+  import.meta.url === executedUrl;
 
 if (isDirectExecution) {
   const abortController = new AbortController();

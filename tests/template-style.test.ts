@@ -176,6 +176,38 @@ describe('template style', () => {
     expect(wrapperMatch?.[1]).toMatch(/z-index:\s*3;/);
   });
 
+  it('keeps oEmbed layouts stacked regardless of viewport width', async () => {
+    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const containerMatch = css.match(/\.oembed-container\s*\{([^}]*)\}/);
+    const headerMatch = css.match(/\.oembed-header\s*\{([^}]*)\}/);
+    const contentMatch = css.match(/\.oembed-content\s*\{([^}]*)\}/);
+    const wideFloatMatch = css.match(
+      /@media\s*\(min-width:\s*920px\)\s*\{[\s\S]*?\.entry-body\s+\.oembed-container\s*\{([^}]*)\}/
+    );
+
+    expect(containerMatch).not.toBeNull();
+    expect(containerMatch?.[1]).toMatch(
+      /margin:\s*0\.75rem\s+0\s+0\.75rem\s+0\.5rem;/
+    );
+    expect(containerMatch?.[1]).toMatch(
+      /grid-template-columns:\s*minmax\(0,\s*1fr\);/
+    );
+    expect(wideFloatMatch).not.toBeNull();
+    expect(wideFloatMatch?.[1]).toMatch(/float:\s*right;/);
+    expect(wideFloatMatch?.[1]).toMatch(/width:\s*60%;/);
+    expect(wideFloatMatch?.[1]).toMatch(/margin-left:\s*1\.3rem;/);
+    expect(wideFloatMatch?.[1]).not.toMatch(
+      /grid-template-columns:\s*minmax\(0,\s*1\.2fr\)\s+minmax\(0,\s*0\.9fr\);/
+    );
+    expect(css).not.toMatch(
+      /@media\s*\(min-width:\s*600px\)\s*\{[\s\S]*?\.oembed-container\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.2fr\)\s+minmax\(0,\s*0\.9fr\);/
+    );
+    expect(headerMatch).not.toBeNull();
+    expect(headerMatch?.[1]).toMatch(/order:\s*2;/);
+    expect(contentMatch).not.toBeNull();
+    expect(contentMatch?.[1]).toMatch(/order:\s*1;/);
+  });
+
   it('defines primary and secondary palette variables', async () => {
     const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
     expect(css).toMatch(
@@ -195,6 +227,43 @@ describe('template style', () => {
     expect(css).toMatch(
       /--secondary-alpha-50:\s*color-mix\(in\s+srgb,\s*var\(--secondary\)\s+50%,\s*transparent\);/
     );
+  });
+
+  it('defines stepwise rem heading sizes at root and breakpoints', async () => {
+    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const tabletBlocks = extractMediaBlocks(
+      css,
+      '@media (max-width: 915.98px)'
+    );
+    const mobileBlocks = extractMediaBlocks(
+      css,
+      '@media (max-width: 575.98px)'
+    );
+
+    expect(css).toContain('--heading-h1-size: 2.5rem;');
+    expect(css).toContain('--heading-h2-size: 2rem;');
+    expect(css).toContain('--heading-h3-size: 1.75rem;');
+    expect(css).toContain('--heading-h4-size: 1.5rem;');
+    expect(css).toContain('--heading-h5-size: 1.25rem;');
+    expect(css).toContain('--heading-h6-size: 1rem;');
+    expect(
+      tabletBlocks.some(
+        (block) =>
+          block.includes('--heading-h1-size: 2.234rem;') &&
+          block.includes('--heading-h2-size: 1.84rem;') &&
+          block.includes('--heading-h3-size: 1.643rem;') &&
+          block.includes('--heading-h4-size: 1.447rem;')
+      )
+    ).toBe(true);
+    expect(
+      mobileBlocks.some(
+        (block) =>
+          block.includes('--heading-h1-size: 1.915rem;') &&
+          block.includes('--heading-h2-size: 1.649rem;') &&
+          block.includes('--heading-h3-size: 1.516rem;') &&
+          block.includes('--heading-h4-size: 1.383rem;')
+      )
+    ).toBe(true);
   });
 
   it('defines inline code palette variables for each theme', async () => {
@@ -288,8 +357,9 @@ describe('template style', () => {
     const streamMatch = css.match(/\.stream-entry\s*\{([^}]*)\}/);
 
     expect(h1Match).not.toBeNull();
+    expect(h1Match?.[1]).toMatch(/font-size:\s*var\(--heading-h1-size\);/);
     expect(h1Match?.[1]).toMatch(
-      /border-bottom:\s*0\.15rem\s+solid\s+var\(--primary-alpha-50\);/
+      /border-bottom:\s*0\.15rem\s+solid\s+var\(--primary-alpha-75\);/
     );
     expect(h1IconMatch).not.toBeNull();
     expect(h1IconMatch?.[1]).toMatch(/color:\s*var\(--primary\);/);
@@ -297,12 +367,13 @@ describe('template style', () => {
       /content:\s*var\(--header-icon,\s*var\(--header-icon-default\)\);/
     );
     expect(h2Match).not.toBeNull();
+    expect(h2Match?.[0]).toMatch(/font-size:\s*var\(--heading-h2-size\);/);
     expect(h2Match?.[0]).toMatch(
       /border-left:\s*0\.7rem\s+solid\s+var\(--primary-alpha-75\);/
     );
     expect(streamMatch).not.toBeNull();
     expect(streamMatch?.[1]).toMatch(
-      /border-bottom:\s*2px\s+solid\s+var\(--primary-alpha-75\);/
+      /border-bottom:\s*2px\s+solid\s+var\(--primary-alpha-25\);/
     );
   });
 
@@ -356,12 +427,15 @@ describe('template style', () => {
     expect(headingClearMatch?.[1]).toMatch(/clear:\s*both;/);
   });
 
-  it('scales the h1 icon with the heading size', async () => {
+  it('sizes the h1 icon from the heading scale variable', async () => {
     const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
 
     expect(h1IconMatch).not.toBeNull();
-    expect(h1IconMatch?.[1]).toMatch(/font-size:\s*1em;/);
+    expect(h1IconMatch?.[1]).toMatch(/left:\s*var\(--heading-h1-icon-left\);/);
+    expect(h1IconMatch?.[1]).toMatch(
+      /font-size:\s*var\(--heading-h1-icon-size\);/
+    );
   });
 
   it('exposes heading permalink positioning variables', async () => {
@@ -377,6 +451,12 @@ describe('template style', () => {
 
     expect(h1Match).not.toBeNull();
     expect(h2Match).not.toBeNull();
+    expect(h1Match?.[0]).toMatch(
+      /--heading-anchor-left:\s*var\(--heading-h1-anchor-left\);/
+    );
+    expect(h2Match?.[0]).toMatch(
+      /--heading-anchor-left:\s*var\(--heading-h2-anchor-left\);/
+    );
     expect(anchorMatch).not.toBeNull();
     expect(mobileMatch).not.toBeNull();
   });
