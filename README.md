@@ -4,15 +4,13 @@ General-purpose Markdown document site generator
 
 ![a-terra-forge](./images/a-terra-forge.120.png)
 
-[![Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.](https://www.repostatus.org/badges/latest/wip.svg)](https://www.repostatus.org/#wip)
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![NPM](https://img.shields.io/npm/v/a-terra-forge.svg)](https://www.npmjs.com/package/a-terra-forge)
 
 ---
 
 [(Japanese language is here/日本語はこちら)](./README_ja.md)
-
-TODO: WIP
 
 ## What is this?
 
@@ -958,7 +956,282 @@ Below are all values defined in `atr.json`:
 
 ## Customize templates
 
-TODO:
+a-terra-forge renders documents according to template files and outputs HTML.
+Understanding this process lets you fully customize the appearance of your document site.
+
+When you initialize a workspace with `atr init`, a `.templates` directory like this is created:
+
+```
+my-page
+├── atr.json
+├── docs/  ...
+├── .gitignore
+├── .assets/  ...
+├── .templates
+│   ├── atom.xml
+│   ├── blog-entry.html
+│   ├── category-entry.html
+│   ├── common-header.html
+│   ├── feed.xml
+│   ├── index-blog-single.html
+│   ├── index-blog.html
+│   ├── index-category.html
+│   ├── index-timeline.html
+│   ├── navigation-bar.html
+│   ├── site-script.js
+│   ├── site-style.css
+│   ├── sitemap.xml
+│   └── timeline-entry.html
+└── .github/  ...
+```
+
+### Transformation process
+
+All of the files shown above are interpreted as "funcity scripts".
+In other words, not only `.html`, but also `.css`, `.js`, and `.xml` can use variable expansion, conditionals, and loops at build time.
+
+The [funcity language](https://github.com/kekyo/funcity) is a text processor based on a functional language, so it enables flexible and lightweight customization.
+
+```mermaid
+flowchart TD
+  A[docs/**/*.md] --> B[Rendered by mark-deco]
+  B --> C[contentHtml / timelineHtml / frontmatter / Git metadata]
+
+  C --> D[index-category.html]
+  C --> E[index-blog.html]
+  C --> F[index-blog-single.html]
+  C --> G[index-timeline.html]
+
+  H[category-entry.html] --> D
+  I[blog-entry.html] --> E
+  I --> F
+  J[timeline-entry.html] --> G
+
+  K[common-header.html] --> D
+  K --> E
+  K --> F
+  K --> G
+  L[navigation-bar.html] --> D
+  L --> E
+  L --> F
+  L --> G
+  M[additional-header.html<br/>optional] --> K
+
+  D --> N[Category page]
+  E --> O[Blog index + blog.json + article-bodies/*.txt]
+  F --> P[Blog single page]
+  G --> Q[Timeline + timeline.json + article-bodies/*.txt]
+
+  R[site-style.css / site-script.js / feed.xml / atom.xml / sitemap.xml] --> S[Output to dist/]
+  T[.assets/** and contentFiles] --> S
+  N --> S
+  O --> S
+  P --> S
+  Q --> S
+```
+
+Roughly speaking, the build proceeds in this order:
+
+1. `docs/**/*.md` is rendered by mark-deco, producing HTML fragments, frontmatter, and Git metadata.
+2. Those results are passed to `index-category.html`, `index-blog.html`, `index-blog-single.html`, and `index-timeline.html` to assemble full pages.
+3. When needed, `category-entry.html`, `blog-entry.html`, and `timeline-entry.html` are used to decorate each entry fragment.
+4. `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, and `sitemap.xml` are rendered separately as site templates.
+5. Files under `.assets/` and static files matched by `contentFiles` are copied directly to the output directory.
+
+Use `import` and `tryImport` to split and reuse templates.
+Both are resolved relative to the calling template, and nested imports are supported.
+
+- `import 'partial.html'`: The target file is required. If it does not exist, the build fails.
+- `tryImport 'partial.html'`: If the target file does not exist, it is treated as an empty string. This is suitable for optional files such as `additional-header.html`.
+- Circular imports are detected and reported as build errors.
+
+The role of each file is shown below:
+
+#### HTML generation
+
+|File|Type|Details|
+|:----|:----|:----|
+|`index-category.html`|Category|Generates the full HTML for a regular category page.|
+|`category-entry.html`|Category|Decorates each document entry inside a category page. If omitted, the document HTML is embedded as-is.|
+|`index-blog.html`|Blog|Generates the index page for a blog category.|
+|`blog-entry.html`|Blog|Generates individual document entries used by the blog index and blog single pages.|
+|`index-blog-single.html`|Blog|Generates a single-document page for a blog entry.|
+|`index-timeline.html`|Timeline|Generates the timeline page.|
+|`timeline-entry.html`|Timeline|Generates each individual document entry on the timeline page.|
+|`common-header.html`|Shared|Generates the HTML head section shared by all pages.|
+|`navigation-bar.html`|Navigation menu|Generates the navigation bar at the top of the page.|
+|`additional-header.html`|Shared|If present, inserts extra content into the HTML head. This is useful for analytics scripts and similar additions.|
+
+- `additional-header.html` is optional.
+- If blog categories are enabled, `index-blog.html`, `blog-entry.html`, and `index-blog-single.html` are required.
+- If the timeline is generated, `index-timeline.html` and `timeline-entry.html` are required.
+
+#### Assets
+
+|File|Details|
+|:----|:----|
+|`site-script.js`|Generates the shared JavaScript used by the site.|
+|`site-style.css`|Generates the shared CSS used by the site.|
+
+#### Metadata generation
+
+|File|Details|
+|:----|:----|
+|`atom.xml`|Generates an Atom feed.|
+|`feed.xml`|Generates an RSS feed.|
+|`sitemap.xml`|Generates a Google sitemap.|
+
+### FunCity variables
+
+Every template file is rendered as a funcity script, and several variables are available inside those scripts.
+These variables play an important role in a-terra-forge and form the core of document site generation.
+
+For example, `pageTitle` is a variable representing the page title.
+You can reference it with `{{ ... }}` like this to generate titles and metadata
+(this is what `common-header.html` and the page templates actually do):
+
+```html
+<title>{{pageTitle}}</title>
+<meta property="og:title" content="{{pageTitle}}">
+```
+
+Similarly, `articleEntries` holds a list of document entries, so you can iterate over it with `for` to render each document:
+
+```html
+<div>
+{{
+  for articleEntry articleEntries
+    getEntry articleEntry   // Generate one document with getEntry
+  end
+}}
+</div>
+```
+
+funcity also provides many [standard variables and functions](https://github.com/kekyo/funcity#standard-functions), and of course you can use those too.
+
+#### Variables available in page templates
+
+The following variables are available in `index-category.html`, `index-blog.html`, `index-blog-single.html`, and `index-timeline.html`.
+
+|Variable name|Details|
+|:----|:----|
+|`articleEntries`|A list of document entries to display. The structure of each item is described in "Article entries" below.|
+|`entryMode`|One of `category`, `blog`, `blog-single`, or `timeline`. You can use this for conditional branches in templates.|
+|`getEntry entry`|Returns the HTML for one entry. It resolves `entry.entryHtml` and `entry.entryPath`, so list templates do not need to care about where the actual content lives.|
+|`navItems`|The left-side navigation items. Each item has `label`, `href`, `isActive`, and optionally `children`.|
+|`navItemsAfter`|The right-aligned navigation items. Available when `afterMenuOrder` is not empty.|
+|`getSiteTemplatePath name`|Returns the relative path to the rendered output of a site template such as `site-style.css`.|
+|`prerenderCount`|Available in `index-blog.html` and `index-timeline.html`. Controls how many entries are embedded initially.|
+|`blogIndexPath`|Available in `index-blog.html`. The relative path to `blog.json`.|
+|`blogCount`|Available in `index-blog.html`. The total number of blog entries.|
+|`timelineIndexPath`|Available in `index-timeline.html`. The relative path to `timeline.json`.|
+|`timelineCount`|Available in `index-timeline.html`. The total number of timeline entries.|
+|`categoryCommitKeyWithDirty`|Available in `index-category.html`. A revision identifier generated from the Git state of the category as a whole.|
+
+- In `index-category.html`, the frontmatter of the first document is also merged into the top-level variables. The default template uses this for `hideMeta`.
+- In `index-blog.html` and `index-timeline.html`, page-level `title`, `description`, and `date` values are provided separately.
+- In `index-blog-single.html`, the variables of the single displayed entry are also merged into the top level, so you can reference `title` and `contentHtml` directly.
+
+#### Article entries
+
+The following are the main variables available on each element of `articleEntries`, and inside `category-entry.html`, `blog-entry.html`, and `timeline-entry.html`.
+
+|Variable name|Details|
+|:----|:----|
+|`title`|The document title.|
+|`id`|The numeric ID that identifies the document. When present, the default templates also use it for an anchor like `article-<id>`.|
+|`fileName`|The original Markdown file name.|
+|`filePath`|The relative path from `docs/`.|
+|`directory`|The category directory the document belongs to.|
+|`anchorId`|The anchor ID for this document.|
+|`git`|Git metadata for the document. You can reference fields such as `git.author.name`, `git.committer.date`, and `git.dirty`.|
+|`date`|A date string, primarily a shorthand for `git.committer.date`.|
+|`contentHtml`|The main body HTML. This is the full document body for category pages and single pages.|
+|`timelineHtml`|A shortened HTML body intended for timeline rendering.|
+|`entryHtml`|The HTML after the entry template has been applied.|
+|`entryPath`|A relative path to a lazy-loaded fragment file such as `article-bodies/*.txt`.|
+|`entrySinglePath`|A relative path to the single page for a blog entry. Used for blog categories and timeline items that point to those entries.|
+|`category`|The category name. Combined with `getMessage category`, you can resolve a display label.|
+|`categoryPath`|The relative path to the category page.|
+|`index`|Available only in `category-entry.html`. The display order within the category page.|
+
+- Keys and values written in frontmatter are also merged directly into the entry variables. For example, you can reference `description`, `tags`, `headerIcon`, `hideMeta`, or your own custom keys.
+- If `locale` is specified per document, that value is used. Otherwise, it falls back to `variables.locale` in `atr.json`.
+- The ordering of timeline and blog entries is decided by the build process before templating. In most cases, templates should just render the entries in the order received.
+
+#### Variables available in site templates
+
+In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, and any template added to `variables.siteTemplates`, the following variables are available in addition to the shared ones.
+
+|Variable name|Details|
+|:----|:----|
+|`feedTitle`|The feed title. If `feedTitle` is not set, it falls back to `siteName`, or to `"feed"` if that is empty.|
+|`feedDescription`|The feed description. If `feedDescription` is not set, it falls back to `siteDescription`.|
+|`feedLanguage`|The feed language. Normally resolved from `locale`.|
+|`siteLink`|The absolute URL of the site top page.|
+|`rssLink`|The absolute URL of the RSS feed (`feed.xml`).|
+|`atomLink`|The absolute URL of the Atom feed (`atom.xml`).|
+|`feedUpdatedRfc1123`|The most recent update time as an RFC 1123 string.|
+|`feedUpdatedIso`|The most recent update time as an ISO 8601 string.|
+|`feedEntries`|A list of feed items. Each item has `title`, `link`, `date`, `dateRfc1123`, and `summary`.|
+|`sitemapUrls`|A list of URLs available in `sitemap.xml`.|
+
+- `feedEntries` and `sitemapUrls` only have meaning when the corresponding templates are included in `siteTemplates`.
+- Even when you add your own site template, you can still use `variables.*` from `atr.json` and the shared helper functions.
+
+#### Variables and functions available in all templates
+
+|Variable name / function name|Details|
+|:----|:----|
+|`variables.*` from `atr.json`|Configured values such as `baseUrl` and `siteName` are available directly.|
+|`version`|The a-terra-forge version string.|
+|`git_commit_hash`|The commit hash of a-terra-forge itself.|
+|`formatDate format value`|Formats a date/time value using `dayjs`. Example: `formatDate 'YYYY/MM/DD' git.committer.date`|
+|`getMessage key defaultValue?`|Resolves text using `messages` and the current `locale`. If not defined, it falls back to `defaultValue`, or to `key` itself if `defaultValue` is omitted.|
+|`escapeXml value`|Escapes a string for XML or HTML attributes. Useful for feeds and sitemaps.|
+|`toCssRgb value fallback`|Normalizes a color value into `r, g, b` format. Intended for use in `site-style.css`.|
+|`toRelativePath path`|Returns a path relative to the file currently being generated. This helps keep links correct even if `frontPage` changes.|
+|`toAbsolutePath path`|Returns an absolute URL based on `baseUrl`. Useful for OGP metadata and feeds.|
+|`import 'file'`|Imports another template and evaluates the funcity script inside it too.|
+|`tryImport 'file'`|Imports an optional template. If it does not exist, it becomes an empty string.|
+|`headerIconCode`|The Bootstrap Icons code point resolved from `headerIcon`. The default templates use it for heading icons.|
+
+- `site-style.css` and `site-script.js` are also funcity scripts, so you can use the same helper functions there.
+- `toRelativePath` and `toAbsolutePath` are resolved per output file. This is safer than hard-coding paths like `/foo/bar`.
+
+#### Common customization examples
+
+1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/additional-header.html` and let `common-header.html` include it via `tryImport`.
+2. If you want to split existing templates, create partial templates such as `.templates/parts/*.html` and load them with `{{import 'parts/foo.html'}}`.
+3. If you want to apply localization inside your own added HTML, call `{{getMessage 'contact' 'Contact'}}` or `{{getMessage category}}` explicitly.
+4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/robots.txt` as a funcity script.
+
+For example, to add `robots.txt`, you can write:
+
+```json
+{
+  "variables": {
+    "siteTemplates": [
+      "site-style.css",
+      "site-script.js",
+      "feed.xml",
+      "atom.xml",
+      "sitemap.xml",
+      "robots.txt"
+    ]
+  }
+}
+```
+
+```txt
+User-agent: *
+Allow: /
+Sitemap: {{toAbsolutePath 'sitemap.xml'}}
+```
+
+In this way, template customization in a-terra-forge is not limited to "tweaking some HTML".
+It is a single funcity-based mechanism that also covers CSS, JavaScript, XML, and plain text output.
+To understand the overall structure, start by reading `common-header.html` and `navigation-bar.html`, then `index-category.html` and `site-style.css`.
 
 ---
 
