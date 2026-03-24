@@ -6,11 +6,11 @@
 import { readFile } from 'fs/promises';
 import { dirname, resolve } from 'path';
 import {
+  createIncludeFunction,
   convertToString,
   FunCityReducerError,
   makeFunCityFunction,
   outputErrors,
-  reduceNode,
   runParser,
   runReducer,
   runTokenizer,
@@ -18,8 +18,6 @@ import {
   type FunCityExpressionNode,
   type FunCityFunctionContext,
   type FunCityLogEntry,
-  type FunCityRange,
-  type FunCityRangedObject,
   type FunCityToken,
   type FunCityVariables,
   type FunCityWarningEntry,
@@ -42,30 +40,6 @@ interface ParsedTemplateCacheEntry {
  * Cache for parsed FunCity templates.
  */
 const parsedTemplateCache = new Map<string, ParsedTemplateCacheEntry>();
-
-const createFallbackRange = (sourceId: string): FunCityRange => ({
-  sourceId,
-  start: { line: 1, column: 1 },
-  end: { line: 1, column: 1 },
-});
-
-const resolveLogRange = (
-  node: FunCityRangedObject | undefined,
-  fallbackSourceId: string
-): FunCityRange => node?.range ?? createFallbackRange(fallbackSourceId);
-
-const appendTemplateError = (
-  logs: FunCityLogEntry[],
-  node: FunCityRangedObject | undefined,
-  fallbackSourceId: string,
-  description: string
-): void => {
-  logs.push({
-    type: 'error',
-    description,
-    range: resolveLogRange(node, fallbackSourceId),
-  });
-};
 
 /**
  * Parse a template script into tokens and AST nodes with caching.
@@ -92,115 +66,58 @@ const parseTemplate = (
 };
 
 type ImportHandlers = {
+  readonly includeTemplate: Function;
+  readonly tryIncludeTemplate: Function;
   readonly importTemplate: Function;
   readonly tryImportTemplate: Function;
 };
 
-const createImportHandlers = (
-  templatePath: string,
-  logs: FunCityLogEntry[],
-  importStack: readonly string[]
-): ImportHandlers => {
-  const templateDir = dirname(templatePath);
-
-  const renderImportedTemplate = async (
-    context: FunCityFunctionContext,
-    argNode: FunCityExpressionNode | undefined,
-    allowMissing: boolean
-  ): Promise<string> => {
-    const resolvedArg =
-      argNode === undefined ? undefined : await context.reduce(argNode);
-    const importPath = resolve(templateDir, String(resolvedArg));
-
-    if (importStack.includes(importPath)) {
-      appendTemplateError(
-        logs,
-        context.thisNode,
-        templatePath,
-        `circular import detected: ${importPath}`
-      );
-      return '';
+const createIncludeAlias = (targetName: 'include' | 'tryInclude'): Function =>
+  makeFunCityFunction(async function (
+    this: FunCityFunctionContext,
+    arg0?: FunCityExpressionNode
+  ) {
+    const targetValue = this.getValue(targetName);
+    if (!targetValue.isFound || typeof targetValue.value !== 'function') {
+      throw new FunCityReducerError({
+        type: 'error',
+        description: `Missing \`${targetName}\` function`,
+        range: this.thisNode.range,
+      });
     }
 
-    let importScript: string | undefined;
-    try {
-      importScript = allowMissing
-        ? await readFileIfExists(importPath)
-        : await readFile(importPath, 'utf8');
-    } catch (error: unknown) {
-      appendTemplateError(
-        logs,
-        context.thisNode,
-        templatePath,
-        `failed to read imported template: ${importPath} (${
-          error instanceof Error ? error.message : String(error)
-        })`
-      );
-      return '';
-    }
-    if (importScript === undefined) {
-      return '';
-    }
+    const targetFunction = targetValue.value as (
+      arg0?: FunCityExpressionNode
+    ) => Promise<unknown>;
+    return await targetFunction.call(this, arg0);
+  });
 
-    const parsed = parseTemplate(importPath, importScript);
-    if (parsed.logs.length > 0) {
-      logs.push(...parsed.logs);
-    }
-    if (parsed.logs.some((entry) => entry.type === 'error')) {
-      return '';
-    }
-
-    const scope = context.newScope();
-    const nestedHandlers = createImportHandlers(importPath, logs, [
-      ...importStack,
-      importPath,
-    ]);
-    scope.setValue(
-      'import',
-      nestedHandlers.importTemplate,
-      context.abortSignal
-    );
-    scope.setValue(
-      'tryImport',
-      nestedHandlers.tryImportTemplate,
-      context.abortSignal
-    );
-
-    const reducedValues: unknown[] = [];
-    try {
-      for (const node of parsed.nodes) {
-        const reduced = await reduceNode(scope, node, context.abortSignal);
-        reducedValues.push(...reduced);
+const createImportHandlers = (logs: FunCityLogEntry[]): ImportHandlers => {
+  const includeHandlers = createIncludeFunction({
+    resolve: async (request, context) => {
+      const includePath = resolve(dirname(context.sourceId), request);
+      const includeScript = await readFileIfExists(includePath);
+      if (includeScript === undefined) {
+        return undefined;
       }
-    } catch (error: unknown) {
-      if (error instanceof FunCityReducerError) {
-        logs.push(error.info);
-        return '';
-      }
-      throw error;
-    }
+      return {
+        sourceId: includePath,
+        script: includeScript,
+      };
+    },
+    logs,
+    mode: 'template',
+    scope: 'child',
+    includeMissing: 'error',
+    tryIncludeMissing: 'empty',
+  });
 
-    return reducedValues
-      .filter((value) => value !== undefined)
-      .map((value) => scope.convertToString(value))
-      .join('');
+  return {
+    includeTemplate: includeHandlers.include,
+    tryIncludeTemplate: includeHandlers.tryInclude,
+    importTemplate: createIncludeAlias('include'),
+    tryImportTemplate: createIncludeAlias('tryInclude'),
   };
-
-  const importTemplate = makeFunCityFunction(async function (
-    this: FunCityFunctionContext,
-    arg0?: FunCityExpressionNode
-  ) {
-    return await renderImportedTemplate(this, arg0, false);
-  });
-
-  const tryImportTemplate = makeFunCityFunction(async function (
-    this: FunCityFunctionContext,
-    arg0?: FunCityExpressionNode
-  ) {
-    return await renderImportedTemplate(this, arg0, true);
-  });
-
-  return { importTemplate, tryImportTemplate };
 };
 
 /**
@@ -243,23 +160,26 @@ const renderFunCity = async (
 };
 
 /**
- * Render a template with import handling for nested includes.
+ * Render a template with nested include handling.
  */
 export const renderTemplateWithImportHandler = async (
   categoryIndexTemplatePath: string,
   templateScript: string,
   baseVariables: FunCityVariables,
   logs: FunCityLogEntry[],
-  importStack: readonly string[],
+  _importStack: readonly string[],
   signal: AbortSignal
 ): Promise<string> => {
-  const { importTemplate, tryImportTemplate } = createImportHandlers(
-    categoryIndexTemplatePath,
-    logs,
-    importStack
-  );
+  const {
+    includeTemplate,
+    tryIncludeTemplate,
+    importTemplate,
+    tryImportTemplate,
+  } = createImportHandlers(logs);
 
   const variables = new Map(baseVariables);
+  variables.set('include', includeTemplate);
+  variables.set('tryInclude', tryIncludeTemplate);
   variables.set('import', importTemplate);
   variables.set('tryImport', tryImportTemplate);
 

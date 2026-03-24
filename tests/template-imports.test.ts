@@ -45,7 +45,7 @@ const renderTemplate = async (
   };
 };
 
-describe('template import rendering', () => {
+describe('template include rendering', () => {
   it('keeps parse error source ids isolated for cached templates.', async () => {
     const templateScript = '{{if true}}';
     const firstPath = '/virtual/templates/first.html';
@@ -70,11 +70,11 @@ describe('template import rendering', () => {
     ).toBe(true);
   });
 
-  it('reports parse errors from imported templates using the imported path.', async () => {
+  it('reports parse errors from included templates using the included path.', async () => {
     const dir = await createTempDir('parse');
     const parentPath = join(dir, 'parent.html');
     const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{import 'partial.html'}}";
+    const parentScript = "{{include 'partial.html'}}";
 
     await writeFile(partialPath, '{{if true}}', 'utf8');
 
@@ -85,11 +85,11 @@ describe('template import rendering', () => {
     );
   });
 
-  it('reports reducer errors from imported templates using the imported path.', async () => {
+  it('reports reducer errors from included templates using the included path.', async () => {
     const dir = await createTempDir('reducer');
     const parentPath = join(dir, 'parent.html');
     const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{import 'partial.html'}}";
+    const parentScript = "{{include 'partial.html'}}";
 
     await writeFile(partialPath, '{{missingVar}}', 'utf8');
 
@@ -101,11 +101,11 @@ describe('template import rendering', () => {
     expect(result.lines.some((line) => line.includes('missingVar'))).toBe(true);
   });
 
-  it('reports missing imported templates using the importer path.', async () => {
+  it('reports missing included templates using the importer path.', async () => {
     const dir = await createTempDir('missing');
     const parentPath = join(dir, 'parent.html');
     const missingPath = join(dir, 'missing.html');
-    const parentScript = "{{import 'missing.html'}}";
+    const parentScript = "{{include 'missing.html'}}";
 
     const result = await renderTemplate(parentPath, parentScript);
 
@@ -114,17 +114,36 @@ describe('template import rendering', () => {
     );
     expect(
       result.lines.some((line) =>
-        line.includes('failed to read imported template')
+        line.includes('Include source not found: missing.html')
       )
     ).toBe(true);
-    expect(result.lines.some((line) => line.includes(missingPath))).toBe(true);
+    expect(result.lines.some((line) => line.includes(missingPath))).toBe(false);
   });
 
-  it('reports circular imports using the importer node path.', async () => {
+  it('reports circular includes using the importer node path.', async () => {
     const dir = await createTempDir('circular');
     const parentPath = join(dir, 'parent.html');
     const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{import 'partial.html'}}";
+    const parentScript = "{{include 'partial.html'}}";
+
+    await writeFile(parentPath, parentScript, 'utf8');
+    await writeFile(partialPath, "{{include 'parent.html'}}", 'utf8');
+
+    const result = await renderTemplate(parentPath, parentScript);
+
+    expect(result.lines.some((line) => line.includes(`${partialPath}:`))).toBe(
+      true
+    );
+    expect(
+      result.lines.some((line) => line.includes('circular include detected'))
+    ).toBe(true);
+  });
+
+  it('keeps import aliases working inside nested includes.', async () => {
+    const dir = await createTempDir('alias');
+    const parentPath = join(dir, 'parent.html');
+    const partialPath = join(dir, 'partial.html');
+    const parentScript = "{{include 'partial.html'}}";
 
     await writeFile(parentPath, parentScript, 'utf8');
     await writeFile(partialPath, "{{import 'parent.html'}}", 'utf8');
@@ -135,7 +154,7 @@ describe('template import rendering', () => {
       true
     );
     expect(
-      result.lines.some((line) => line.includes('circular import detected'))
+      result.lines.some((line) => line.includes('circular include detected'))
     ).toBe(true);
   });
 });

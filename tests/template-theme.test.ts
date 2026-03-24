@@ -19,7 +19,7 @@ const assertThemeScriptBeforeStyles = (template: string) => {
   expect(themeIndex).toBeLessThan(styleIndex);
 };
 
-const assertCommonHeaderImportInHead = (html: string) => {
+const assertCommonHeaderIncludeInHead = (html: string) => {
   const headStart = html.indexOf('<head');
   const headEnd = html.indexOf('</head>');
 
@@ -27,7 +27,7 @@ const assertCommonHeaderImportInHead = (html: string) => {
   expect(headEnd).not.toBe(-1);
 
   const head = html.slice(headStart, headEnd);
-  expect(head).toContain("{{import 'common-header.html'}}");
+  expect(head).toContain("{{include 'common-header.html'}}");
 };
 
 describe('template theme', () => {
@@ -54,9 +54,9 @@ describe('template theme', () => {
     );
 
     assertThemeScriptBeforeStyles(commonHeader);
-    assertCommonHeaderImportInHead(indexTemplate);
-    assertCommonHeaderImportInHead(categoryTemplate);
-    assertCommonHeaderImportInHead(blogTemplate);
-    assertCommonHeaderImportInHead(blogSingleTemplate);
+    assertCommonHeaderIncludeInHead(indexTemplate);
+    assertCommonHeaderIncludeInHead(categoryTemplate);
+    assertCommonHeaderIncludeInHead(blogTemplate);
+    assertCommonHeaderIncludeInHead(blogSingleTemplate);
   });
 });

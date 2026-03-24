@@ -1038,12 +1038,13 @@ Roughly speaking, the build proceeds in this order:
 4. `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, and `sitemap.xml` are rendered separately as site templates.
 5. Files under `.assets/` and static files matched by `contentFiles` are copied directly to the output directory.
 
-Use `import` and `tryImport` to split and reuse templates.
-Both are resolved relative to the calling template, and nested imports are supported.
+Use `include` and `tryInclude` to split and reuse templates.
+Both are resolved relative to the calling template, and nested includes are supported.
 
-- `import 'partial.html'`: The target file is required. If it does not exist, the build fails.
-- `tryImport 'partial.html'`: If the target file does not exist, it is treated as an empty string. This is suitable for optional files such as `additional-header.html`.
-- Circular imports are detected and reported as build errors.
+- `include 'partial.html'`: The target file is required. If it does not exist, the build fails.
+- `tryInclude 'partial.html'`: If the target file does not exist, it is treated as an empty string. This is suitable for optional files such as `additional-header.html`.
+- Circular includes are detected and reported as build errors.
+- For compatibility, `import` and `tryImport` are still available as aliases of `include` and `tryInclude`.
 
 The role of each file is shown below:
 
@@ -1192,8 +1193,10 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 |`toCssRgb value fallback`|Normalizes a color value into `r, g, b` format. Intended for use in `site-style.css`.|
 |`toRelativePath path`|Returns a path relative to the file currently being generated. This helps keep links correct even if `frontPage` changes.|
 |`toAbsolutePath path`|Returns an absolute URL based on `baseUrl`. Useful for OGP metadata and feeds.|
-|`import 'file'`|Imports another template and evaluates the funcity script inside it too.|
-|`tryImport 'file'`|Imports an optional template. If it does not exist, it becomes an empty string.|
+|`include 'file'`|Includes another template and evaluates the funcity script inside it too.|
+|`tryInclude 'file'`|Includes an optional template. If it does not exist, it becomes an empty string.|
+|`import 'file'`|A compatibility alias of `include 'file'`.|
+|`tryImport 'file'`|A compatibility alias of `tryInclude 'file'`.|
 |`headerIconCode`|The Bootstrap Icons code point resolved from `headerIcon`. The default templates use it for heading icons.|
 
 - `site-style.css` and `site-script.js` are also funcity scripts, so you can use the same helper functions there.
@@ -1201,8 +1204,8 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 
 #### Common customization examples
 
-1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/additional-header.html` and let `common-header.html` include it via `tryImport`.
-2. If you want to split existing templates, create partial templates such as `.templates/parts/*.html` and load them with `{{import 'parts/foo.html'}}`.
+1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/additional-header.html` and let `common-header.html` include it via `tryInclude`.
+2. If you want to split existing templates, create partial templates such as `.templates/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
 3. If you want to apply localization inside your own added HTML, call `{{getMessage 'contact' 'Contact'}}` or `{{getMessage category}}` explicitly.
 4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/robots.txt` as a funcity script.
 

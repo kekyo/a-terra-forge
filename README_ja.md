@@ -1039,12 +1039,13 @@ flowchart TD
 4. `site-style.css` / `site-script.js` / `feed.xml` / `atom.xml` / `sitemap.xml` は、ページとは別に site template としてレンダリングされます。
 5. `.assets/` 配下と `contentFiles` に一致した静的ファイルが、そのまま出力先にコピーされます。
 
-テンプレートの分割と再利用には `import` / `tryImport` が使えます。
-どちらも呼び出し元テンプレートからの相対パスで解決され、ネストした import も可能です。
+テンプレートの分割と再利用には `include` / `tryInclude` が使えます。
+どちらも呼び出し元テンプレートからの相対パスで解決され、ネストした include も可能です。
 
-- `import 'partial.html'`: 対象ファイルが必須。存在しない場合はエラーになります。
-- `tryImport 'partial.html'`: 対象ファイルが無ければ空文字として扱われます。`additional-header.html` のような任意ファイル向けです。
-- 循環 import は検出され、ビルドエラーになります。
+- `include 'partial.html'`: 対象ファイルが必須。存在しない場合はエラーになります。
+- `tryInclude 'partial.html'`: 対象ファイルが無ければ空文字として扱われます。`additional-header.html` のような任意ファイル向けです。
+- 循環 include は検出され、ビルドエラーになります。
+- 互換性のために `import` / `tryImport` も当面は `include` / `tryInclude` のエイリアスとして利用できます。
 
 以下にそれぞれのファイルの役割を示します:
 
@@ -1193,8 +1194,10 @@ flowchart TD
 |`toCssRgb value fallback`|色指定を `r, g, b` 形式に正規化します。`site-style.css` で使う想定です|
 |`toRelativePath path`|現在生成中の出力ファイルから見た相対パスを返します。`frontPage` を変えてもリンクが壊れにくくなります|
 |`toAbsolutePath path`|`baseUrl` 基準の絶対URLを返します。OGPやフィード向けです|
-|`import 'file'`|別テンプレートを読み込んで、その中の funcity スクリプトも評価します|
-|`tryImport 'file'`|任意のテンプレートを読み込みます。無ければ空文字になります|
+|`include 'file'`|別テンプレートを読み込んで、その中の funcity スクリプトも評価します|
+|`tryInclude 'file'`|任意のテンプレートを読み込みます。無ければ空文字になります|
+|`import 'file'`|`include 'file'` の互換エイリアスです|
+|`tryImport 'file'`|`tryInclude 'file'` の互換エイリアスです|
 |`headerIconCode`|`headerIcon` から解決された Bootstrap Icons のコードポイントです。既定テンプレートでは見出しアイコンに使います|
 
 - `site-style.css` や `site-script.js` も同じ funcity スクリプトなので、ここに挙げた関数をそのまま使えます。
@@ -1202,8 +1205,8 @@ flowchart TD
 
 #### よくあるカスタマイズ例
 
-1. `head` に解析タグや追加メタタグを差し込みたいなら、`.templates/additional-header.html` を作って `common-header.html` から `tryImport` させます。
-2. 既存テンプレートを分割したいなら、`.templates/parts/*.html` のような部分テンプレートを作り、`{{import 'parts/foo.html'}}` で読み込みます。
+1. `head` に解析タグや追加メタタグを差し込みたいなら、`.templates/additional-header.html` を作って `common-header.html` から `tryInclude` させます。
+2. 既存テンプレートを分割したいなら、`.templates/parts/*.html` のような部分テンプレートを作り、`{{include 'parts/foo.html'}}` で読み込みます。
 3. 自分で追加したHTMLでも多言語置換をしたいなら、`{{getMessage 'contact' 'Contact'}}` や `{{getMessage category}}` のように明示的に呼び出します。
 4. `robots.txt` などを出力したいなら、`atr.json` の `variables.siteTemplates` に追加し、`.templates/robots.txt` を funcity スクリプトとして作ります。
 
