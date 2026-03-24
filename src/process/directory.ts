@@ -199,10 +199,7 @@ export const generateDirectoryDocument = async (
             [categoryEntryTemplate.path],
             signal
           );
-          const entryHasError = outputErrors(
-            categoryEntryTemplate.path,
-            entryErrors
-          );
+          const entryHasError = outputErrors(entryErrors);
           return entryHasError ? entry.contentHtml : entryRendered;
         })
       )
@@ -316,7 +313,7 @@ export const generateDirectoryDocument = async (
     signal
   );
 
-  const isError = outputErrors(pageTemplate.path, logs);
+  const isError = outputErrors(logs);
 
   if (!isError) {
     await writeContentFile(destinationPath, rendered);

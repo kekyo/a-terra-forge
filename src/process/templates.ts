@@ -44,20 +44,24 @@ const parsedTemplateCache = new Map<string, ParsedTemplateCacheEntry>();
 /**
  * Parse a template script into tokens and AST nodes with caching.
  */
-const parseTemplate = (templateScript: string): ParsedTemplateCacheEntry => {
-  const cached = parsedTemplateCache.get(templateScript);
+const parseTemplate = (
+  sourceId: string,
+  templateScript: string
+): ParsedTemplateCacheEntry => {
+  const cacheKey = `${sourceId}\u0000${templateScript}`;
+  const cached = parsedTemplateCache.get(cacheKey);
   if (cached) {
     return cached;
   }
   const parseErrors: FunCityLogEntry[] = [];
-  const tokens = runTokenizer(templateScript, parseErrors);
+  const tokens = runTokenizer(templateScript, parseErrors, sourceId);
   const nodes = runParser(tokens, parseErrors);
   const parsed: ParsedTemplateCacheEntry = {
     tokens,
     nodes,
     logs: parseErrors,
   };
-  parsedTemplateCache.set(templateScript, parsed);
+  parsedTemplateCache.set(cacheKey, parsed);
   return parsed;
 };
 
@@ -87,6 +91,7 @@ const createImportHandlers = (
         type: 'error',
         description: `circular import detected: ${importPath}`,
         range: context.thisNode?.range ?? {
+          sourceId: templatePath,
           start: { line: 1, column: 1 },
           end: { line: 1, column: 1 },
         },
@@ -101,7 +106,7 @@ const createImportHandlers = (
       return '';
     }
 
-    const parsed = parseTemplate(importScript);
+    const parsed = parseTemplate(importPath, importScript);
     if (parsed.logs.length > 0) {
       logs.push(...parsed.logs);
     }
@@ -166,12 +171,13 @@ const createImportHandlers = (
  * Render a FunCity template with variables and collect logs.
  */
 const renderFunCity = async (
+  sourceId: string,
   templateScript: string,
   variables: FunCityVariables,
   logs: FunCityLogEntry[],
   signal: AbortSignal
 ): Promise<string> => {
-  const parsed = parseTemplate(templateScript);
+  const parsed = parseTemplate(sourceId, templateScript);
   if (parsed.logs.length > 0) {
     logs.push(...parsed.logs);
   }
@@ -221,7 +227,13 @@ export const renderTemplateWithImportHandler = async (
   variables.set('import', importTemplate);
   variables.set('tryImport', tryImportTemplate);
 
-  const result = await renderFunCity(templateScript, variables, logs, signal);
+  const result = await renderFunCity(
+    categoryIndexTemplatePath,
+    templateScript,
+    variables,
+    logs,
+    signal
+  );
   return result;
 };
 
@@ -264,7 +276,7 @@ export const renderOptionalTemplateFile = async (
     [templatePath],
     signal
   );
-  const isError = outputErrors(templatePath, logs);
+  const isError = outputErrors(logs);
   if (!isError) {
     await writeContentFile(outputPath, rendered);
   }

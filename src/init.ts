@@ -36,8 +36,11 @@ const resolvePackageRoot = (override?: string): string => {
   if (override) {
     return resolve(override);
   }
+  if (typeof __dirname === 'string') {
+    return resolve(__dirname, '..');
+  }
   const moduleUrl = import.meta.url;
-  if (moduleUrl.startsWith('file:')) {
+  if (typeof moduleUrl === 'string' && moduleUrl.startsWith('file:')) {
     return resolve(dirname(fileURLToPath(moduleUrl)), '..');
   }
   return resolve(process.cwd());
