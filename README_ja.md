@@ -941,7 +941,7 @@ flowchart LR
 
 ### コードハイライト設定
 
-`variables.codeHighlight` に、Shiki のシンタックスハイライト設定を指定します。
+`atr.json` の `variables.codeHighlight` に、Shiki のシンタックスハイライト設定を指定します。
 
 |キー名|詳細|
 |:----|:----|

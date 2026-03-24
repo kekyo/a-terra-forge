@@ -940,7 +940,7 @@ Below are all values defined in `atr.json`:
 
 ### Code highlighting settings
 
-`variables.codeHighlight` contains the configuration used for Shiki syntax highlighting.
+`variables.codeHighlight` contains the configuration `atr.json` used for Shiki syntax highlighting.
 
 |Key|Details|
 |:----|:----|
