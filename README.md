@@ -882,7 +882,7 @@ flowchart LR
 ```
 ````
 
-The diagram is rendered automatically and displayed in the document:
+The diagram is pre-rendered automatically during the `atr` build and displayed in the document:
 
 ![Mermaid graph](./images/mermaid-1.png)
 
@@ -891,12 +891,11 @@ However, it may be difficult to write code without seeing how the results are di
 
 For example, using a [third-party extension for Visual Studio Code](https://marketplace.visualstudio.com/search?term=mermaid&target=VSCode&category=All%20categories&sortBy=Relevance) allows you to check and edit graph results much more quickly.
 
-Note: Unlike other embedding features, Mermaid outputs the graph code almost verbatim into HTML.
-The actual "graph shapes" are drawn by Mermaid's runtime JavaScript code executed in the client-side browser.
+By default, a-terra-forge pre-renders Mermaid diagrams during the `atr` build with [beautiful-mermaid](https://github.com/lukilabs/beautiful-mermaid).
+That means the generated page contains the rendered diagram markup already, so Mermaid's client-side runtime is not required just to display the graph.
 
-Therefore, SVG code is not output directly to HTML; a reference to the Mermaid runtime is required.
-The a-terra-forge template includes this code, allowing you to start using it immediately.
-However, you may want to be aware of this when customizing the template.
+If you prefer the legacy Mermaid.js runtime flow, set `variables.mermaidRenderer` to `mermaid`.
+In that mode the template must load the Mermaid runtime script, and the default scaffold already includes it conditionally.
 
 ---
 
@@ -932,6 +931,7 @@ Below are all values defined in `atr.json`:
 |`prerenderCount`|No|Number of entries pre-rendered into the page. Use a positive integer; when omitted, default is `5`. |
 |`menuOrder`|No|A list that determines the order in which recognized categories are displayed in the navigation menu. Categories not explicitly listed here are placed at the end of the list. Categories explicitly listed but not present are ignored. |
 |`afterMenuOrder`|No|A list that determines the order in which recognized categories are displayed in the navigation menu. However, this list is displayed right-aligned in the navigation menu. Use this if you want to separate them from general categories. |
+|`mermaidRenderer`|No|Selects how Mermaid diagrams are rendered. `beautiful` (default) pre-renders diagrams during the `atr` build and does not require the Mermaid runtime on the generated page. `mermaid` uses the legacy client-side Mermaid.js runtime and requires the template to load that script. |
 
 - "Template only" means that the a-terra-forge conversion process does not use this value; it is referenced as a variable within the template assets.
 - In addition to the variables shown here, you can also use the [standard variables available in funcity](https://github.com/kekyo/funcity#standard-functions).
