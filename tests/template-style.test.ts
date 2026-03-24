@@ -176,6 +176,38 @@ describe('template style', () => {
     expect(wrapperMatch?.[1]).toMatch(/z-index:\s*3;/);
   });
 
+  it('keeps oEmbed layouts stacked regardless of viewport width', async () => {
+    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const containerMatch = css.match(/\.oembed-container\s*\{([^}]*)\}/);
+    const headerMatch = css.match(/\.oembed-header\s*\{([^}]*)\}/);
+    const contentMatch = css.match(/\.oembed-content\s*\{([^}]*)\}/);
+    const wideFloatMatch = css.match(
+      /@media\s*\(min-width:\s*920px\)\s*\{[\s\S]*?\.entry-body\s+\.oembed-container\s*\{([^}]*)\}/
+    );
+
+    expect(containerMatch).not.toBeNull();
+    expect(containerMatch?.[1]).toMatch(
+      /margin:\s*0\.75rem\s+0\s+0\.75rem\s+0\.5rem;/
+    );
+    expect(containerMatch?.[1]).toMatch(
+      /grid-template-columns:\s*minmax\(0,\s*1fr\);/
+    );
+    expect(wideFloatMatch).not.toBeNull();
+    expect(wideFloatMatch?.[1]).toMatch(/float:\s*right;/);
+    expect(wideFloatMatch?.[1]).toMatch(/width:\s*60%;/);
+    expect(wideFloatMatch?.[1]).toMatch(/margin-left:\s*1\.3rem;/);
+    expect(wideFloatMatch?.[1]).not.toMatch(
+      /grid-template-columns:\s*minmax\(0,\s*1\.2fr\)\s+minmax\(0,\s*0\.9fr\);/
+    );
+    expect(css).not.toMatch(
+      /@media\s*\(min-width:\s*600px\)\s*\{[\s\S]*?\.oembed-container\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.2fr\)\s+minmax\(0,\s*0\.9fr\);/
+    );
+    expect(headerMatch).not.toBeNull();
+    expect(headerMatch?.[1]).toMatch(/order:\s*2;/);
+    expect(contentMatch).not.toBeNull();
+    expect(contentMatch?.[1]).toMatch(/order:\s*1;/);
+  });
+
   it('defines primary and secondary palette variables', async () => {
     const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
     expect(css).toMatch(
@@ -327,7 +359,7 @@ describe('template style', () => {
     expect(h1Match).not.toBeNull();
     expect(h1Match?.[1]).toMatch(/font-size:\s*var\(--heading-h1-size\);/);
     expect(h1Match?.[1]).toMatch(
-      /border-bottom:\s*0\.15rem\s+solid\s+var\(--primary-alpha-50\);/
+      /border-bottom:\s*0\.15rem\s+solid\s+var\(--primary-alpha-75\);/
     );
     expect(h1IconMatch).not.toBeNull();
     expect(h1IconMatch?.[1]).toMatch(/color:\s*var\(--primary\);/);
@@ -341,7 +373,7 @@ describe('template style', () => {
     );
     expect(streamMatch).not.toBeNull();
     expect(streamMatch?.[1]).toMatch(
-      /border-bottom:\s*2px\s+solid\s+var\(--primary-alpha-75\);/
+      /border-bottom:\s*2px\s+solid\s+var\(--primary-alpha-25\);/
     );
   });
 

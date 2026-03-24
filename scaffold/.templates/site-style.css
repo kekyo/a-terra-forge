@@ -834,6 +834,7 @@ h6 {
   background-clip: padding-box;
   box-sizing: border-box;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   overflow: hidden;
   color: var(--panel-ink);
   clear: both;
@@ -847,16 +848,10 @@ h6 {
   }
 }
 
-@media (min-width: 600px) {
-  .oembed-container {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
-    align-items: center;
-  }
-}
-
 .oembed-header {
   display: flex;
   flex-direction: column;
+  order: 2;
   padding: var(--panel-padding);
   gap: 0.35rem;
   min-width: 0;
@@ -903,6 +898,7 @@ h6 {
 
 .oembed-content {
   display: grid;
+  order: 1;
   min-width: 0;
   align-self: start;
 }
