@@ -10,7 +10,7 @@ set tpc (cond prerenderCount? prerenderCount 5)
 set pageTitle (getMessage title)
 set pageDescription siteDescription
 set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
-set committerDates (map (fun date (formatDate date)) (sort (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
 set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
 if locale?
 }}

@@ -3,7 +3,7 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { mkdir, readdir, readFile, writeFile } from 'fs/promises';
+import { cp, mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join, relative, resolve } from 'path';
 import { describe, expect, it, type TestContext } from 'vitest';
 import dayjs from 'dayjs';
@@ -2302,6 +2302,95 @@ title: Draft
       'utf8'
     );
     expect(singleHtml).toContain('SINGLE:Draft');
+  });
+
+  it('Uses the latest category article date in scaffold category templates.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-scaffold-category-date');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, '.templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await cp('scaffold/.templates', templatesDir, { recursive: true });
+
+    const guideDir = join(docsDir, 'guide');
+    await mkdir(guideDir, { recursive: true });
+
+    const firstPath = join(guideDir, 'index.md');
+    const secondPath = join(guideDir, 'advanced.md');
+
+    await writeFile(
+      firstPath,
+      `---
+title: Guide
+description: Guide overview
+---
+
+# Guide
+
+Intro`,
+      'utf8'
+    );
+    await writeFile(
+      secondPath,
+      `---
+title: Advanced
+---
+
+# Advanced
+
+Details`,
+      'utf8'
+    );
+
+    const git = simpleGit(siteRoot);
+    await git.init();
+    await git.addConfig('user.name', 'Committer Name');
+    await git.addConfig('user.email', 'committer@example.com');
+
+    const commitWithDate = async (filePath: string, date: string) => {
+      const relPath = relative(siteRoot, filePath);
+      await git.add(relPath);
+      await git
+        .env({
+          ...process.env,
+          GIT_AUTHOR_DATE: date,
+          GIT_COMMITTER_DATE: date,
+        })
+        .commit(`Commit ${relPath}`, relPath);
+    };
+
+    await commitWithDate(firstPath, '2024-01-01T00:00:00Z');
+    await commitWithDate(secondPath, '2024-02-01T00:00:00Z');
+
+    const config = {
+      variables: {
+        siteName: 'Example Site',
+        siteDescription: 'Example description',
+      },
+    };
+    await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath: join(siteRoot, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const categoryHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain('date: 2024/02/01');
+    expect(categoryHtml).not.toContain('date: 2024/01/01');
+    expect(categoryHtml).toContain(
+      'meta property="article:modified_time" content="2024-02-01T00:00:00.000Z"'
+    );
   });
 
   it('Resolves relative URLs for timeline article-bodies.', async (fn) => {

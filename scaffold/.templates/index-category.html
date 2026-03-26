@@ -10,7 +10,7 @@ set articleEntry0 (first articleEntries)
 set pageTitle articleEntry0.title
 set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
 set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
-set committerDates (map (fun date (formatDate date)) (sort (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
 set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
 }}
 {{
@@ -41,7 +41,7 @@ if locale?
               {{end}}
               {{if articleEntry0.git?}}
                 {{if (length committerDates)}}
-                <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' articleEntry0.git.committer.date}}</p>
+                <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' (last committerDates)}}</p>
                 {{end}}
                 {{if (length authorNames)}}
                 <p>{{getMessage 'author'}}: {{getMessage articleEntry0.git.author.name}}</p>
