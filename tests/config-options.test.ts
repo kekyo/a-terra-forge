@@ -8,7 +8,6 @@ import { resolve } from 'path';
 import { describe, expect, it, type TestContext } from 'vitest';
 
 import {
-  defaultAssetDir,
   defaultCacheDir,
   defaultDocsDir,
   defaultOutDir,
@@ -36,7 +35,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const variables = new Map<string, unknown>([
       ['docsDir', './docs'],
       ['templatesDir', '.templates'],
-      ['assetsDir', './.assets'],
       ['outDir', '../out'],
       ['tmpDir', './tmp'],
       ['cacheDir', '.cache'],
@@ -51,7 +49,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
 
     expect(resolved.docsDir).toBe(resolve(baseDir, './docs'));
     expect(resolved.templatesDir).toBe(resolve(baseDir, '.templates'));
-    expect(resolved.assetsDir).toBe(resolve(baseDir, './.assets'));
     expect(resolved.outDir).toBe(resolve(baseDir, '../out'));
     expect(resolved.tmpDir).toBe(resolve(baseDir, './tmp'));
     expect(resolved.cacheDir).toBe(resolve(baseDir, '.cache'));
@@ -63,7 +60,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const variables = new Map<string, unknown>([
       ['docsDir', 123],
       ['templatesDir', false],
-      ['assetsDir', 456],
       ['outDir', null],
       ['tmpDir', 123],
       ['cacheDir', {}],
@@ -76,7 +72,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
 
     expect(resolved.docsDir).toBeUndefined();
     expect(resolved.templatesDir).toBeUndefined();
-    expect(resolved.assetsDir).toBeUndefined();
     expect(resolved.outDir).toBeUndefined();
     expect(resolved.tmpDir).toBeUndefined();
     expect(resolved.cacheDir).toBeUndefined();
@@ -182,7 +177,6 @@ describe('loadATerraForgeConfig', () => {
 
     expect(config.variables.get('docsDir')).toBe(defaultDocsDir);
     expect(config.variables.get('templatesDir')).toBe(defaultTemplatesDir);
-    expect(config.variables.get('assetsDir')).toBe(defaultAssetDir);
     expect(config.variables.get('outDir')).toBe(defaultOutDir);
     expect(config.variables.get('tmpDir')).toBe(defaultTmpDir);
     expect(config.variables.get('cacheDir')).toBe(defaultCacheDir);

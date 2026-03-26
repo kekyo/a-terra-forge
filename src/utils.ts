@@ -403,8 +403,8 @@ export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
 export const defaultTemplateNames = ['default'] as const;
 export const defaultDocsDir = 'docs' as const;
 export const defaultTemplatesDir = '.templates' as const;
+export const defaultTemplateAssetsDir = '.assets' as const;
 export const defaultOutDir = 'dist' as const;
-export const defaultAssetDir = '.assets' as const;
 export const defaultTmpDir = tmpdir();
 export const defaultCacheDir = process.env.HOME
   ? join(process.env.HOME, '.cache', name)
@@ -845,7 +845,6 @@ const normalizeVariablesWithLists = (
 
   normalizeDirectoryVariable('docsDir', defaultDocsDir);
   normalizeDirectoryVariable('templatesDir', defaultTemplatesDir);
-  normalizeDirectoryVariable('assetsDir', defaultAssetDir);
   normalizeDirectoryVariable('outDir', defaultOutDir);
   normalizeDirectoryVariable('tmpDir', defaultTmpDir);
   normalizeDirectoryVariable('cacheDir', defaultCacheDir);
@@ -1084,7 +1083,6 @@ const resolveVariablePath = (
 type ProcessingDirKey =
   | 'docsDir'
   | 'templatesDir'
-  | 'assetsDir'
   | 'outDir'
   | 'tmpDir'
   | 'cacheDir';
@@ -1109,7 +1107,6 @@ export const resolveATerraForgeProcessingOptionsFromVariables = (
 
   applyResolvedDirOption(resolved, variables, baseDir, 'docsDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'templatesDir');
-  applyResolvedDirOption(resolved, variables, baseDir, 'assetsDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'outDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'tmpDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'cacheDir');

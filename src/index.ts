@@ -27,7 +27,6 @@ import type {
 } from './types';
 import {
   type ConsoleLogLevel,
-  defaultAssetDir,
   defaultCacheDir,
   defaultDocsDir,
   defaultOutDir,
@@ -60,7 +59,6 @@ const resolveCliPath = (value: unknown): string | undefined => {
 type BuildCliOptions = {
   docs?: string;
   templates?: string;
-  assets?: string;
   out?: string;
   temp?: string;
   cache?: string;
@@ -109,7 +107,6 @@ const resolveBuildOptions = async (
   const configDir = dirname(configPath);
   const defaultDocsDirResolved = resolve(configDir, defaultDocsDir);
   const defaultTemplatesDirResolved = resolve(configDir, defaultTemplatesDir);
-  const defaultAssetsDirResolved = resolve(configDir, defaultAssetDir);
   const defaultOutDirResolved = resolve(configDir, defaultOutDir);
   const defaultTmpDirResolved = resolve(configDir, defaultTmpDir);
   const defaultCacheDirResolved = resolve(configDir, defaultCacheDir);
@@ -122,10 +119,6 @@ const resolveBuildOptions = async (
       resolveCliPath(opts.templates) ??
       variableOptions.templatesDir ??
       defaultTemplatesDirResolved,
-    assetsDir:
-      resolveCliPath(opts.assets) ??
-      variableOptions.assetsDir ??
-      defaultAssetsDirResolved,
     outDir:
       resolveCliPath(opts.out) ??
       variableOptions.outDir ??
@@ -189,7 +182,6 @@ if (isDirectExecution) {
     .summary('Build static site contents for deployment')
     .addOption(new Option('-d, --docs <dir>', 'Markdown document directory'))
     .addOption(new Option('-t, --templates <dir>', 'Template directory'))
-    .addOption(new Option('-a, --assets <dir>', 'Asset directory'))
     .addOption(new Option('-o, --out <dir>', 'Output directory'))
     .addOption(new Option('--temp <dir>', 'Temporary working directory'))
     .addOption(new Option('--cache <dir>', 'Cache directory'))
@@ -279,7 +271,7 @@ if (isDirectExecution) {
 
   program
     .command('update')
-    .summary('Overwrite scaffold-managed assets and templates')
+    .summary('Overwrite scaffold-managed templates and template assets')
     .addOption(new Option('-f, --force', 'Overwrite regardless of version'))
     .addOption(
       new Option(

@@ -75,7 +75,6 @@ export default defineConfig(async ({ command }): Promise<UserConfig> => {
           variables: {
             docsDir: join(demoRoot, 'docs'),
             templatesDir: resolve('scaffold/.templates'),
-            assetsDir: resolve('scaffold/.assets'),
           },
           watchInclude: [resolve('src'), resolve('vite.config.ts')],
         }),

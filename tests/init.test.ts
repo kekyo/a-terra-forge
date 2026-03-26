@@ -37,6 +37,9 @@ const writeFixture = async (root: string) => {
   await mkdir(join(root, 'scaffold', '.templates', 'default'), {
     recursive: true,
   });
+  await mkdir(join(root, 'scaffold', '.templates', 'default', '.assets'), {
+    recursive: true,
+  });
   await mkdir(join(root, 'scaffold', 'vite'), { recursive: true });
 
   await writeFile(
@@ -66,6 +69,11 @@ const writeFixture = async (root: string) => {
     '<html></html>',
     'utf8'
   );
+  await writeFile(
+    join(root, 'scaffold', '.templates', 'default', '.assets', 'icon.png'),
+    'icon',
+    'utf8'
+  );
 };
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -92,6 +100,11 @@ describe('initScaffold', () => {
     expect(
       existsSync(
         join(destination, '.templates', 'default', 'index-timeline.html')
+      )
+    ).toBe(true);
+    expect(
+      existsSync(
+        join(destination, '.templates', 'default', '.assets', 'icon.png')
       )
     ).toBe(true);
     expect(existsSync(join(destination, 'package.json'))).toBe(true);

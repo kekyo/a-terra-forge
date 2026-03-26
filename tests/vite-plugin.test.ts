@@ -244,19 +244,17 @@ describe('atrPreview', () => {
     httpServer.emit('close');
   });
 
-  it('passes the overridden assetsDir into generateDocs and keeps a temp preview outDir.', async (fn) => {
+  it('passes overridden docs and templates dirs into generateDocs and keeps a temp preview outDir.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-assets-override');
     const configDocsDir = resolve(rootDir, 'docs');
     const configTemplatesDir = resolve(rootDir, '.templates');
     const overrideDocsDir = resolve(rootDir, 'demo-docs');
     const overrideTemplatesDir = resolve(rootDir, 'scaffold', '.templates');
-    const overrideAssetsDir = resolve(rootDir, 'scaffold', '.assets');
     const overrideOutDir = resolve(rootDir, 'demo', 'dist');
     await mkdir(configDocsDir, { recursive: true });
     await mkdir(configTemplatesDir, { recursive: true });
     await mkdir(overrideDocsDir, { recursive: true });
     await mkdir(overrideTemplatesDir, { recursive: true });
-    await mkdir(overrideAssetsDir, { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     await writeFile(
@@ -316,7 +314,6 @@ describe('atrPreview', () => {
       variables: {
         docsDir: overrideDocsDir,
         templatesDir: overrideTemplatesDir,
-        assetsDir: overrideAssetsDir,
         outDir: overrideOutDir,
       },
     });
@@ -338,7 +335,7 @@ describe('atrPreview', () => {
     expect(options).toBeDefined();
     expect(options.docsDir).toBe(resolve(overrideDocsDir));
     expect(options.templatesDir).toBe(resolve(overrideTemplatesDir));
-    expect(options.assetsDir).toBe(resolve(overrideAssetsDir));
+    expect((options as { assetsDir?: string }).assetsDir).toBeUndefined();
     expect(typeof options.outDir).toBe('string');
     expect(options.outDir.startsWith(previewRootBaseDir)).toBe(true);
     expect(options.outDir).not.toBe(resolve(overrideOutDir));
@@ -559,12 +556,12 @@ describe('atrPreview', () => {
     const rootDir = await createTempDir(fn, 'root-watch-allow');
     const docsDir = join(rootDir, 'docs');
     const templatesDir = join(rootDir, '.templates');
-    const assetsDir = join(rootDir, '.assets');
+    const templateAssetsDir = join(templatesDir, 'default', '.assets');
     const srcDir = join(rootDir, 'src');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
     await mkdir(join(templatesDir, 'default'), { recursive: true });
-    await mkdir(assetsDir, { recursive: true });
+    await mkdir(templateAssetsDir, { recursive: true });
     await mkdir(srcDir, { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
@@ -575,7 +572,6 @@ describe('atrPreview', () => {
           variables: {
             docsDir: './docs',
             templatesDir: './.templates',
-            assetsDir: './.assets',
           },
         },
         null,
@@ -676,7 +672,8 @@ describe('atrPreview', () => {
     expect(ignored(join(rootDir, 'nested', 'config.json'))).toBe(true);
     expect(ignored(join(docsDir, 'index.md'))).toBe(false);
     expect(ignored(join(templatesDir, 'default', 'index.html'))).toBe(false);
-    expect(ignored(join(assetsDir, 'logo.png'))).toBe(false);
+    expect(ignored(join(templateAssetsDir, 'logo.png'))).toBe(false);
+    expect(ignored(join(rootDir, '.assets', 'logo.png'))).toBe(true);
     expect(ignored(join(srcDir, 'index.ts'))).toBe(false);
     expect(ignored(join(rootDir, 'vite.config.ts'))).toBe(false);
     expect(ignored(join(rootDir, 'other', 'extra.ts'))).toBe(true);

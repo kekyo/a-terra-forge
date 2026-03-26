@@ -27,7 +27,6 @@ import type {
 } from '../types';
 import {
   defaultCacheDir,
-  defaultAssetDir,
   defaultDocsDir,
   defaultTemplatesDir,
   defaultTmpDir,
@@ -104,13 +103,12 @@ export const atrPreview = (
   const resolveDefaultDirs = (baseDir: string) => ({
     docsDir: resolve(baseDir, defaultDocsDir),
     templatesDir: resolve(baseDir, defaultTemplatesDir),
-    assetsDir: resolve(baseDir, defaultAssetDir),
     cacheDir: resolve(baseDir, defaultCacheDir),
     tmpDir: resolve(baseDir, defaultTmpDir),
   });
   const configOverrides: ATerraForgeConfigOverrides =
     parseATerraForgeConfigOverrides(options, configPath);
-  let { docsDir, templatesDir, assetsDir } = resolveDefaultDirs(configDir);
+  let { docsDir, templatesDir } = resolveDefaultDirs(configDir);
 
   // Current serving preview directory.
   let activePreviewRootDir: string | undefined;
@@ -226,7 +224,7 @@ export const atrPreview = (
   resolveWatchIncludePaths(projectRoot);
   updateWatchAllowList(
     configDir,
-    [docsDir, templatesDir, assetsDir, ...extraWatchDirs],
+    [docsDir, templatesDir, ...extraWatchDirs],
     extraWatchFiles
   );
 
@@ -235,7 +233,6 @@ export const atrPreview = (
     return (
       isWithinDir(resolved, docsDir) ||
       isWithinDir(resolved, templatesDir) ||
-      isWithinDir(resolved, assetsDir) ||
       resolved === configPath
     );
   };
@@ -323,7 +320,6 @@ export const atrPreview = (
 
     docsDir = variableOptions.docsDir ?? defaults.docsDir;
     templatesDir = variableOptions.templatesDir ?? defaults.templatesDir;
-    assetsDir = variableOptions.assetsDir ?? defaults.assetsDir;
 
     const cacheDir = variableOptions.cacheDir ?? defaults.cacheDir;
     const tmpDir = options.tmpDir
@@ -332,14 +328,13 @@ export const atrPreview = (
 
     updateWatchAllowList(
       dirname(configPath),
-      [docsDir, templatesDir, assetsDir, ...extraWatchDirs],
+      [docsDir, templatesDir, ...extraWatchDirs],
       extraWatchFiles
     );
     updateWatchTargets([
       configDir,
       docsDir,
       templatesDir,
-      assetsDir,
       ...extraWatchDirs,
       ...extraWatchFiles,
     ]);
@@ -348,7 +343,6 @@ export const atrPreview = (
     return {
       docsDir,
       templatesDir,
-      assetsDir,
       outDir,
       tmpDir,
       cacheDir,
@@ -519,11 +513,10 @@ export const atrPreview = (
       const defaults = resolveDefaultDirs(dirname(configPath));
       docsDir = defaults.docsDir;
       templatesDir = defaults.templatesDir;
-      assetsDir = defaults.assetsDir;
       resolveWatchIncludePaths(projectRoot);
       updateWatchAllowList(
         dirname(configPath),
-        [docsDir, templatesDir, assetsDir, ...extraWatchDirs],
+        [docsDir, templatesDir, ...extraWatchDirs],
         extraWatchFiles
       );
       const viteLogger =
@@ -560,7 +553,6 @@ export const atrPreview = (
         configDir,
         docsDir,
         templatesDir,
-        assetsDir,
         ...extraWatchDirs,
         ...extraWatchFiles,
       ]);

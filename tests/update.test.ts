@@ -30,13 +30,18 @@ const silentLogger: Logger = {
 };
 
 const writePackageFixture = async (root: string) => {
-  await mkdir(join(root, 'scaffold', '.assets'), { recursive: true });
   await mkdir(join(root, 'scaffold', '.templates', 'default'), {
+    recursive: true,
+  });
+  await mkdir(join(root, 'scaffold', '.templates', 'default', '.assets'), {
     recursive: true,
   });
   await mkdir(join(root, 'scaffold', 'docs'), { recursive: true });
 
-  await writeFile(join(root, 'scaffold', '.assets', 'icon.png'), 'new-icon');
+  await writeFile(
+    join(root, 'scaffold', '.templates', 'default', '.assets', 'icon.png'),
+    'new-icon'
+  );
   await writeFile(
     join(root, 'scaffold', '.templates', 'default', 'site-style.css'),
     'new-style',
@@ -64,8 +69,10 @@ describe('updateScaffold', () => {
     const destination = await createTempDir(fn, 'destination-default');
 
     await writePackageFixture(sourceRoot);
-    await mkdir(join(destination, '.assets'), { recursive: true });
     await mkdir(join(destination, '.templates', 'default'), {
+      recursive: true,
+    });
+    await mkdir(join(destination, '.templates', 'default', '.assets'), {
       recursive: true,
     });
     await mkdir(join(destination, 'docs'), { recursive: true });
@@ -73,7 +80,10 @@ describe('updateScaffold', () => {
       version: '0.1.2',
       variables: {},
     });
-    await writeFile(join(destination, '.assets', 'icon.png'), 'old-icon');
+    await writeFile(
+      join(destination, '.templates', 'default', '.assets', 'icon.png'),
+      'old-icon'
+    );
     await writeFile(
       join(destination, '.templates', 'default', 'site-style.css'),
       'old-style',
@@ -88,7 +98,10 @@ describe('updateScaffold', () => {
     });
 
     expect(
-      await readFile(join(destination, '.assets', 'icon.png'), 'utf8')
+      await readFile(
+        join(destination, '.templates', 'default', '.assets', 'icon.png'),
+        'utf8'
+      )
     ).toBe('new-icon');
     expect(
       await readFile(
@@ -107,23 +120,27 @@ describe('updateScaffold', () => {
     expect(updatedConfig.variables).toEqual({});
   });
 
-  it('respects custom template and asset directories from atr.json.', async (fn) => {
+  it('respects a custom templates directory from atr.json.', async (fn) => {
     const sourceRoot = await createTempDir(fn, 'source-custom');
     const destination = await createTempDir(fn, 'destination-custom');
 
     await writePackageFixture(sourceRoot);
-    await mkdir(join(destination, 'custom-assets'), { recursive: true });
     await mkdir(join(destination, 'custom-templates', 'default'), {
+      recursive: true,
+    });
+    await mkdir(join(destination, 'custom-templates', 'default', '.assets'), {
       recursive: true,
     });
     await writeConfig(join(destination, 'atr.json'), {
       version: '0.1.2',
       variables: {
-        assetsDir: 'custom-assets',
         templatesDir: 'custom-templates',
       },
     });
-    await writeFile(join(destination, 'custom-assets', 'icon.png'), 'old-icon');
+    await writeFile(
+      join(destination, 'custom-templates', 'default', '.assets', 'icon.png'),
+      'old-icon'
+    );
     await writeFile(
       join(destination, 'custom-templates', 'default', 'site-style.css'),
       'old-style',
@@ -137,7 +154,10 @@ describe('updateScaffold', () => {
     });
 
     expect(
-      await readFile(join(destination, 'custom-assets', 'icon.png'), 'utf8')
+      await readFile(
+        join(destination, 'custom-templates', 'default', '.assets', 'icon.png'),
+        'utf8'
+      )
     ).toBe('new-icon');
     expect(
       await readFile(
@@ -171,12 +191,17 @@ describe('updateScaffold', () => {
     const destination = await createTempDir(fn, 'destination-force');
 
     await writePackageFixture(sourceRoot);
-    await mkdir(join(destination, '.assets'), { recursive: true });
+    await mkdir(join(destination, '.templates', 'default', '.assets'), {
+      recursive: true,
+    });
     await writeConfig(join(destination, 'atr.json'), {
       version: '999.0.0',
       variables: {},
     });
-    await writeFile(join(destination, '.assets', 'icon.png'), 'old-icon');
+    await writeFile(
+      join(destination, '.templates', 'default', '.assets', 'icon.png'),
+      'old-icon'
+    );
 
     await updateScaffold({
       configPath: join(destination, 'atr.json'),
@@ -186,7 +211,10 @@ describe('updateScaffold', () => {
     });
 
     expect(
-      await readFile(join(destination, '.assets', 'icon.png'), 'utf8')
+      await readFile(
+        join(destination, '.templates', 'default', '.assets', 'icon.png'),
+        'utf8'
+      )
     ).toBe('new-icon');
 
     const updatedConfig = JSON.parse(

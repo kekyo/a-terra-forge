@@ -25,10 +25,10 @@ import {
   assertDirectoryExists,
   collectArticleFiles,
   copyTargetContentFiles,
-  defaultAssetDir,
   defaultCacheDir,
   defaultDocsDir,
   defaultOutDir,
+  defaultTemplateAssetsDir,
   defaultTemplatesDir,
   defaultTmpDir,
   getTrimmingConsoleLogger,
@@ -272,26 +272,35 @@ const renderSiteTemplates = async (
 const ensureTrailingSlash = (value: string): string =>
   value.endsWith('/') ? value : `${value}/`;
 
-const copyAssetFiles = async (
-  assetsDir: string,
+const copyTemplateAssetFiles = async (
+  templatesDir: string,
+  templateNames: readonly string[],
   outDir: string,
   configPath: string
 ): Promise<void> => {
-  try {
-    const result = await stat(assetsDir);
-    if (!result.isDirectory()) {
-      throw new Error(
-        `"assetsDir" in variables must be a directory: ${configPath}`
-      );
+  const orderedTemplateNames = [...templateNames].reverse();
+  for (const templateName of orderedTemplateNames) {
+    const assetsDir = resolve(
+      templatesDir,
+      templateName,
+      defaultTemplateAssetsDir
+    );
+    try {
+      const result = await stat(assetsDir);
+      if (!result.isDirectory()) {
+        throw new Error(
+          `Template assets path must be a directory: ${assetsDir} (${configPath})`
+        );
+      }
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
+        continue;
+      }
+      throw error;
     }
-  } catch (error: unknown) {
-    if ((error as NodeJS.ErrnoException)?.code === 'ENOENT') {
-      return;
-    }
-    throw error;
-  }
 
-  await copyTargetContentFiles(assetsDir, ['**/*'], outDir);
+    await copyTargetContentFiles(assetsDir, ['**/*'], outDir);
+  }
 };
 
 /**
@@ -325,11 +334,6 @@ export const generateDocs = async (
     options.templatesDir ??
       variableOptions.templatesDir ??
       resolve(configDir, defaultTemplatesDir)
-  );
-  const assetsDir = resolve(
-    options.assetsDir ??
-      variableOptions.assetsDir ??
-      resolve(configDir, defaultAssetDir)
   );
   const finalOutDir = resolve(
     options.outDir ??
@@ -607,7 +611,12 @@ export const generateDocs = async (
         rewritePath: rewriteContentPath,
         detectDuplicates: frontPage !== timelineKey,
       }),
-      copyAssetFiles(assetsDir, outDir, configPath),
+      copyTemplateAssetFiles(
+        templatesDir,
+        config.templateNames,
+        outDir,
+        configPath
+      ),
     ]);
     if (!pageTemplate) {
       throw new Error('Category template is missing: index-category.html');

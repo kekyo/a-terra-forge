@@ -40,8 +40,6 @@ export interface ATerraForgeProcessingOptions {
   docsDir?: string;
   /** Template directory (defaults to ".templates" when omitted). */
   templatesDir?: string;
-  /** Asset directory (defaults to ".assets" when omitted). */
-  assetsDir?: string;
   /** Output directory (defaults to "dist" when omitted). */
   outDir?: string;
   /** Temporary working directory base (defaults to the system temp directory when omitted). */
@@ -66,8 +64,6 @@ export interface ATerraForgeVariablesInput {
   docsDir?: string;
   /** Template directory. */
   templatesDir?: string;
-  /** Asset directory. */
-  assetsDir?: string;
   /** Output directory. */
   outDir?: string;
   /** Temporary working directory base. */

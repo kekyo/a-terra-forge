@@ -271,13 +271,14 @@ const buildScaffoldOgImageSite = async (
   const siteRoot = await createTempDir(fn, name);
   const docsDir = join(siteRoot, 'docs');
   const templatesDir = join(siteRoot, '.templates');
-  const assetsDir = join(siteRoot, '.assets');
   const outDir = join(siteRoot, 'out');
 
   await mkdir(docsDir, { recursive: true });
-  await mkdir(assetsDir, { recursive: true });
   await cp('scaffold/.templates', templatesDir, { recursive: true });
-  await writeFile(join(assetsDir, 'icon.png'), redPngBuffer);
+  await writeFile(
+    join(templatesDir, 'default', '.assets', 'icon.png'),
+    redPngBuffer
+  );
   await writeFile(
     join(siteRoot, 'atr.json'),
     JSON.stringify({
@@ -324,7 +325,6 @@ Timeline body
   const options: ATerraForgeProcessingOptions = {
     docsDir,
     templatesDir,
-    assetsDir,
     outDir,
     cacheDir: '.cache',
     configPath: join(siteRoot, 'atr.json'),
@@ -409,14 +409,18 @@ Details here`,
     const siteRoot = await createTempDir(fn, 'site-og-image');
     const docsDir = join(siteRoot, 'docs');
     const templatesDir = join(siteRoot, '.templates');
-    const assetsDir = join(siteRoot, '.assets');
     const outDir = join(siteRoot, 'out');
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
     await mkdir(join(templatesDir, 'default'), { recursive: true });
-    await mkdir(assetsDir, { recursive: true });
-    await writeFile(join(assetsDir, 'icon.png'), redPngBuffer);
+    await mkdir(join(templatesDir, 'default', '.assets'), {
+      recursive: true,
+    });
+    await writeFile(
+      join(templatesDir, 'default', '.assets', 'icon.png'),
+      redPngBuffer
+    );
 
     await mkdir(join(docsDir, 'guide'), { recursive: true });
     await mkdir(join(docsDir, 'blog'), { recursive: true });
@@ -531,7 +535,6 @@ Timeline body
     const options: ATerraForgeProcessingOptions = {
       docsDir,
       templatesDir,
-      assetsDir,
       outDir,
       cacheDir: '.cache',
       configPath,
@@ -919,7 +922,7 @@ Guide body
     expect(copiedTxt).toBe(textContent);
   });
 
-  it('Copies assetsDir contents into the output root.', async (fn) => {
+  it('copies template assets into the output root using templateNames priority.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, '.templates');
     const outDir = await createTempDir(fn, 'out');
@@ -928,22 +931,48 @@ Guide body
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
     await mkdir(join(templatesDir, 'default'), { recursive: true });
+    await mkdir(join(templatesDir, 'great'), { recursive: true });
+    await mkdir(join(templatesDir, 'default', '.assets', 'images'), {
+      recursive: true,
+    });
+    await mkdir(join(templatesDir, 'great', '.assets', 'images'), {
+      recursive: true,
+    });
     await writeFile(
       join(templatesDir, 'default', 'index-category.html'),
       '<html></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
-
-    const assetsDir = join(configDir, '.assets');
-    const imagesDir = join(assetsDir, 'images');
-    await mkdir(imagesDir, { recursive: true });
-    await writeFile(join(assetsDir, 'favicon.ico'), 'icon', 'utf8');
-    await writeFile(join(imagesDir, 'logo.png'), 'logo', 'utf8');
+    await writeFile(
+      join(templatesDir, 'default', '.assets', 'favicon.ico'),
+      'default-icon',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'default', '.assets', 'images', 'logo.png'),
+      'default-logo',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'great', '.assets', 'favicon.ico'),
+      'great-icon',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'great', '.assets', 'images', 'banner.png'),
+      'great-banner',
+      'utf8'
+    );
 
     await writeFile(
       join(configDir, 'atr.json'),
-      JSON.stringify({ variables: { siteName: 'Asset test' } }),
+      JSON.stringify({
+        variables: {
+          siteName: 'Asset test',
+          templateNames: ['great', 'default'],
+        },
+      }),
       'utf8'
     );
 
@@ -959,13 +988,18 @@ Guide body
     await generateDocs(options, abortController.signal);
 
     const copiedIcon = await readFile(join(outDir, 'favicon.ico'), 'utf8');
-    expect(copiedIcon).toBe('icon');
+    expect(copiedIcon).toBe('great-icon');
 
     const copiedLogo = await readFile(
       join(outDir, 'images', 'logo.png'),
       'utf8'
     );
-    expect(copiedLogo).toBe('logo');
+    expect(copiedLogo).toBe('default-logo');
+    const copiedBanner = await readFile(
+      join(outDir, 'images', 'banner.png'),
+      'utf8'
+    );
+    expect(copiedBanner).toBe('great-banner');
 
     await expect(
       readFile(join(outDir, '.assets', 'favicon.ico'), 'utf8')

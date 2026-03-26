@@ -16,7 +16,6 @@ import {
 } from './scaffold';
 import type { Logger } from './types';
 import {
-  defaultAssetDir,
   defaultTemplatesDir,
   getTrimmingConsoleLogger,
   loadATerraForgeConfig,
@@ -238,7 +237,7 @@ const writeUpdatedConfig = async (
 };
 
 /**
- * Overwrite scaffold-managed assets/templates for an existing workspace.
+ * Overwrite scaffold-managed templates for an existing workspace.
  */
 export const updateScaffold = async (
   options: Readonly<ATerraForgeUpdateOptions>
@@ -260,18 +259,11 @@ export const updateScaffold = async (
     config.variables,
     configDir
   );
-  const assetsDir =
-    resolvedOptions.assetsDir ?? resolve(configDir, defaultAssetDir);
   const templatesDir =
     resolvedOptions.templatesDir ?? resolve(configDir, defaultTemplatesDir);
 
   const scaffoldDir = resolve(sourceRoot, 'scaffold');
   const entries = await buildCopyPlanFromSources([
-    {
-      sourceDir: resolve(scaffoldDir, '.assets'),
-      targetDir: assetsDir,
-      label: '.assets',
-    },
     {
       sourceDir: resolve(scaffoldDir, '.templates'),
       targetDir: templatesDir,
