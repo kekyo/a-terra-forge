@@ -75,7 +75,7 @@ $ npm i -g a-terra-forge
 There are two main usage patterns: using the CLI directly, and using the Vite plugin.
 In either case, there is a scaffold generation feature.
 
-- Using the CLI directly is the basic way to use a-terra-forge. There are commands to generate a new document scaffold and to build the site.
+- Using the CLI directly is the basic way to use a-terra-forge. There are commands to generate a new document scaffold, build the site, and refresh scaffold-managed assets.
 - The Vite plugin uses [Vite](https://vite.dev/) for web development to preview the built site in a browser.
   When you save documents, the page preview updates automatically, enabling a pseudo [WYSIWYG](https://en.wikipedia.org/wiki/WYSIWYG) experience where you can always write while watching the page.
 
@@ -389,6 +389,7 @@ Below is a partial excerpt of `atr.json`:
 
 ```json
 {
+  "version": "0.1.2",
   "variables": {
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",
@@ -403,6 +404,8 @@ Below is a partial excerpt of `atr.json`:
   }
 }
 ```
+
+The top-level `version` is used by `atr update` to determine whether the scaffold can be refreshed. It is not part of `variables`, and it is automatically rewritten to the current atr CLI version after a successful update.
 
 The definitions included in `variables` above are treated as "variables" and are defined so they can be referenced by a-terra-forge's internal processing and template scripts (described later). These values can be used to adjust overall site generation and appearance.
 
@@ -428,6 +431,37 @@ For example, changing `primaryColor` to `#ff4040` will alter the accent color as
 The variables above include several items for adjusting categories. These are settings based on categories, so you should check them again after referring to the categories described later.
 
 `atr.json` still contains many predefined variables, but these will be covered in a separate chapter.
+
+### Upgrade a-terra-forge
+
+To upgrade the a-terra-forge CLI to the latest version, use the following NPM command:
+
+```bash
+$ npm update -g a-terra-forge
+```
+
+This will upgrade the a-terra-forge CLI itself.
+
+After upgrading it, you may want to bring the standard files under `.assets/` and `.templates/` in your editing space up to date as well.
+In that case, use the `atr update` command:
+
+```bash
+$ atr update
+```
+
+This command overwrites only scaffold-managed files under `assetsDir` and `templatesDir`. Document files such as `docs/` are not touched.
+
+`atr update` uses the top-level `version` field in `atr.json` to determine which scaffold version your editing space currently has.
+
+- If the editing space version is newer than the current CLI version, the update is stopped for safety.
+- If `version` is missing or invalid, the update is also stopped for safety.
+- Add `-f` to skip these checks and force the update.
+
+```bash
+$ atr update -f
+```
+
+When the update succeeds, the top-level `version` in `atr.json` is automatically rewritten to the current a-terra-forge CLI version string.
 
 ---
 
@@ -903,10 +937,15 @@ In that mode the template must load the Mermaid runtime script, and the default 
 
 ## atr.json
 
-Below are all values defined in `atr.json`:
+Below are all values defined in `atr.json` on `variables` key:
 
 |Variable name|Template only|Details|
 |:----|:----|:----|
+|`version`|No|The scaffold version stored by the editing space. Place it at the top level of `atr.json`, not inside `variables`. `atr update` compares this value with the current CLI version and automatically rewrites it to the current CLI version string after a successful update. |
+
+|Variable name|Template only|Details|
+|:----|:----|:----|
+|`version`|No|The scaffold version stored by the editing space. Place it at the top level of `atr.json`, not inside `variables`. `atr update` compares this value with the current CLI version and automatically rewrites it to the current CLI version string after a successful update. |
 |`baseUrl`|No|Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it. |
 |`siteName`|No|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
 |`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them in `assetsDir` or similar directories. |

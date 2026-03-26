@@ -1,4 +1,5 @@
 {
+  "version": "0.1.2",
   "variables": {
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",

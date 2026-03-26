@@ -20,6 +20,7 @@ import {
 import { generateDocs } from './process';
 import { initScaffold } from './init';
 import { createNewArticle } from './new';
+import { updateScaffold } from './update';
 import type {
   ATerraForgeConfigOverrides,
   ATerraForgeProcessingOptions,
@@ -70,6 +71,12 @@ type BuildCliOptions = {
 
 type NewCliOptions = {
   config?: string;
+  log?: ConsoleLogLevel;
+};
+
+type UpdateCliOptions = {
+  config?: string;
+  force?: boolean;
   log?: ConsoleLogLevel;
 };
 
@@ -268,6 +275,32 @@ if (isDirectExecution) {
       const result = await createNewArticle({ docsDir, category });
       const relativePath = toPosixRelativePath(docsDir, result.path);
       logger.info(`New article created: ${relativePath}`);
+    });
+
+  program
+    .command('update')
+    .summary('Overwrite scaffold-managed assets and templates')
+    .addOption(new Option('-f, --force', 'Overwrite regardless of version'))
+    .addOption(
+      new Option(
+        '-c, --config <path>',
+        'Config file path (atr.json5/atr.jsonc/atr.json)'
+      )
+    )
+    .addOption(
+      new Option('--log <level>', 'Log level').choices(logLevelChoices)
+    )
+    .action(async (opts: UpdateCliOptions) => {
+      banner();
+      const logLevel = resolveLogLevel(opts.log);
+      const configPath = opts.config
+        ? resolve(opts.config)
+        : resolveATerraForgeConfigPathFromDir(process.cwd());
+      await updateScaffold({
+        configPath,
+        force: opts.force ?? false,
+        logger: getTrimmingConsoleLogger(logLevel),
+      });
     });
 
   program.parseAsync(process.argv).catch((error) => {

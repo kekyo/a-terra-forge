@@ -4,12 +4,18 @@
 // https://github.com/kekyo/a-terra-forge
 
 import { existsSync } from 'fs';
-import { copyFile, mkdir, readdir, rm, stat } from 'fs/promises';
-import { dirname, join, relative, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { mkdir } from 'fs/promises';
+import { join, relative, resolve } from 'path';
 
 import type { Logger } from './types';
-import { assertDirectoryExists, getTrimmingConsoleLogger } from './utils';
+import {
+  buildCopyPlanFromSources,
+  executeCopyPlan,
+  resolvePackageRoot,
+  type ScaffoldCopyEntry,
+  type ScaffoldCopySource,
+} from './scaffold';
+import { getTrimmingConsoleLogger } from './utils';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -26,122 +32,55 @@ export interface ATerraForgeInitOptions {
   sourceRoot?: string;
 }
 
-interface CopyEntry {
-  source: string;
-  target: string;
-  isDirectory: boolean;
-}
-
-const resolvePackageRoot = (override?: string): string => {
-  if (override) {
-    return resolve(override);
-  }
-  if (typeof __dirname === 'string') {
-    return resolve(__dirname, '..');
-  }
-  const moduleUrl = import.meta.url;
-  if (typeof moduleUrl === 'string' && moduleUrl.startsWith('file:')) {
-    return resolve(dirname(fileURLToPath(moduleUrl)), '..');
-  }
-  return resolve(process.cwd());
-};
-
-const collectEntries = async (
-  sourceDir: string,
-  targetDir: string,
-  excludeNames: ReadonlySet<string> | undefined
-): Promise<CopyEntry[]> => {
-  const entries = await readdir(sourceDir, { withFileTypes: true });
-  const results: CopyEntry[] = [];
-
-  for (const entry of entries) {
-    if (excludeNames?.has(entry.name)) {
-      continue;
-    }
-
-    const sourcePath = join(sourceDir, entry.name);
-    const targetPath = join(targetDir, entry.name);
-
-    if (entry.isDirectory()) {
-      results.push({
-        source: sourcePath,
-        target: targetPath,
-        isDirectory: true,
-      });
-      const childEntries = await collectEntries(
-        sourcePath,
-        targetPath,
-        undefined
-      );
-      results.push(...childEntries);
-    } else if (entry.isFile()) {
-      results.push({
-        source: sourcePath,
-        target: targetPath,
-        isDirectory: false,
-      });
-    }
-  }
-
-  return results;
-};
-
 const buildCopyPlan = async (
   sourceRoot: string,
   targetDir: string,
   includeVite: boolean
-): Promise<CopyEntry[]> => {
+): Promise<ScaffoldCopyEntry[]> => {
   const scaffoldDir = resolve(sourceRoot, 'scaffold');
   const templatesDir = resolve(scaffoldDir, '.templates');
   const viteScaffoldDir = resolve(scaffoldDir, 'vite');
 
-  await assertDirectoryExists(scaffoldDir, 'scaffold');
-  await assertDirectoryExists(templatesDir, '.templates');
-
-  const entries: CopyEntry[] = [];
-  const scaffoldEntries = await collectEntries(
-    scaffoldDir,
-    targetDir,
-    new Set(['.templates', 'vite'])
-  );
-  entries.push(
-    ...scaffoldEntries.map((entry) => {
-      if (entry.isDirectory) {
-        return entry;
-      }
-      const relativePath = relative(scaffoldDir, entry.source);
-      if (relativePath === '_gitignore') {
-        return {
-          ...entry,
-          target: join(targetDir, '.gitignore'),
-        };
-      }
-      return entry;
-    })
-  );
+  const sources: ScaffoldCopySource[] = [
+    {
+      sourceDir: scaffoldDir,
+      targetDir,
+      label: 'scaffold',
+      excludeNames: new Set(['.templates', 'vite']),
+    },
+    {
+      sourceDir: templatesDir,
+      targetDir: join(targetDir, '.templates'),
+      label: '.templates',
+    },
+  ];
 
   if (includeVite) {
-    await assertDirectoryExists(viteScaffoldDir, 'vite');
-    const viteEntries = await collectEntries(
-      viteScaffoldDir,
+    sources.splice(1, 0, {
+      sourceDir: viteScaffoldDir,
       targetDir,
-      undefined
-    );
-    entries.push(...viteEntries);
+      label: 'vite',
+    });
   }
 
-  const templateEntries = await collectEntries(
-    templatesDir,
-    join(targetDir, '.templates'),
-    undefined
-  );
-  entries.push(...templateEntries);
-
-  return entries;
+  const entries = await buildCopyPlanFromSources(sources);
+  return entries.map((entry) => {
+    if (entry.isDirectory) {
+      return entry;
+    }
+    const relativePath = relative(scaffoldDir, entry.source);
+    if (relativePath === '_gitignore') {
+      return {
+        ...entry,
+        target: join(targetDir, '.gitignore'),
+      };
+    }
+    return entry;
+  });
 };
 
 const listConflicts = (
-  entries: readonly CopyEntry[],
+  entries: readonly ScaffoldCopyEntry[],
   targetDir: string
 ): string[] => {
   const conflicts = new Set<string>();
@@ -152,52 +91,6 @@ const listConflicts = (
     }
   }
   return Array.from(conflicts.values()).sort();
-};
-
-const ensureDirectoryForCopy = async (
-  entry: CopyEntry,
-  force: boolean
-): Promise<void> => {
-  if (entry.isDirectory) {
-    if (existsSync(entry.target)) {
-      const targetStat = await stat(entry.target);
-      if (!targetStat.isDirectory()) {
-        if (force) {
-          await rm(entry.target, { recursive: true, force: true });
-        } else {
-          throw new Error(
-            `Target exists and is not a directory: ${entry.target}`
-          );
-        }
-      }
-    }
-    await mkdir(entry.target, { recursive: true });
-    return;
-  }
-
-  await mkdir(dirname(entry.target), { recursive: true });
-  if (existsSync(entry.target)) {
-    const targetStat = await stat(entry.target);
-    if (targetStat.isDirectory()) {
-      if (force) {
-        await rm(entry.target, { recursive: true, force: true });
-      } else {
-        throw new Error(`Target exists and is a directory: ${entry.target}`);
-      }
-    }
-  }
-};
-
-const executeCopyPlan = async (
-  entries: readonly CopyEntry[],
-  force: boolean
-): Promise<void> => {
-  for (const entry of entries) {
-    await ensureDirectoryForCopy(entry, force);
-    if (!entry.isDirectory) {
-      await copyFile(entry.source, entry.target);
-    }
-  }
 };
 
 export const initScaffold = async (
