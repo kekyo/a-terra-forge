@@ -664,6 +664,8 @@ New article created: food/index.md
   "messages": {
     "en": {
       "date": "Date",
+      "createdDate": "Created",
+      "updatedDate": "Updated",
       "author": "Author",
       "category": "Category",
       "timeline": "Timeline",
@@ -675,6 +677,8 @@ New article created: food/index.md
     },
     "ja": {
       "date": "日時",
+      "createdDate": "執筆日",
+      "updatedDate": "更新日",
       "author": "執筆者",
       "category": "カテゴリ",
       "timeline": "タイムライン",
@@ -1146,8 +1150,8 @@ flowchart TD
 |`filePath`|`docs/` からの相対パスです|
 |`directory`|所属カテゴリディレクトリです|
 |`anchorId`|この文書のアンカーIDです|
-|`git`|対応する Git メタデータです。`git.author.name`、`git.committer.date`、`git.dirty` などを参照できます|
-|`date`|主に `git.committer.date` の短縮参照として使える日付文字列です|
+|`git`|対応する Git メタデータです。`git.author.name`、`git.committer.date`、`git.dirty` などのトップレベル項目は最新更新を表し、`git.created.committer.date` と `git.updated.committer.date` も参照できます|
+|`date`|主に最新更新日時 (`git.committer.date`) の短縮参照として使える日付文字列です|
 |`contentHtml`|本文HTMLです。カテゴリページや単一ページ向けの完全な本文です|
 |`timelineHtml`|タイムライン向けに要約された本文HTMLです|
 |`entryHtml`|エントリテンプレート適用後のHTMLです|
@@ -1188,7 +1192,7 @@ flowchart TD
 |`atr.json` の `variables.*`|`baseUrl` や `siteName` など、設定した値がそのまま使えます|
 |`version`|a-terra-forge のバージョン文字列です|
 |`git_commit_hash`|a-terra-forge 自身のコミットハッシュです|
-|`formatDate format value`|`dayjs` 形式で日時を整形します。例: `formatDate 'YYYY/MM/DD' git.committer.date` |
+|`formatDate format value`|`dayjs` 形式で日時を整形します。例: `formatDate 'YYYY/MM/DD' git.updated.committer.date` |
 |`getMessage key defaultValue?`|`messages` と現在の `locale` を使って文言を解決します。未定義時は `defaultValue`、それも無ければ `key` 自身を返します|
 |`escapeXml value`|XML/HTML属性向けに文字列をエスケープします。フィードやサイトマップで有用です|
 |`toCssRgb value fallback`|色指定を `r, g, b` 形式に正規化します。`site-style.css` で使う想定です|

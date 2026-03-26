@@ -663,6 +663,8 @@ To customize this, define the `messages` variable in `atr.json`:
   "messages": {
     "en": {
       "date": "Date",
+      "createdDate": "Created",
+      "updatedDate": "Updated",
       "author": "Author",
       "category": "Category",
       "timeline": "Timeline",
@@ -674,6 +676,8 @@ To customize this, define the `messages` variable in `atr.json`:
     },
     "ja": {
       "date": "日時",
+      "createdDate": "執筆日",
+      "updatedDate": "更新日",
       "author": "執筆者",
       "category": "カテゴリ",
       "timeline": "タイムライン",
@@ -1145,8 +1149,8 @@ The following are the main variables available on each element of `articleEntrie
 |`filePath`|The relative path from `docs/`.|
 |`directory`|The category directory the document belongs to.|
 |`anchorId`|The anchor ID for this document.|
-|`git`|Git metadata for the document. You can reference fields such as `git.author.name`, `git.committer.date`, and `git.dirty`.|
-|`date`|A date string, primarily a shorthand for `git.committer.date`.|
+|`git`|Git metadata for the document. Top-level fields such as `git.author.name`, `git.committer.date`, and `git.dirty` still refer to the latest update. You can also reference `git.created.committer.date` and `git.updated.committer.date`.|
+|`date`|A date string, primarily a shorthand for the latest update time (`git.committer.date`).|
 |`contentHtml`|The main body HTML. This is the full document body for category pages and single pages.|
 |`timelineHtml`|A shortened HTML body intended for timeline rendering.|
 |`entryHtml`|The HTML after the entry template has been applied.|
@@ -1187,7 +1191,7 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 |`variables.*` from `atr.json`|Configured values such as `baseUrl` and `siteName` are available directly.|
 |`version`|The a-terra-forge version string.|
 |`git_commit_hash`|The commit hash of a-terra-forge itself.|
-|`formatDate format value`|Formats a date/time value using `dayjs`. Example: `formatDate 'YYYY/MM/DD' git.committer.date`|
+|`formatDate format value`|Formats a date/time value using `dayjs`. Example: `formatDate 'YYYY/MM/DD' git.updated.committer.date`|
 |`getMessage key defaultValue?`|Resolves text using `messages` and the current `locale`. If not defined, it falls back to `defaultValue`, or to `key` itself if `defaultValue` is omitted.|
 |`escapeXml value`|Escapes a string for XML or HTML attributes. Useful for feeds and sitemaps.|
 |`toCssRgb value fallback`|Normalizes a color value into `r, g, b` format. Intended for use in `site-style.css`.|

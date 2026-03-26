@@ -6,16 +6,19 @@
 import fs from 'fs/promises';
 import { posix } from 'path';
 import * as git from 'isomorphic-git';
+import type { ReadCommitResult, TreeEntry } from 'isomorphic-git';
 
 import type {
   GitCommitMetadata,
   GitFileMetadata,
+  GitRevisionMetadata,
   GitStatusMetadata,
   GitUserMetadata,
   Logger,
 } from './types';
 import type { ArticleFileInfo } from './utils';
 import { toPosixRelativePath } from './utils';
+import { parseFrontmatterId } from './process/frontmatter';
 
 ///////////////////////////////////////////////////////////////////////////////////
 
@@ -66,6 +69,229 @@ const splitMessage = (message: string): { summary: string; body: string } => {
   return { summary, body };
 };
 
+const buildRevisionMetadata = (
+  commitEntry: ReadCommitResult
+): GitRevisionMetadata => {
+  const commit = commitEntry.commit;
+  const message = commit.message ?? '';
+  const { summary, body } = splitMessage(message);
+  const author = buildUserMetadata(commit.author);
+  const committer = buildUserMetadata(commit.committer);
+  const oid = commitEntry.oid ?? '';
+  const shortOid = oid.length >= 7 ? oid.slice(0, 7) : oid;
+
+  return {
+    oid,
+    shortOid,
+    message,
+    summary,
+    body,
+    parents: commit.parent ?? [],
+    tree: commit.tree ?? '',
+    author,
+    committer,
+  };
+};
+
+type HistoryContinuation =
+  | {
+      ref: string;
+      filepath: string;
+    }
+  | undefined;
+
+const isMarkdownTreeEntry = (entry: TreeEntry): boolean =>
+  entry.type === 'blob' && entry.path.toLowerCase().endsWith('.md');
+
+const parseFrontmatterIdSafe = (
+  content: string,
+  relativePath: string,
+  logger: Logger | undefined
+): number | undefined => {
+  try {
+    return parseFrontmatterId(content, relativePath);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    logger?.debug?.(
+      `Git history frontmatter scan skipped for "${relativePath}": ${message}`
+    );
+    return undefined;
+  }
+};
+
+const scanTreeForArticleId = async (
+  gitRoot: string,
+  treeOid: string,
+  currentPath: string,
+  articleId: number,
+  logger: Logger | undefined
+): Promise<readonly string[]> => {
+  const { tree } = await git.readTree({
+    fs,
+    dir: gitRoot,
+    oid: treeOid,
+  });
+
+  const pathLists = await Promise.all(
+    tree.map(async (entry) => {
+      const entryPath = currentPath
+        ? posix.join(currentPath, entry.path)
+        : entry.path;
+      if (entry.type === 'tree') {
+        return scanTreeForArticleId(
+          gitRoot,
+          entry.oid,
+          entryPath,
+          articleId,
+          logger
+        );
+      }
+      if (!isMarkdownTreeEntry(entry)) {
+        return [];
+      }
+
+      const { blob } = await git.readBlob({
+        fs,
+        dir: gitRoot,
+        oid: entry.oid,
+      });
+      const content = Buffer.from(blob).toString('utf8');
+      const scannedId = parseFrontmatterIdSafe(content, entryPath, logger);
+      return scannedId === articleId ? [entryPath] : [];
+    })
+  );
+
+  return pathLists.flat();
+};
+
+const findHistoryContinuationById = async (
+  gitRoot: string,
+  docsRepoPath: string,
+  articleId: number,
+  parentOids: readonly string[],
+  articleRelativePath: string,
+  logger: Logger | undefined
+): Promise<HistoryContinuation> => {
+  const candidates = new Map<string, { ref: string; filepath: string }>();
+
+  for (const parentOid of parentOids) {
+    try {
+      const parentCommit = await git.readCommit({
+        fs,
+        dir: gitRoot,
+        oid: parentOid,
+      });
+      const parentTreeOid = parentCommit.commit.tree;
+      const searchTreeOid = docsRepoPath
+        ? (
+            await git.readTree({
+              fs,
+              dir: gitRoot,
+              oid: parentTreeOid,
+              filepath: docsRepoPath,
+            })
+          ).oid
+        : parentTreeOid;
+      const matchedPaths = await scanTreeForArticleId(
+        gitRoot,
+        searchTreeOid,
+        docsRepoPath,
+        articleId,
+        logger
+      );
+      for (const filepath of matchedPaths) {
+        candidates.set(`${parentOid}:${filepath}`, {
+          ref: parentOid,
+          filepath,
+        });
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  if (candidates.size === 1) {
+    const [candidate] = candidates.values();
+    return candidate;
+  }
+
+  if (candidates.size > 1) {
+    logger?.warn?.(
+      `warning: Git history tracking for "${articleRelativePath}" was stopped because multiple parent documents share the same id ${articleId}.`
+    );
+  }
+
+  return undefined;
+};
+
+const traceCommitHistory = async (
+  gitRoot: string,
+  docsRepoPath: string,
+  articleFile: ArticleFileInfo,
+  repoPath: string,
+  articleId: number | undefined,
+  logger: Logger | undefined
+): Promise<readonly ReadCommitResult[]> => {
+  const commitEntries: ReadCommitResult[] = [];
+  const seenOids = new Set<string>();
+  const seenContinuations = new Set<string>();
+  let currentRef: string | undefined = 'HEAD';
+  let currentPath = repoPath;
+
+  while (currentRef) {
+    const entries = await git.log({
+      fs,
+      dir: gitRoot,
+      filepath: currentPath,
+      ref: currentRef,
+      follow: true,
+      force: true,
+    });
+    if (entries.length === 0) {
+      break;
+    }
+
+    for (const entry of entries) {
+      if (!seenOids.has(entry.oid)) {
+        seenOids.add(entry.oid);
+        commitEntries.push(entry);
+      }
+    }
+
+    const oldestEntry = entries[entries.length - 1];
+    const parentOids = oldestEntry?.commit.parent ?? [];
+    if (parentOids.length === 0 || articleId === undefined) {
+      break;
+    }
+
+    const continuation = await findHistoryContinuationById(
+      gitRoot,
+      docsRepoPath,
+      articleId,
+      parentOids,
+      articleFile.relativePath,
+      logger
+    );
+    if (!continuation) {
+      break;
+    }
+
+    const continuationKey = `${continuation.ref}:${continuation.filepath}`;
+    if (seenContinuations.has(continuationKey)) {
+      logger?.warn?.(
+        `warning: Git history tracking for "${articleFile.relativePath}" was stopped because the continuation path repeated.`
+      );
+      break;
+    }
+
+    seenContinuations.add(continuationKey);
+    currentRef = continuation.ref;
+    currentPath = continuation.filepath;
+  }
+
+  return commitEntries;
+};
+
 export const collectGitMetadata = async (
   docsDir: string,
   articleFiles: readonly ArticleFileInfo[],
@@ -84,6 +310,7 @@ export const collectGitMetadata = async (
     return metadata;
   }
 
+  const docsRepoPath = toPosixRelativePath(gitRoot, docsDir);
   const repoPaths: string[] = [];
   const repoPathByArticle = new Map<string, string>();
   for (const articleFile of articleFiles) {
@@ -126,43 +353,43 @@ export const collectGitMetadata = async (
         !(status.head === status.workdir && status.workdir === status.stage);
 
       try {
-        const entries = await git.log({
-          fs,
-          dir: gitRoot,
-          filepath: repoPath,
-          depth: 1,
-          follow: false,
-          force: true,
-        });
+        const articleContent = await fs.readFile(
+          articleFile.absolutePath,
+          'utf8'
+        );
+        const articleId = parseFrontmatterIdSafe(
+          articleContent,
+          articleFile.relativePath,
+          logger
+        );
+        const entries = await traceCommitHistory(
+          gitRoot,
+          docsRepoPath,
+          articleFile,
+          repoPath,
+          articleId,
+          logger
+        );
         const latest = entries[0];
         if (!latest) {
           metadata.set(articleFile.relativePath, undefined);
           return;
         }
 
-        const commit = latest.commit;
-        const message = commit.message ?? '';
-        const { summary, body } = splitMessage(message);
+        const createdEntry = entries[entries.length - 1] ?? latest;
+        const updated = buildRevisionMetadata(latest);
+        const created = buildRevisionMetadata(createdEntry);
+
         const docsPath = toPosixRelativePath(docsDir, articleFile.absolutePath);
         const file = buildFileMetadata(docsPath, repoPath);
-        const author = buildUserMetadata(commit.author);
-        const committer = buildUserMetadata(commit.committer);
-        const oid = latest.oid ?? '';
-        const shortOid = oid.length >= 7 ? oid.slice(0, 7) : oid;
 
         metadata.set(articleFile.relativePath, {
-          oid,
-          shortOid,
-          message,
-          summary,
-          body,
-          parents: commit.parent ?? [],
-          tree: commit.tree ?? '',
-          author,
-          committer,
+          ...updated,
           file,
           ...(status ? { status } : {}),
           ...(dirty !== undefined ? { dirty } : {}),
+          created,
+          updated,
         });
       } catch {
         metadata.set(articleFile.relativePath, undefined);

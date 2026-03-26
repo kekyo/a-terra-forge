@@ -10,7 +10,9 @@ set articleEntry0 (first articleEntries)
 set pageTitle articleEntry0.title
 set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
 set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
-set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set createdDates (sort (collect (map (fun articleEntry articleEntry.git?.created.committer.date) articleEntries)))
+set updatedDates (sort (collect (map (fun articleEntry articleEntry.git?.updated.committer.date) articleEntries)))
+set committerDates updatedDates
 set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
 }}
 {{
@@ -40,9 +42,24 @@ if locale?
               </p>
               {{end}}
               {{if articleEntry0.git?}}
-                {{if (length committerDates)}}
-                <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' (last committerDates)}}</p>
+                {{if (length createdDates)}}
+                <p>{{getMessage 'createdDate'}}: {{formatDate 'YYYY/MM/DD' (first createdDates)}}</p>
                 {{end}}
+                {{
+                if (length updatedDates)
+                  if (length createdDates)
+                    if (not (eq (last updatedDates) (first createdDates)))
+                }}
+                <p>{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' (last updatedDates)}}</p>
+                {{
+                    end
+                  else
+                }}
+                <p>{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' (last updatedDates)}}</p>
+                {{
+                  end
+                end
+                }}
                 {{if (length authorNames)}}
                 <p>{{getMessage 'author'}}: {{getMessage articleEntry0.git.author.name}}</p>
                 {{end}}

@@ -7,7 +7,7 @@ import { readFile } from 'fs/promises';
 import { describe, expect, it } from 'vitest';
 
 describe('template dates', () => {
-  it('renders per-entry committer dates in blog and timeline entries', async () => {
+  it('renders created and updated dates in blog and timeline entries', async () => {
     const blogTemplate = await readFile(
       'scaffold/.templates/blog-entry.html',
       'utf8'
@@ -17,15 +17,24 @@ describe('template dates', () => {
       'utf8'
     );
 
+    expect(blogTemplate).toContain("{{getMessage 'createdDate'}}");
+    expect(blogTemplate).toContain("{{getMessage 'updatedDate'}}");
+    expect(blogTemplate).toContain('git.created.committer.date');
+    expect(blogTemplate).toContain('git.updated.committer.date');
     expect(blogTemplate).toContain(
-      "{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' git.committer.date}}"
+      'not (eq git.updated.committer.date git.created.committer.date)'
     );
+
+    expect(timelineTemplate).toContain("{{getMessage 'createdDate'}}");
+    expect(timelineTemplate).toContain("{{getMessage 'updatedDate'}}");
+    expect(timelineTemplate).toContain('git.created.committer.date');
+    expect(timelineTemplate).toContain('git.updated.committer.date');
     expect(timelineTemplate).toContain(
-      "{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' git.committer.date}}"
+      'not (eq git.updated.committer.date git.created.committer.date)'
     );
   });
 
-  it('uses the latest category committer date for category pages and metadata', async () => {
+  it('uses aggregated created and updated dates for category pages and metadata', async () => {
     const categoryTemplate = await readFile(
       'scaffold/.templates/index-category.html',
       'utf8'
@@ -36,10 +45,16 @@ describe('template dates', () => {
     );
 
     expect(categoryTemplate).toContain(
-      'set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))'
+      'set createdDates (sort (collect (map (fun articleEntry articleEntry.git?.created.committer.date) articleEntries)))'
     );
     expect(categoryTemplate).toContain(
-      "{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' (last committerDates)}}"
+      'set updatedDates (sort (collect (map (fun articleEntry articleEntry.git?.updated.committer.date) articleEntries)))'
+    );
+    expect(categoryTemplate).toContain(
+      "{{getMessage 'createdDate'}}: {{formatDate 'YYYY/MM/DD' (first createdDates)}}"
+    );
+    expect(categoryTemplate).toContain(
+      "{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' (last updatedDates)}}"
     );
     expect(commonHeader).toContain(
       '<meta property="article:modified_time" content="{{last committerDates}}">'

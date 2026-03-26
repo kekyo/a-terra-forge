@@ -175,7 +175,10 @@ export interface GitStatusMetadata {
   stage: number;
 }
 
-export interface GitCommitMetadata {
+/**
+ * Git revision metadata for a specific commit in a document history.
+ */
+export interface GitRevisionMetadata {
   oid: string;
   shortOid: string;
   message: string;
@@ -185,7 +188,20 @@ export interface GitCommitMetadata {
   tree: string;
   author: GitUserMetadata;
   committer: GitUserMetadata;
+}
+
+/**
+ * Git metadata attached to a rendered document.
+ *
+ * @remarks
+ * The top-level commit fields remain aliases of the latest update commit for
+ * backward compatibility. `created` points to the earliest reachable commit of
+ * the document, while `updated` points to the latest commit.
+ */
+export interface GitCommitMetadata extends GitRevisionMetadata {
   file: GitFileMetadata;
   status?: GitStatusMetadata;
   dirty?: boolean;
+  created: GitRevisionMetadata;
+  updated: GitRevisionMetadata;
 }

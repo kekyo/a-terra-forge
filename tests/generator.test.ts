@@ -2312,6 +2312,7 @@ title: Draft
 
     await mkdir(docsDir, { recursive: true });
     await cp('scaffold/.templates', templatesDir, { recursive: true });
+    await cp('scaffold/atr.json', join(siteRoot, 'atr.json'));
 
     const guideDir = join(docsDir, 'guide');
     await mkdir(guideDir, { recursive: true });
@@ -2363,14 +2364,6 @@ Details`,
     await commitWithDate(firstPath, '2024-01-01T00:00:00Z');
     await commitWithDate(secondPath, '2024-02-01T00:00:00Z');
 
-    const config = {
-      variables: {
-        siteName: 'Example Site',
-        siteDescription: 'Example description',
-      },
-    };
-    await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
-
     const options: ATerraForgeProcessingOptions = {
       docsDir: docsDir,
       templatesDir: templatesDir,
@@ -2386,11 +2379,93 @@ Details`,
       join(outDir, 'guide', 'index.html'),
       'utf8'
     );
-    expect(categoryHtml).toContain('date: 2024/02/01');
-    expect(categoryHtml).not.toContain('date: 2024/01/01');
+    expect(categoryHtml).toContain('Created: 2024/01/01');
+    expect(categoryHtml).toContain('Updated: 2024/02/01');
     expect(categoryHtml).toContain(
       'meta property="article:modified_time" content="2024-02-01T00:00:00.000Z"'
     );
+  });
+
+  it('Renders scaffold timeline entries with created and updated dates.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-scaffold-timeline-dates');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, '.templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await cp('scaffold/.templates', templatesDir, { recursive: true });
+    await cp('scaffold/atr.json', join(siteRoot, 'atr.json'));
+
+    const entryPath = join(docsDir, 'entry.md');
+    await writeFile(
+      entryPath,
+      `---
+id: 1
+title: Entry
+---
+
+# Entry
+
+Initial body
+`,
+      'utf8'
+    );
+
+    const git = simpleGit(siteRoot);
+    await git.init();
+    await git.addConfig('user.name', 'Committer Name');
+    await git.addConfig('user.email', 'committer@example.com');
+
+    const commitWithDate = async (date: string) => {
+      await git.add('.');
+      await git
+        .env({
+          ...process.env,
+          GIT_AUTHOR_DATE: date,
+          GIT_COMMITTER_DATE: date,
+        })
+        .commit(`Commit ${date}`);
+    };
+
+    await commitWithDate('2024-01-01T00:00:00Z');
+
+    await writeFile(
+      entryPath,
+      `---
+id: 1
+title: Entry
+---
+
+# Entry
+
+Updated body
+`,
+      'utf8'
+    );
+    await commitWithDate('2024-02-01T00:00:00Z');
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath: join(siteRoot, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const timelineIndex = JSON.parse(
+      await readFile(join(outDir, 'timeline.json'), 'utf8')
+    ) as { entryPath: string }[];
+    const entryHtml = await readFile(
+      join(outDir, timelineIndex[0]!.entryPath),
+      'utf8'
+    );
+
+    expect(entryHtml).toContain('Created: 2024/01/01');
+    expect(entryHtml).toContain('Updated: 2024/02/01');
+    expect(entryHtml).not.toContain('Date: 2024/02/01');
   });
 
   it('Resolves relative URLs for timeline article-bodies.', async (fn) => {
@@ -2825,7 +2900,7 @@ Dirty edit`,
     await writeRequiredTemplates(templatesDir, {
       indexTemplate: '<html><body>{{timelineIndexPath}}</body></html>',
       entryTemplate:
-        '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}</section><section>{{contentHtml}}</section></article>',
+        '<article><header>{{title}}</header><section>{{git.summary}}|{{git.body}}|{{git.author.email}}|{{git.committer.date}}|{{git.committer.email}}|{{git.file.path}}|{{git.created.committer.date}}|{{git.updated.committer.date}}</section><section>{{contentHtml}}</section></article>',
     });
 
     const options: ATerraForgeProcessingOptions = {
@@ -2872,22 +2947,36 @@ Dirty edit`,
       'utf8'
     );
     const entry1Match = entry1.match(
-      /First commit\|Details line\|author1@example.com\|([^|]+)\|committer@example.com\|notes\/01-first\.md/
+      /First commit\|Details line\|author1@example.com\|([^|]+)\|committer@example.com\|notes\/01-first\.md\|([^|]+)\|([^|<]+)/
     );
     expect(entry1Match).not.toBeNull();
     const entry1Date = dayjs(entry1Match?.[1]);
     expect(entry1Date.isValid()).toBe(true);
+    const entry1CreatedDate = dayjs(entry1Match?.[2]);
+    expect(entry1CreatedDate.isValid()).toBe(true);
+    const entry1UpdatedDate = dayjs(entry1Match?.[3]);
+    expect(entry1UpdatedDate.isValid()).toBe(true);
+    expect(entry1CreatedDate.toISOString()).toBe(
+      entry1UpdatedDate.toISOString()
+    );
 
     const entry2 = await readFile(
       join(outDir, 'article-bodies', '2.txt'),
       'utf8'
     );
     const entry2Match = entry2.match(
-      /Second commit\|\|author2@example.com\|([^|]+)\|committer@example.com\|notes\/02-second\.md/
+      /Second commit\|\|author2@example.com\|([^|]+)\|committer@example.com\|notes\/02-second\.md\|([^|]+)\|([^|<]+)/
     );
     expect(entry2Match).not.toBeNull();
     const entry2Date = dayjs(entry2Match?.[1]);
     expect(entry2Date.isValid()).toBe(true);
+    const entry2CreatedDate = dayjs(entry2Match?.[2]);
+    expect(entry2CreatedDate.isValid()).toBe(true);
+    const entry2UpdatedDate = dayjs(entry2Match?.[3]);
+    expect(entry2UpdatedDate.isValid()).toBe(true);
+    expect(entry2CreatedDate.toISOString()).toBe(
+      entry2UpdatedDate.toISOString()
+    );
   });
 
   it('Generates sitemap.xml with all HTML files when baseUrl is configured.', async (fn) => {

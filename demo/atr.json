@@ -24,6 +24,8 @@
   "messages": {
     "en": {
       "date": "Date",
+      "createdDate": "Created",
+      "updatedDate": "Updated",
       "author": "Author",
       "category": "Category",
       "tags": "Tags",
@@ -37,6 +39,8 @@
     },
     "ja": {
       "date": "日時",
+      "createdDate": "執筆日",
+      "updatedDate": "更新日",
       "author": "執筆者",
       "category": "カテゴリ",
       "tags": "タグ",

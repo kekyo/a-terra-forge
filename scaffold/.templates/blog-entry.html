@@ -37,10 +37,23 @@
       }}
       {{
       if git?
-        if git.committer.date?
+        if git.created.committer.date?
       }}
-      <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' git.committer.date}}</p>
+      <p>{{getMessage 'createdDate'}}: {{formatDate 'YYYY/MM/DD' git.created.committer.date}}</p>
       {{
+        end
+        if git.updated.committer.date?
+          if git.created.committer.date?
+            if (not (eq git.updated.committer.date git.created.committer.date))
+      }}
+      <p>{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' git.updated.committer.date}}</p>
+      {{
+            end
+          else
+      }}
+      <p>{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' git.updated.committer.date}}</p>
+      {{
+          end
         end
         if git.author.name?
       }}
