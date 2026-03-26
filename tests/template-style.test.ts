@@ -208,6 +208,31 @@ describe('template style', () => {
     expect(contentMatch?.[1]).toMatch(/order:\s*1;/);
   });
 
+  it('shows card media above labels on narrow viewports', async () => {
+    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const bodyMatch = css.match(/^\.card-body\s*\{([^}]*)\}/m);
+    const imageMatch = css.match(/^\.card-image\s*\{([^}]*)\}/m);
+    const mobileBlock = extractMediaBlock(css, '@media (max-width: 599.98px)');
+    const wideBlock = extractMediaBlock(css, '@media (min-width: 600px)');
+    const bodyIndex = css.indexOf('.card-body {');
+    const imageIndex = css.indexOf('.card-image {');
+    const mobileIndex = css.indexOf('@media (max-width: 599.98px)');
+
+    expect(bodyMatch).not.toBeNull();
+    expect(bodyMatch?.[1]).toMatch(/order:\s*1;/);
+    expect(imageMatch).not.toBeNull();
+    expect(imageMatch?.[1]).toMatch(/order:\s*2;/);
+    expect(mobileBlock).not.toBeNull();
+    expect(mobileBlock).toMatch(/\.card-body\s*\{[^}]*order:\s*2;/);
+    expect(mobileBlock).toMatch(/\.card-image\s*\{[^}]*order:\s*1;/);
+    expect(wideBlock).not.toBeNull();
+    expect(wideBlock).toMatch(
+      /\.card-link\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.2fr\)\s+minmax\(0,\s*0\.9fr\);/
+    );
+    expect(mobileIndex).toBeGreaterThan(bodyIndex);
+    expect(mobileIndex).toBeGreaterThan(imageIndex);
+  });
+
   it('defines primary and secondary palette variables', async () => {
     const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
     expect(css).toMatch(
@@ -246,6 +271,9 @@ describe('template style', () => {
     expect(css).toContain('--heading-h4-size: 1.5rem;');
     expect(css).toContain('--heading-h5-size: 1.25rem;');
     expect(css).toContain('--heading-h6-size: 1rem;');
+    expect(css).toContain(
+      '--heading-h1-margin-right: calc(var(--heading-h1-size) * 2);'
+    );
     expect(
       tabletBlocks.some(
         (block) =>
@@ -358,6 +386,9 @@ describe('template style', () => {
 
     expect(h1Match).not.toBeNull();
     expect(h1Match?.[1]).toMatch(/font-size:\s*var\(--heading-h1-size\);/);
+    expect(h1Match?.[1]).toMatch(
+      /margin-right:\s*var\(--heading-h1-margin-right\);/
+    );
     expect(h1Match?.[1]).toMatch(
       /border-bottom:\s*0\.15rem\s+solid\s+var\(--primary-alpha-75\);/
     );
