@@ -14,6 +14,9 @@
   --secondary-rgb: {{toCssRgb secondaryColor? '108, 117, 125'}};
   /* Inline code accent color */
   --inline-code-rgb: {{toCssRgb inlineCodeColor? '13, 110, 253'}};
+  /* Base font family */
+  --font-family-base: {{cond fontList? (join ', ' fontList) 'Noto Sans, sans-serif'}};
+  --bs-body-font-family: var(--font-family-base);
   /* Header (H1) icon (default: activity) */
   --header-icon-default: '{{cond headerIconCode? headerIconCode '\\F66B'}}';
   /* Max document area width  */
@@ -327,6 +330,7 @@ body {
 body {
   display: flex;
   flex-direction: column;
+  font-family: var(--font-family-base);
   margin: 0;
 }
 

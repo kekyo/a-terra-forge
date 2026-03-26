@@ -44,6 +44,21 @@ const extractMediaBlock = (css: string, mediaQuery: string) =>
   extractMediaBlocks(css, mediaQuery)[0] ?? null;
 
 describe('template style', () => {
+  it('defines a configurable base font family from fontList', async () => {
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
+
+    expect(css).toContain(
+      "--font-family-base: {{cond fontList? (join ', ' fontList) 'Noto Sans, sans-serif'}};"
+    );
+    expect(css).toMatch(/--bs-body-font-family:\s*var\(--font-family-base\);/);
+    expect(css).toMatch(
+      /body\s*\{[^}]*display:\s*flex;[^}]*font-family:\s*var\(--font-family-base\);/
+    );
+  });
+
   it('sets smaller docs padding for the smartphone breakpoint', async () => {
     const css = await readFile(
       'scaffold/.templates/default/site-style.css',

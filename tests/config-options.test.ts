@@ -10,6 +10,7 @@ import { describe, expect, it, type TestContext } from 'vitest';
 import {
   defaultCacheDir,
   defaultDocsDir,
+  defaultFontList,
   defaultOutDir,
   defaultTemplatesDir,
   defaultTmpDir,
@@ -180,6 +181,16 @@ describe('loadATerraForgeConfig', () => {
     expect(config.variables.get('outDir')).toBe(defaultOutDir);
     expect(config.variables.get('tmpDir')).toBe(defaultTmpDir);
     expect(config.variables.get('cacheDir')).toBe(defaultCacheDir);
+  });
+
+  it('defaults fontList when missing.', async (fn) => {
+    const root = await createTempDir(fn, 'default-font-list');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(configPath, '{}', 'utf8');
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.variables.get('fontList')).toEqual([...defaultFontList]);
   });
 
   it('defaults templateNames to default when missing.', async (fn) => {

@@ -86,6 +86,8 @@ export interface ATerraForgeVariablesInput {
   afterMenuOrder?: readonly string[];
   /** Categories rendered with blog-style ordering and templates. */
   blogCategories?: readonly string[];
+  /** Font family fallback list used by default CSS and SVG templates. */
+  fontList?: readonly string[];
   /** Code highlighting configuration values. */
   codeHighlight?: Record<string, unknown>;
   /** Additional variable entries. */

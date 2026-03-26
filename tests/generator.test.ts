@@ -3123,6 +3123,20 @@ Details`,
     });
   });
 
+  it('renders scaffold fontList into the generated site CSS', async (fn) => {
+    const { outDir } = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-font-list',
+      { fontList: ['IBM Plex Sans', 'sans-serif'] }
+    );
+
+    const css = await readFile(join(outDir, 'site-style.css'), 'utf8');
+
+    expect(css).toContain('--font-family-base: IBM Plex Sans, sans-serif;');
+    expect(css).toContain('--bs-body-font-family: var(--font-family-base);');
+    expect(css).toContain('font-family: var(--font-family-base);');
+  });
+
   it('falls back to the light theme when ogpImageTheme is invalid', async (fn) => {
     const { outDir } = await buildScaffoldOgImageSite(
       fn,

@@ -944,6 +944,7 @@ flowchart LR
 |`siteName`|No| このサイトのサイト名で、ナビゲーションメニューの左端の表示や、ページメタデータの埋め込みに使用されます。 |
 |`siteDescription`|No| このサイトの説明文で、ページメタデータ (OGP/RSS/Atom) の埋め込みに使用されます。サイズは、`1200px`x`630px`が標準的に使用されます。 |
 |`siteImage`|Yes| このサイトの画像パスで、ページメタデータ (OGP) の埋め込みに使用されます。画像は `.templates/{templateName}/.assets/` などに配置してデプロイ出来ます。 |
+|`fontList`|Yes| 雛形の標準 CSS と OGP SVG テンプレートで使用するフォントファミリーのフォールバック一覧です。`["Noto Sans", "sans-serif"]` のような文字列配列で指定し、テンプレート内では `font-family` の値として連結して使用されます。省略時のデフォルトは `["Noto Sans", "sans-serif"]` です。 |
 |`siteIconAssetPath`|Yes| 雛形の OGP SVG テンプレートで使用するサイトアイコン画像のパスです。画像は `.templates/{templateName}/.assets/` 配下に置き、`icon.png` のような公開後のパスで指定します。 |
 |`ogpImageTheme`|Yes| 雛形の OGP SVG テンプレートを選択するテーマです。`light` または `dark` を指定でき、省略時のデフォルトは `light` です。雛形では `og-image-light.svg` や `og-image-timeline-dark.svg` のようなファイルを探索します。 |
 |`locale`|No| サイト全体の言語指定です。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。例えば英語の場合は`en`、日本語の場合は`ja`です。この指定を行っても、コンテンツが自動的に翻訳されるわけではありません。 |

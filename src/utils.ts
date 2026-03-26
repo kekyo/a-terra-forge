@@ -401,6 +401,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 
 export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
 export const defaultTemplateNames = ['default'] as const;
+export const defaultFontList = ['Noto Sans', 'sans-serif'] as const;
 export const defaultDocsDir = 'docs' as const;
 export const defaultTemplatesDir = '.templates' as const;
 export const defaultTemplateAssetsDir = '.assets' as const;
@@ -873,12 +874,19 @@ const normalizeVariablesWithLists = (
     'blogCategories',
     []
   );
+  const fontList = resolveVariableStringList(
+    normalized,
+    configPath,
+    'fontList',
+    defaultFontList
+  );
 
   normalized.set('contentFiles', contentFiles);
   normalized.set('templateNames', templateNames);
   normalized.set('menuOrder', menuOrder);
   normalized.set('afterMenuOrder', afterMenuOrder);
   normalized.set('blogCategories', blogCategories);
+  normalized.set('fontList', fontList);
 
   return {
     variables: normalized,

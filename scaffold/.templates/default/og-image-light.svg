@@ -28,6 +28,7 @@ set pageCategory (cond articleEntry0.category? (getMessage articleEntry0.categor
 set updatedLabel (cond (length committerDates) (concat 'Updated ' (formatDate 'YYYY-MM-DD' (last committerDates))) '')
 set tagLabel (cond (length articleTags) (truncateText (concat '#' (join '  #' articleTags)) 80) '')
 set accentColor (cond primaryColor? primaryColor '#2f81f7')
+set fontFamily (cond fontList? (join ', ' fontList) 'Noto Sans, sans-serif')
 set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.10)')
 }}
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" role="img" aria-labelledby="og-title og-desc">
@@ -62,20 +63,20 @@ set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.
     {{end}}
 
     {{if pageCategory?}}
-    <text x="72" y="188" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24" font-weight="700">{{escapeXml pageCategory}}</text>
+    <text x="72" y="188" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="24" font-weight="700">{{escapeXml pageCategory}}</text>
     {{end}}
 
-    <text x="72" y="280" fill="#0f172a" font-family="Noto Sans, sans-serif" font-size="72" font-weight="800">{{svgTextSpans pageTitle 28 2 72 86}}</text>
-    <text x="72" y="350" fill="#334155" font-family="Noto Sans, sans-serif" font-size="34">{{svgTextSpans pageDescription 52 3 72 46}}</text>
+    <text x="72" y="280" fill="#0f172a" font-family="{{escapeXml fontFamily}}" font-size="72" font-weight="800">{{svgTextSpans pageTitle 28 2 72 86}}</text>
+    <text x="72" y="350" fill="#334155" font-family="{{escapeXml fontFamily}}" font-size="34">{{svgTextSpans pageDescription 52 3 72 46}}</text>
 
     {{if updatedLabel?}}
-    <text x="72" y="500" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24">{{escapeXml updatedLabel}}</text>
+    <text x="72" y="500" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="24">{{escapeXml updatedLabel}}</text>
     {{end}}
     {{if tagLabel?}}
-    <text x="400" y="500" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24">{{escapeXml tagLabel}}</text>
+    <text x="400" y="500" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="24">{{escapeXml tagLabel}}</text>
     {{end}}
 
-    <text x="72" y="550" fill="#475569" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml siteName}}</text>
-    <text x="300" y="550" fill="#475569" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml baseUrl}}</text>
+    <text x="72" y="550" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="22">{{escapeXml siteName}}</text>
+    <text x="300" y="550" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="22">{{escapeXml baseUrl}}</text>
   </g>
 </svg>

@@ -6,6 +6,7 @@
     "siteDescription": "Sample a-terra-forge site",
     "siteIconAssetPath": "icon.png",
     "templateNames": ["default"],
+    "fontList": ["Noto Sans", "sans-serif"],
     "frontPage": "timeline",
     "headerIcon": "activity",
     "primaryColor": "#0080ff",

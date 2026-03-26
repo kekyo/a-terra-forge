@@ -949,6 +949,7 @@ Below are all values defined in `atr.json` on `variables` key:
 |`siteName`|No|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
 |`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them under `.templates/{templateName}/.assets/` or similar directories. |
 |`siteImage`|Yes| The site image path, used for embedding page metadata (OGP). The standard size used is `1200px`x`630px`. |
+|`fontList`|Yes|Font family fallback list used by the scaffold default CSS and OGP SVG templates. Specify it as an array such as `["Noto Sans", "sans-serif"]`, and it is rendered as a `font-family` value in the templates. Defaults to `["Noto Sans", "sans-serif"]` when omitted. |
 |`siteIconAssetPath`|Yes|Path to the site icon asset used by the scaffold OGP SVG templates. Place the image under `.templates/{templateName}/.assets/` and reference the published path such as `icon.png`. |
 |`ogpImageTheme`|Yes|Theme used to select the scaffold OGP SVG templates. Accepts `light` or `dark`. Default is `light`. The scaffold looks for templates such as `og-image-light.svg` and `og-image-timeline-dark.svg`. |
 |`locale`|No|The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. Even if you make this selection, the content will not be automatically translated. |
