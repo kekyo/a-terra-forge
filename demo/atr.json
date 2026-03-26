@@ -3,6 +3,7 @@
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",
     "siteDescription": "Sample a-terra-forge site",
+    "siteIconAssetPath": "icon.png",
     "frontPage": "timeline",
     "headerIcon": "activity",
     "primaryColor": "#0080ff",
@@ -19,7 +20,8 @@
         "light": "light-plus",
         "dark": "dark-plus"
       }
-    }
+    },
+    "ogpImageTheme": "light"
   },
   "messages": {
     "en": {

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+a-terra-forge - Universal document-oriented markdown site generator
+Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
+Under MIT.
+https://github.com/kekyo/a-terra-forge
+-->
+{{
+set accentColor (cond primaryColor? primaryColor '#2f81f7')
+set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.10)')
+}}
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" role="img" aria-labelledby="timeline-title timeline-desc">
+  <title id="timeline-title">{{escapeXml siteName}}</title>
+  <desc id="timeline-desc">{{escapeXml siteDescription}}</desc>
+  <defs>
+    <linearGradient id="timeline-background-light" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fbff" />
+      <stop offset="1" stop-color="#e9f0f8" />
+    </linearGradient>
+    <linearGradient id="timeline-accent-light" x1="72" y1="0" x2="952" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{{accentColor}}" />
+      <stop offset="1" stop-color="{{accentColor}}" stop-opacity="0.72" />
+    </linearGradient>
+    <clipPath id="timeline-icon-clip-light">
+      <rect x="988" y="72" width="140" height="140" rx="28" />
+    </clipPath>
+    <clipPath id="timeline-frame-clip-light">
+      <rect x="0" y="0" width="1200" height="630" rx="16" />
+    </clipPath>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="628" rx="24" fill="#f8fafc" stroke-width="0" />
+  <g clip-path="url(#timeline-frame-clip-light)">
+    <rect x="60" y="60" width="1080" height="510" rx="16" fill="rgba(15, 23, 42, 0.02)" />
+    <rect x="72" y="75" width="880" height="8" rx="4" fill="url(#timeline-accent-light)" />
+    <circle cx="1114" cy="510" r="168" fill="{{accentCircleFill}}" />
+
+    {{if siteIconAssetPath?}}
+    <rect x="988" y="72" width="140" height="140" rx="28" fill="rgba(15, 23, 42, 0.04)" stroke-width="0" />
+    <image href="{{toRelativePath siteIconAssetPath}}" x="988" y="72" width="140" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#timeline-icon-clip-light)" />
+    {{end}}
+
+    <text x="72" y="138" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24" font-weight="700">{{escapeXml (getMessage 'timeline' 'Timeline')}}</text>
+    <text x="72" y="230" fill="#0f172a" font-family="Noto Sans, sans-serif" font-size="72" font-weight="800">{{svgTextSpans siteName 28 2 72 86}}</text>
+    <text x="72" y="300" fill="#334155" font-family="Noto Sans, sans-serif" font-size="34">{{svgTextSpans siteDescription 52 3 72 46}}</text>
+
+    <text x="72" y="550" fill="#475569" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml siteName}}</text>
+    <text x="300" y="550" fill="#475569" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml baseUrl}}</text>
+  </g>
+</svg>

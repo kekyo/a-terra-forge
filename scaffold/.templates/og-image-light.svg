@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+a-terra-forge - Universal document-oriented markdown site generator
+Copyright (c) Kouji Matsui. (@kekyo@mi.kekyo.net)
+Under MIT.
+https://github.com/kekyo/a-terra-forge
+-->
+{{
+set articleEntry0 (first articleEntries)
+set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
+set pageTitle siteName
+set pageDescription siteDescription
+if (eq entryMode 'category')
+  set pageTitle articleEntry0.title
+  set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
+else
+  if (eq entryMode 'blog')
+    set pageTitle (getMessage title)
+  else
+    if (eq entryMode 'blog-single')
+      set pageTitle articleEntry0.title
+      set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
+    end
+  end
+end
+set pageCategory (cond articleEntry0.category? (getMessage articleEntry0.category articleEntry0.category) '')
+set updatedLabel (cond (length committerDates) (concat 'Updated ' (formatDate 'YYYY-MM-DD' (last committerDates))) '')
+set tagLabel (cond (length articleTags) (truncateText (concat '#' (join '  #' articleTags)) 80) '')
+set accentColor (cond primaryColor? primaryColor '#2f81f7')
+set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.10)')
+}}
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none" role="img" aria-labelledby="og-title og-desc">
+  <title id="og-title">{{escapeXml pageTitle}}</title>
+  <desc id="og-desc">{{escapeXml pageDescription}}</desc>
+  <defs>
+    <linearGradient id="og-background-light" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#f8fbff" />
+      <stop offset="1" stop-color="#e9f0f8" />
+    </linearGradient>
+    <linearGradient id="og-accent-light" x1="72" y1="0" x2="952" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="{{accentColor}}" />
+      <stop offset="1" stop-color="{{accentColor}}" stop-opacity="0.72" />
+    </linearGradient>
+    <clipPath id="og-icon-clip-light">
+      <rect x="988" y="72" width="140" height="140" rx="28" />
+    </clipPath>
+    <clipPath id="og-frame-clip-light">
+      <rect x="0" y="0" width="1200" height="630" rx="16" />
+    </clipPath>
+  </defs>
+
+  <rect x="1" y="1" width="1198" height="628" rx="24" fill="#f8fafc" stroke-width="0" />
+  <g clip-path="url(#og-frame-clip-light)">
+    <rect x="60" y="60" width="1080" height="510" rx="16" fill="rgba(15, 23, 42, 0.02)" />
+    <rect x="72" y="75" width="880" height="8" rx="4" fill="url(#og-accent-light)" />
+    <circle cx="1114" cy="510" r="168" fill="{{accentCircleFill}}" />
+
+    {{if siteIconAssetPath?}}
+    <rect x="988" y="72" width="140" height="140" rx="28" fill="rgba(15, 23, 42, 0.04)" stroke-width="0" />
+    <image href="{{toRelativePath siteIconAssetPath}}" x="988" y="72" width="140" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#og-icon-clip-light)" />
+    {{end}}
+
+    {{if pageCategory?}}
+    <text x="72" y="138" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24" font-weight="700">{{escapeXml pageCategory}}</text>
+    {{end}}
+
+    <text x="72" y="230" fill="#0f172a" font-family="Noto Sans, sans-serif" font-size="72" font-weight="800">{{svgTextSpans pageTitle 28 2 72 86}}</text>
+    <text x="72" y="300" fill="#334155" font-family="Noto Sans, sans-serif" font-size="34">{{svgTextSpans pageDescription 52 3 72 46}}</text>
+
+    {{if updatedLabel?}}
+    <text x="72" y="500" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24">{{escapeXml updatedLabel}}</text>
+    {{end}}
+    {{if tagLabel?}}
+    <text x="400" y="500" fill="#475569" font-family="Noto Sans, sans-serif" font-size="24">{{escapeXml tagLabel}}</text>
+    {{end}}
+
+    <text x="72" y="550" fill="#475569" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml siteName}}</text>
+    <text x="300" y="550" fill="#475569" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml baseUrl}}</text>
+  </g>
+</svg>

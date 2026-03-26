@@ -5,6 +5,7 @@
 
 import { cp, mkdir, readdir, readFile, writeFile } from 'fs/promises';
 import { join, relative, resolve } from 'path';
+import { deflateSync, inflateSync } from 'zlib';
 import { describe, expect, it, type TestContext } from 'vitest';
 import dayjs from 'dayjs';
 import simpleGit from 'simple-git';
@@ -95,6 +96,244 @@ const extractHeaderTitle = (html: string): string => {
   return match?.[1] ?? '';
 };
 
+const crc32Table = Uint32Array.from({ length: 256 }, (_unused, index) => {
+  let value = index;
+  for (let bit = 0; bit < 8; bit += 1) {
+    value = (value & 1) === 1 ? 0xedb88320 ^ (value >>> 1) : value >>> 1;
+  }
+  return value >>> 0;
+});
+
+const crc32 = (buffer: Buffer): number => {
+  let value = 0xffffffff;
+  for (const byte of buffer) {
+    value = (crc32Table[(value ^ byte) & 0xff] ?? 0) ^ (value >>> 8);
+  }
+  return (value ^ 0xffffffff) >>> 0;
+};
+
+const createPngChunk = (type: string, data: Buffer): Buffer => {
+  const typeBuffer = Buffer.from(type, 'ascii');
+  const lengthBuffer = Buffer.alloc(4);
+  lengthBuffer.writeUInt32BE(data.length, 0);
+  const crcBuffer = Buffer.alloc(4);
+  crcBuffer.writeUInt32BE(crc32(Buffer.concat([typeBuffer, data])), 0);
+  return Buffer.concat([lengthBuffer, typeBuffer, data, crcBuffer]);
+};
+
+const createSolidPngBuffer = (
+  red: number,
+  green: number,
+  blue: number,
+  alpha: number
+): Buffer => {
+  const signature = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+  ]);
+  const ihdr = Buffer.alloc(13);
+  ihdr.writeUInt32BE(1, 0);
+  ihdr.writeUInt32BE(1, 4);
+  ihdr[8] = 8;
+  ihdr[9] = 6;
+  const idat = deflateSync(Buffer.from([0, red, green, blue, alpha]));
+  return Buffer.concat([
+    signature,
+    createPngChunk('IHDR', ihdr),
+    createPngChunk('IDAT', idat),
+    createPngChunk('IEND', Buffer.alloc(0)),
+  ]);
+};
+
+const redPngBuffer = createSolidPngBuffer(255, 0, 0, 255);
+
+const readPngSize = (buffer: Buffer) => {
+  expect(buffer.subarray(0, 8)).toEqual(
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
+  );
+  return {
+    width: buffer.readUInt32BE(16),
+    height: buffer.readUInt32BE(20),
+  };
+};
+
+const paethPredictor = (left: number, up: number, upLeft: number): number => {
+  const initial = left + up - upLeft;
+  const leftDistance = Math.abs(initial - left);
+  const upDistance = Math.abs(initial - up);
+  const upLeftDistance = Math.abs(initial - upLeft);
+  if (leftDistance <= upDistance && leftDistance <= upLeftDistance) {
+    return left;
+  }
+  if (upDistance <= upLeftDistance) {
+    return up;
+  }
+  return upLeft;
+};
+
+const readPngPixel = (
+  buffer: Buffer,
+  x: number,
+  y: number
+): { red: number; green: number; blue: number; alpha: number } => {
+  const size = readPngSize(buffer);
+  expect(x).toBeGreaterThanOrEqual(0);
+  expect(y).toBeGreaterThanOrEqual(0);
+  expect(x).toBeLessThan(size.width);
+  expect(y).toBeLessThan(size.height);
+  expect(buffer[24]).toBe(8);
+  expect(buffer[25]).toBe(6);
+  expect(buffer[28]).toBe(0);
+
+  const idatChunks: Buffer[] = [];
+  let offset = 8;
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.subarray(offset + 4, offset + 8).toString('ascii');
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    if (type === 'IDAT') {
+      idatChunks.push(buffer.subarray(dataStart, dataEnd));
+    }
+    offset = dataEnd + 4;
+    if (type === 'IEND') {
+      break;
+    }
+  }
+
+  const bytesPerPixel = 4;
+  const stride = size.width * bytesPerPixel;
+  const inflated = inflateSync(Buffer.concat(idatChunks));
+  const rows: Buffer[] = [];
+  let inflatedOffset = 0;
+  let previousRow = Buffer.alloc(stride);
+
+  for (let rowIndex = 0; rowIndex < size.height; rowIndex += 1) {
+    const filterType = inflated[inflatedOffset] ?? 0;
+    inflatedOffset += 1;
+    const filtered = inflated.subarray(inflatedOffset, inflatedOffset + stride);
+    inflatedOffset += stride;
+    const row = Buffer.alloc(stride);
+
+    for (let index = 0; index < stride; index += 1) {
+      const left =
+        index >= bytesPerPixel ? (row[index - bytesPerPixel] ?? 0) : 0;
+      const up = previousRow[index] ?? 0;
+      const upLeft =
+        index >= bytesPerPixel ? (previousRow[index - bytesPerPixel] ?? 0) : 0;
+      const value = filtered[index] ?? 0;
+      switch (filterType) {
+        case 0:
+          row[index] = value;
+          break;
+        case 1:
+          row[index] = (value + left) & 0xff;
+          break;
+        case 2:
+          row[index] = (value + up) & 0xff;
+          break;
+        case 3:
+          row[index] = (value + Math.floor((left + up) / 2)) & 0xff;
+          break;
+        case 4:
+          row[index] = (value + paethPredictor(left, up, upLeft)) & 0xff;
+          break;
+        default:
+          throw new Error(`Unsupported PNG filter type: ${filterType}`);
+      }
+    }
+
+    rows.push(row);
+    previousRow = row;
+  }
+
+  const row = rows[y];
+  if (!row) {
+    throw new Error(`Missing PNG row: ${y}`);
+  }
+  const pixelOffset = x * bytesPerPixel;
+  return {
+    red: row[pixelOffset] ?? 0,
+    green: row[pixelOffset + 1] ?? 0,
+    blue: row[pixelOffset + 2] ?? 0,
+    alpha: row[pixelOffset + 3] ?? 0,
+  };
+};
+
+const buildScaffoldOgImageSite = async (
+  fn: TestContext,
+  name: string,
+  variables: Record<string, unknown>
+) => {
+  const siteRoot = await createTempDir(fn, name);
+  const docsDir = join(siteRoot, 'docs');
+  const templatesDir = join(siteRoot, '.templates');
+  const assetsDir = join(siteRoot, '.assets');
+  const outDir = join(siteRoot, 'out');
+
+  await mkdir(docsDir, { recursive: true });
+  await mkdir(assetsDir, { recursive: true });
+  await cp('scaffold/.templates', templatesDir, { recursive: true });
+  await writeFile(join(assetsDir, 'icon.png'), redPngBuffer);
+  await writeFile(
+    join(siteRoot, 'atr.json'),
+    JSON.stringify({
+      variables: {
+        baseUrl: 'https://example.com/docs/',
+        siteName: 'Example Site',
+        siteDescription: 'Example Description',
+        siteIconAssetPath: './icon.png',
+        ...variables,
+      },
+    }),
+    'utf8'
+  );
+
+  const guideDir = join(docsDir, 'guide');
+  await mkdir(guideDir, { recursive: true });
+  await writeFile(
+    join(guideDir, 'index.md'),
+    `---
+title: Guide
+description: Guide description
+---
+
+# Guide
+
+Guide body
+`,
+    'utf8'
+  );
+  await writeFile(
+    join(docsDir, 'entry.md'),
+    `---
+id: 1
+title: Entry
+---
+
+# Entry
+
+Timeline body
+`,
+    'utf8'
+  );
+
+  const options: ATerraForgeProcessingOptions = {
+    docsDir,
+    templatesDir,
+    assetsDir,
+    outDir,
+    cacheDir: '.cache',
+    configPath: join(siteRoot, 'atr.json'),
+  };
+
+  const abortController = new AbortController();
+  await generateDocs(options, abortController.signal);
+
+  return {
+    outDir,
+  };
+};
+
 describe('generateDocs', () => {
   it('Converts each directory into a single HTML using the fallback template.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
@@ -156,6 +395,286 @@ Details here`,
 
     const copiedCss = await readFile(join(outDir, 'site-style.css'), 'utf8');
     expect(copiedCss).toBe(cssContent);
+  });
+
+  it('renders page-specific OGP images and injects ogImagePath into page templates', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-og-image');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, '.templates');
+    const assetsDir = join(siteRoot, '.assets');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+    await mkdir(assetsDir, { recursive: true });
+    await writeFile(join(assetsDir, 'icon.png'), redPngBuffer);
+
+    await mkdir(join(docsDir, 'guide'), { recursive: true });
+    await mkdir(join(docsDir, 'blog'), { recursive: true });
+    await writeFile(
+      join(docsDir, 'guide', 'index.md'),
+      `---
+title: Guide
+description: Guide description
+tags:
+  - docs
+---
+
+# Guide
+
+Guide body
+`,
+      'utf8'
+    );
+    await writeFile(
+      join(docsDir, 'blog', 'post.md'),
+      `---
+id: 1
+title: Blog Post
+description: Blog description
+tags:
+  - release
+---
+
+# Blog Post
+
+Blog body
+`,
+      'utf8'
+    );
+    await writeFile(
+      join(docsDir, 'entry.md'),
+      `---
+id: 2
+title: Timeline Entry
+---
+
+# Timeline Entry
+
+Timeline body
+`,
+      'utf8'
+    );
+
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html><body>CATEGORY:{{ogImagePath}}</body></html>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'index-timeline.html'),
+      '<html><body>TIMELINE:{{ogImagePath}}</body></html>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'timeline-entry.html'),
+      '<article>{{title}}</article>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'index-blog.html'),
+      '<html><body>BLOG:{{ogImagePath}}</body></html>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'blog-entry.html'),
+      '<article>{{title}}</article>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'index-blog-single.html'),
+      '<html><body>BLOG_SINGLE:{{ogImagePath}}</body></html>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'og-image-light.svg'),
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0d1117" />
+  <image href="{{toRelativePath siteIconAssetPath}}" x="24" y="24" width="96" height="96" />
+  <text x="72" y="180" fill="#ffffff">{{truncateText siteName 24}}</text>
+</svg>`,
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'og-image-timeline-light.svg'),
+      `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320">
+  <rect width="640" height="320" fill="#161b22" />
+  <text x="32" y="96" fill="#ffffff">{{truncateText siteName 24}}</text>
+</svg>`,
+      'utf8'
+    );
+
+    const configPath = join(siteRoot, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          baseUrl: 'https://example.com/docs/',
+          siteName: 'Example Site',
+          siteDescription: 'Example Description',
+          blogCategories: ['blog'],
+          siteIconAssetPath: './icon.png',
+        },
+      }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir,
+      templatesDir,
+      assetsDir,
+      outDir,
+      cacheDir: '.cache',
+      configPath,
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const guideHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(guideHtml).toContain('CATEGORY:guide/og-image.png');
+
+    const blogHtml = await readFile(join(outDir, 'blog', 'index.html'), 'utf8');
+    expect(blogHtml).toContain('BLOG:blog/og-image.png');
+
+    const blogSingleHtml = await readFile(
+      join(outDir, 'blog', '1.html'),
+      'utf8'
+    );
+    expect(blogSingleHtml).toContain('BLOG_SINGLE:blog/1.og-image.png');
+
+    const timelineHtml = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(timelineHtml).toContain('TIMELINE:og-image.png');
+
+    const guideImage = await readFile(join(outDir, 'guide', 'og-image.png'));
+    expect(readPngSize(guideImage)).toEqual({ width: 1200, height: 630 });
+    expect(readPngPixel(guideImage, 40, 40)).toEqual({
+      red: 255,
+      green: 0,
+      blue: 0,
+      alpha: 255,
+    });
+
+    const blogImage = await readFile(join(outDir, 'blog', 'og-image.png'));
+    expect(readPngSize(blogImage)).toEqual({ width: 1200, height: 630 });
+
+    const blogSingleImage = await readFile(
+      join(outDir, 'blog', '1.og-image.png')
+    );
+    expect(readPngSize(blogSingleImage)).toEqual({
+      width: 1200,
+      height: 630,
+    });
+
+    const timelineImage = await readFile(join(outDir, 'og-image.png'));
+    expect(readPngSize(timelineImage)).toEqual({ width: 640, height: 320 });
+  });
+
+  it('does not render OGP images from legacy template filenames only', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-og-image-legacy-only');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, '.templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+
+    await mkdir(join(docsDir, 'guide'), { recursive: true });
+    await writeFile(
+      join(docsDir, 'guide', 'index.md'),
+      `---
+title: Guide
+description: Guide description
+---
+
+# Guide
+
+Guide body
+`,
+      'utf8'
+    );
+
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      '<html><body>{{if ogImagePath?}}{{ogImagePath}}{{end}}</body></html>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'og-image.svg'),
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#0d1117" />
+</svg>`,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const configPath = join(siteRoot, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          baseUrl: 'https://example.com/docs/',
+          siteName: 'Example Site',
+          siteDescription: 'Example Description',
+        },
+      }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir,
+      templatesDir,
+      outDir,
+      cacheDir: '.cache',
+      configPath,
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const guideHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(guideHtml).toBe('<html><body></body></html>');
+    expect(
+      await readdir(join(outDir, 'guide'), { withFileTypes: false })
+    ).not.toContain('og-image.png');
+  });
+
+  it('provides category labels on category-page article entries', async (fn) => {
+    const docsDir = await createTempDir(fn, 'docs-category-label');
+    const templatesDir = await createTempDir(fn, '.templates-category-label');
+    const outDir = await createTempDir(fn, 'out-category-label');
+
+    await mkdir(join(docsDir, 'guide'), { recursive: true });
+    await writeFile(
+      join(docsDir, 'guide', 'index.md'),
+      '# Guide\n\nBody',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'index-category.html'),
+      `{{set articleEntry0 (first articleEntries)}}<html><body>{{articleEntry0.category}}</body></html>`,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: resolve(docsDir),
+      templatesDir: resolve(templatesDir),
+      outDir: resolve(outDir),
+      cacheDir: '.cache',
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'guide', 'index.html'), 'utf8');
+    expect(html).toContain('guide');
   });
 
   it('logs built paths relative to the config directory.', async (fn) => {
@@ -2384,6 +2903,159 @@ Details`,
     expect(categoryHtml).toContain(
       'meta property="article:modified_time" content="2024-02-01T00:00:00.000Z"'
     );
+  });
+
+  it('emits absolute scaffold OGP image metadata for generated page images', async (fn) => {
+    const { outDir } = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-og-image-meta',
+      {}
+    );
+
+    const categoryHtml = await readFile(
+      join(outDir, 'guide', 'index.html'),
+      'utf8'
+    );
+    expect(categoryHtml).toContain(
+      '<meta property="og:image" content="https://example.com/docs/guide/og-image.png">'
+    );
+    expect(categoryHtml).toContain(
+      '<meta name="twitter:image" content="https://example.com/docs/guide/og-image.png">'
+    );
+
+    const timelineHtml = await readFile(join(outDir, 'index.html'), 'utf8');
+    expect(timelineHtml).toContain(
+      '<meta property="og:image" content="https://example.com/docs/og-image.png">'
+    );
+    expect(timelineHtml).toContain(
+      '<meta name="twitter:image" content="https://example.com/docs/og-image.png">'
+    );
+
+    const categoryImage = await readFile(join(outDir, 'guide', 'og-image.png'));
+    expect(readPngSize(categoryImage)).toEqual({ width: 1200, height: 630 });
+
+    const timelineImage = await readFile(join(outDir, 'og-image.png'));
+    expect(readPngSize(timelineImage)).toEqual({ width: 1200, height: 630 });
+  });
+
+  it('renders scaffold OGP images with the default light theme and embeds the site icon asset', async (fn) => {
+    const { outDir } = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-og-image-default-light',
+      {}
+    );
+
+    const categoryImage = await readFile(join(outDir, 'guide', 'og-image.png'));
+    expect(readPngPixel(categoryImage, 0, 0)).toEqual({
+      red: 0,
+      green: 0,
+      blue: 0,
+      alpha: 0,
+    });
+    expect(readPngPixel(categoryImage, 20, 100)).toEqual({
+      red: 248,
+      green: 250,
+      blue: 252,
+      alpha: 255,
+    });
+    expect(readPngPixel(categoryImage, 1058, 142)).toEqual({
+      red: 255,
+      green: 0,
+      blue: 0,
+      alpha: 255,
+    });
+
+    const timelineImage = await readFile(join(outDir, 'og-image.png'));
+    expect(readPngPixel(timelineImage, 0, 0)).toEqual({
+      red: 0,
+      green: 0,
+      blue: 0,
+      alpha: 0,
+    });
+    expect(readPngPixel(timelineImage, 20, 100)).toEqual({
+      red: 248,
+      green: 250,
+      blue: 252,
+      alpha: 255,
+    });
+    expect(readPngPixel(timelineImage, 1058, 142)).toEqual({
+      red: 255,
+      green: 0,
+      blue: 0,
+      alpha: 255,
+    });
+  });
+
+  it('falls back to the light theme when ogpImageTheme is invalid', async (fn) => {
+    const { outDir } = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-og-image-invalid-theme',
+      { ogpImageTheme: 'transparent' }
+    );
+
+    const categoryImage = await readFile(join(outDir, 'guide', 'og-image.png'));
+    expect(readPngPixel(categoryImage, 0, 0)).toEqual({
+      red: 0,
+      green: 0,
+      blue: 0,
+      alpha: 0,
+    });
+    expect(readPngPixel(categoryImage, 20, 100)).toEqual({
+      red: 248,
+      green: 250,
+      blue: 252,
+      alpha: 255,
+    });
+
+    const timelineImage = await readFile(join(outDir, 'og-image.png'));
+    expect(readPngPixel(timelineImage, 0, 0)).toEqual({
+      red: 0,
+      green: 0,
+      blue: 0,
+      alpha: 0,
+    });
+    expect(readPngPixel(timelineImage, 20, 100)).toEqual({
+      red: 248,
+      green: 250,
+      blue: 252,
+      alpha: 255,
+    });
+  });
+
+  it('renders scaffold OGP images with an explicit dark theme background', async (fn) => {
+    const { outDir } = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-og-image-dark',
+      { ogpImageTheme: 'dark' }
+    );
+
+    const categoryImage = await readFile(join(outDir, 'guide', 'og-image.png'));
+    expect(readPngPixel(categoryImage, 0, 0)).toEqual({
+      red: 0,
+      green: 0,
+      blue: 0,
+      alpha: 0,
+    });
+    expect(readPngPixel(categoryImage, 20, 100)).toEqual({
+      red: 13,
+      green: 17,
+      blue: 23,
+      alpha: 255,
+    });
+
+    const timelineImage = await readFile(join(outDir, 'og-image.png'));
+    expect(readPngPixel(timelineImage, 0, 0)).toEqual({
+      red: 0,
+      green: 0,
+      blue: 0,
+      alpha: 0,
+    });
+    expect(readPngPixel(timelineImage, 20, 100)).toEqual({
+      red: 13,
+      green: 17,
+      blue: 23,
+      alpha: 255,
+    });
   });
 
   it('Renders scaffold timeline entries with created and updated dates.', async (fn) => {

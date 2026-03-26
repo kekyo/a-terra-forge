@@ -30,11 +30,17 @@ import { type CategoryEntry, createEntryGetter } from './entries';
 import { renderTemplateWithImportHandler } from './templates';
 import {
   buildNavItems,
+  getDirectoryLabel,
   isIndexMarkdown,
   resolveOrderValue,
   resolveCategoryDestinationPath,
   type NavCategory,
 } from './navigation';
+import {
+  renderOgImage,
+  resolveOgImageOutputPath,
+  type OgImageTemplateSet,
+} from './ogImage';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -84,6 +90,7 @@ export const generateDirectoryDocument = async (
   frontPage: string,
   includeTimeline: boolean,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  ogImageTemplates: OgImageTemplateSet,
   baseUrl: URL,
   signal: AbortSignal
 ): Promise<void> => {
@@ -227,6 +234,7 @@ export const generateDirectoryDocument = async (
         id: entryId,
         title: entry.title,
         fileName,
+        category: getDirectoryLabel(entry.directory),
         index: entry.index,
         filePath: entry.filePath,
         directory: entry.directory,
@@ -292,15 +300,42 @@ export const generateDirectoryDocument = async (
     ...(categoryCommitKeyWithDirty ? { categoryCommitKeyWithDirty } : {}),
   };
 
-  const templateVariables = applyHeaderIconCode(
-    buildCandidateVariables(
-      scriptVariables,
-      configVariables,
-      baseResult.frontmatter,
-      contentVariables,
-      pathFunctions
-    ),
-    configVariables
+  const buildTemplateVariables = (
+    documentPath: string,
+    extraVariables?: Record<string, unknown>
+  ) =>
+    applyHeaderIconCode(
+      buildCandidateVariables(
+        scriptVariables,
+        configVariables,
+        baseResult.frontmatter,
+        contentVariables,
+        ...(extraVariables ? [extraVariables] : []),
+        createPathFunctions({
+          outDir,
+          documentPath,
+          baseUrl,
+        })
+      ),
+      configVariables
+    );
+
+  const ogImageOutputPath = resolveOgImageOutputPath(destinationPath);
+  const ogImagePath = await renderOgImage({
+    templates: ogImageTemplates,
+    mode: 'category',
+    variables: buildTemplateVariables(ogImageOutputPath),
+    outputPath: ogImageOutputPath,
+    configDir,
+    outDir,
+    finalOutDir,
+    logger,
+    signal,
+  });
+
+  const templateVariables = buildTemplateVariables(
+    destinationPath,
+    ogImagePath ? { ogImagePath } : undefined
   );
 
   const logs: FunCityLogEntry[] = [];

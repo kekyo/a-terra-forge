@@ -42,6 +42,11 @@ import {
   type NavCategory,
 } from './navigation';
 import type { PageTemplateInfo, RenderedArticleInfo } from './directory';
+import {
+  renderOgImage,
+  resolveOgImageOutputPath,
+  type OgImageTemplateSet,
+} from './ogImage';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -65,6 +70,7 @@ export const generateBlogDocument = async (
   frontPage: string,
   includeTimeline: boolean,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  ogImageTemplates: OgImageTemplateSet,
   baseUrl: URL,
   signal: AbortSignal
 ): Promise<readonly string[]> => {
@@ -78,11 +84,6 @@ export const generateBlogDocument = async (
   const prerenderCount = resolvePrerenderCount(configVariables);
   const categoryLabel = getDirectoryLabel(directory);
   const categoryPath = toPosixRelativePath(blogOutputDir, destinationPath);
-  const indexPathFunctions = createPathFunctions({
-    outDir,
-    documentPath: destinationPath,
-    baseUrl,
-  });
 
   await mkdir(articleBodiesDir, { recursive: true });
 
@@ -305,14 +306,41 @@ export const generateBlogDocument = async (
     ...(prerenderCount !== undefined ? { prerenderCount } : {}),
   };
 
-  const templateVariables = applyHeaderIconCode(
-    buildCandidateVariables(
-      scriptVariables,
-      configVariables,
-      contentVariables,
-      indexPathFunctions
-    ),
-    configVariables
+  const buildIndexTemplateVariables = (
+    documentPath: string,
+    extraVariables?: Record<string, unknown>
+  ) =>
+    applyHeaderIconCode(
+      buildCandidateVariables(
+        scriptVariables,
+        configVariables,
+        contentVariables,
+        ...(extraVariables ? [extraVariables] : []),
+        createPathFunctions({
+          outDir,
+          documentPath,
+          baseUrl,
+        })
+      ),
+      configVariables
+    );
+
+  const ogImageOutputPath = resolveOgImageOutputPath(destinationPath);
+  const ogImagePath = await renderOgImage({
+    templates: ogImageTemplates,
+    mode: 'blog',
+    variables: buildIndexTemplateVariables(ogImageOutputPath),
+    outputPath: ogImageOutputPath,
+    configDir,
+    outDir,
+    finalOutDir,
+    logger,
+    signal,
+  });
+
+  const templateVariables = buildIndexTemplateVariables(
+    destinationPath,
+    ogImagePath ? { ogImagePath } : undefined
   );
 
   const logs: FunCityLogEntry[] = [];
@@ -341,11 +369,6 @@ export const generateBlogDocument = async (
   const singlePageOutputs = await Promise.all(
     sortedCandidates.map(async (candidate) => {
       const { entry, entrySingleFilePath } = candidate;
-      const singlePathFunctions = createPathFunctions({
-        outDir,
-        documentPath: entrySingleFilePath,
-        baseUrl,
-      });
       const singleNavItems = buildNavItems(
         entrySingleFilePath,
         outDir,
@@ -375,15 +398,41 @@ export const generateBlogDocument = async (
           ? { navItemsAfter: singleNavItemsAfter }
           : {}),
       };
-      const singleTemplateVariables = applyHeaderIconCode(
-        buildCandidateVariables(
-          scriptVariables,
-          configVariables,
-          entry,
-          singleContentVariables,
-          singlePathFunctions
-        ),
-        configVariables
+      const buildSingleTemplateVariables = (
+        documentPath: string,
+        extraVariables?: Record<string, unknown>
+      ) =>
+        applyHeaderIconCode(
+          buildCandidateVariables(
+            scriptVariables,
+            configVariables,
+            entry,
+            singleContentVariables,
+            ...(extraVariables ? [extraVariables] : []),
+            createPathFunctions({
+              outDir,
+              documentPath,
+              baseUrl,
+            })
+          ),
+          configVariables
+        );
+      const singleOgImageOutputPath =
+        resolveOgImageOutputPath(entrySingleFilePath);
+      const singleOgImagePath = await renderOgImage({
+        templates: ogImageTemplates,
+        mode: 'blog-single',
+        variables: buildSingleTemplateVariables(singleOgImageOutputPath),
+        outputPath: singleOgImageOutputPath,
+        configDir,
+        outDir,
+        finalOutDir,
+        logger,
+        signal,
+      });
+      const singleTemplateVariables = buildSingleTemplateVariables(
+        entrySingleFilePath,
+        singleOgImagePath ? { ogImagePath: singleOgImagePath } : undefined
       );
       const singleLogs: FunCityLogEntry[] = [];
       const singleRendered = await renderTemplateWithImportHandler(

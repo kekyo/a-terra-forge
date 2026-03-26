@@ -69,6 +69,7 @@ import {
 } from './process/directory';
 import { generateBlogDocument } from './process/blog';
 import { generateTimelineDocument } from './process/timeline';
+import { loadOgImageTemplates } from './process/ogImage';
 import { buildSitemapUrls } from './process/sitemap';
 import { buildFeedTemplateData } from './process/feed';
 import { createWorkDir } from './worker/workdir';
@@ -465,6 +466,7 @@ export const generateDocs = async (
     outDir,
     siteTemplates
   );
+  const ogImageTemplates = await loadOgImageTemplates(templatesDir);
   const baseUrlRaw = configVariablesRaw.get('baseUrl');
   const trimmedBaseUrl =
     typeof baseUrlRaw === 'string' ? baseUrlRaw.trim() : '';
@@ -808,6 +810,7 @@ export const generateDocs = async (
               frontPage,
               includeTimeline,
               siteTemplateOutputMap,
+              ogImageTemplates,
               resolvedBaseUrl,
               signal
             );
@@ -828,6 +831,7 @@ export const generateDocs = async (
             frontPage,
             includeTimeline,
             siteTemplateOutputMap,
+            ogImageTemplates,
             resolvedBaseUrl,
             signal
           );
@@ -861,6 +865,7 @@ export const generateDocs = async (
         timelineEntryTemplate,
         frontPage,
         siteTemplateOutputMap,
+        ogImageTemplates,
         resolvedBaseUrl,
         signal
       );

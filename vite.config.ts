@@ -53,6 +53,7 @@ const buildConfig: UserConfig = {
         'worker_threads',
         'glob',
         'commander',
+        '@resvg/resvg-js',
         'mark-deco',
         'mark-deco/node',
       ],
@@ -74,7 +75,7 @@ export default defineConfig(async ({ command }): Promise<UserConfig> => {
           variables: {
             docsDir: join(demoRoot, 'docs'),
             templatesDir: resolve('scaffold/.templates'),
-            outDir: join(demoRoot, 'dist'),
+            assetsDir: resolve('scaffold/.assets'),
           },
           watchInclude: [resolve('src'), resolve('vite.config.ts')],
         }),

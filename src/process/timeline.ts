@@ -42,6 +42,11 @@ import {
   type NavCategory,
 } from './navigation';
 import type { PageTemplateInfo, RenderedArticleInfo } from './directory';
+import {
+  renderOgImage,
+  resolveOgImageOutputPath,
+  type OgImageTemplateSet,
+} from './ogImage';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -63,6 +68,7 @@ export const generateTimelineDocument = async (
   timelineEntryTemplate: PageTemplateInfo,
   frontPage: string,
   siteTemplateOutputMap: ReadonlyMap<string, string>,
+  ogImageTemplates: OgImageTemplateSet,
   baseUrl: URL,
   signal: AbortSignal
 ): Promise<void> => {
@@ -70,11 +76,6 @@ export const generateTimelineDocument = async (
   const timelineOutputDir = resolveTimelineOutputDir(outDir, frontPage);
   const articleBodiesDir = join(timelineOutputDir, 'article-bodies');
   const prerenderCount = resolvePrerenderCount(configVariables);
-  const indexPathFunctions = createPathFunctions({
-    outDir,
-    documentPath: destinationPath,
-    baseUrl,
-  });
 
   await mkdir(articleBodiesDir, { recursive: true });
 
@@ -301,14 +302,41 @@ export const generateTimelineDocument = async (
     ...(prerenderCount !== undefined ? { prerenderCount } : {}),
   };
 
-  const templateVariables = applyHeaderIconCode(
-    buildCandidateVariables(
-      scriptVariables,
-      configVariables,
-      contentVariables,
-      indexPathFunctions
-    ),
-    configVariables
+  const buildTemplateVariables = (
+    documentPath: string,
+    extraVariables?: Record<string, unknown>
+  ) =>
+    applyHeaderIconCode(
+      buildCandidateVariables(
+        scriptVariables,
+        configVariables,
+        contentVariables,
+        ...(extraVariables ? [extraVariables] : []),
+        createPathFunctions({
+          outDir,
+          documentPath,
+          baseUrl,
+        })
+      ),
+      configVariables
+    );
+
+  const ogImageOutputPath = resolveOgImageOutputPath(destinationPath);
+  const ogImagePath = await renderOgImage({
+    templates: ogImageTemplates,
+    mode: 'timeline',
+    variables: buildTemplateVariables(ogImageOutputPath),
+    outputPath: ogImageOutputPath,
+    configDir,
+    outDir,
+    finalOutDir,
+    logger,
+    signal,
+  });
+
+  const templateVariables = buildTemplateVariables(
+    destinationPath,
+    ogImagePath ? { ogImagePath } : undefined
   );
 
   const logs: FunCityLogEntry[] = [];

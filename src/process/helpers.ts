@@ -41,6 +41,166 @@ const escapeXml = (arg0: unknown): string => {
     .replace(/'/g, '&apos;');
 };
 
+const normalizeTextContent = (value: unknown): string =>
+  String(value ?? '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const clampPositiveInteger = (value: unknown, fallback: number): number => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return fallback;
+  }
+  return Math.floor(parsed);
+};
+
+const getTextUnitWeight = (value: string): number => {
+  if (/\s/u.test(value)) {
+    return 0.5;
+  }
+  const codePoint = value.codePointAt(0) ?? 0;
+  return codePoint <= 0x7f ? 1 : 2;
+};
+
+const measureTextUnits = (value: string): number => {
+  let total = 0;
+  for (const char of value) {
+    total += getTextUnitWeight(char);
+  }
+  return total;
+};
+
+const truncateTextValue = (value: string, maxUnits: number): string => {
+  if (!value) {
+    return '';
+  }
+  if (measureTextUnits(value) <= maxUnits) {
+    return value;
+  }
+
+  const ellipsis = '...';
+  const availableUnits = Math.max(0, maxUnits - measureTextUnits(ellipsis));
+  let total = 0;
+  let lastIndex = 0;
+
+  for (const char of value) {
+    const next = total + getTextUnitWeight(char);
+    if (next > availableUnits) {
+      break;
+    }
+    total = next;
+    lastIndex += char.length;
+  }
+
+  const trimmed = value.slice(0, lastIndex).trimEnd();
+  return `${trimmed}${ellipsis}`;
+};
+
+const takeTextSegmentByUnits = (
+  value: string,
+  maxUnits: number
+): { line: string; rest: string } => {
+  if (!value) {
+    return { line: '', rest: '' };
+  }
+  if (measureTextUnits(value) <= maxUnits) {
+    return { line: value, rest: '' };
+  }
+
+  let total = 0;
+  let currentEnd = 0;
+  let breakEnd = 0;
+
+  for (const char of value) {
+    const next = total + getTextUnitWeight(char);
+    if (next > maxUnits) {
+      break;
+    }
+    total = next;
+    currentEnd += char.length;
+    if (char === ' ' || char === '-' || char === '/' || char === '_') {
+      breakEnd = currentEnd;
+    }
+  }
+
+  let cutIndex = breakEnd > 0 ? breakEnd : currentEnd;
+  if (cutIndex <= 0) {
+    const firstChar = Array.from(value)[0];
+    cutIndex = firstChar ? firstChar.length : value.length;
+  }
+
+  const line = value.slice(0, cutIndex).trimEnd();
+  const rest = value.slice(cutIndex).trimStart();
+  return { line, rest };
+};
+
+const wrapTextByUnits = (
+  value: string,
+  maxUnits: number,
+  maxLines: number
+): string[] => {
+  const normalized = normalizeTextContent(value);
+  if (!normalized) {
+    return [];
+  }
+
+  const lines: string[] = [];
+  let remaining = normalized;
+
+  while (remaining.length > 0 && lines.length < maxLines) {
+    if (lines.length === maxLines - 1) {
+      lines.push(truncateTextValue(remaining, maxUnits));
+      break;
+    }
+
+    const { line, rest } = takeTextSegmentByUnits(remaining, maxUnits);
+    if (!line) {
+      break;
+    }
+    lines.push(line);
+    remaining = rest;
+  }
+
+  return lines;
+};
+
+/**
+ * Truncate text for compact template rendering.
+ */
+const truncateText = (arg0: unknown, arg1: unknown): string => {
+  const maxUnits = clampPositiveInteger(arg1, 64);
+  return truncateTextValue(normalizeTextContent(arg0), maxUnits);
+};
+
+/**
+ * Build SVG tspan fragments with simple line wrapping.
+ */
+const svgTextSpans = (
+  arg0: unknown,
+  arg1: unknown,
+  arg2: unknown,
+  arg3: unknown,
+  arg4: unknown
+): string => {
+  const text = normalizeTextContent(arg0);
+  if (!text) {
+    return '';
+  }
+
+  const maxUnits = clampPositiveInteger(arg1, 32);
+  const maxLines = clampPositiveInteger(arg2, 2);
+  const x = escapeXml(arg3);
+  const lineHeight = clampPositiveInteger(arg4, 48);
+  const lines = wrapTextByUnits(text, maxUnits, maxLines);
+
+  return lines
+    .map((line, index) => {
+      const dy = index === 0 ? '' : ` dy="${lineHeight}"`;
+      return `<tspan x="${x}"${dy}>${escapeXml(line)}</tspan>`;
+    })
+    .join('');
+};
+
 /**
  * Convert a color value into a CSS RGB triple string.
  */
@@ -110,6 +270,8 @@ export const scriptVariables = combineVariables({
   getMessage,
   escapeXml,
   toCssRgb,
+  truncateText,
+  svgTextSpans,
 });
 
 /**

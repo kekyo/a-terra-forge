@@ -313,6 +313,20 @@ export const writeContentFile = async (path: string, content: string) => {
   await rename(path + '.tmp', path);
 };
 
+export const writeBinaryFile = async (path: string, content: Uint8Array) => {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path + '.tmp', content);
+  try {
+    if (existsSync(path)) {
+      await unlink(path);
+    }
+  } catch (e: unknown) {
+    await unlink(path + '.tmp');
+    throw e;
+  }
+  await rename(path + '.tmp', path);
+};
+
 export const buildDirectoryDestinationPath = (
   outDir: string,
   relativeDir: string

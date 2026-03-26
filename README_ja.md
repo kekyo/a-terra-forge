@@ -912,6 +912,8 @@ flowchart LR
 |`siteName`|No| このサイトのサイト名で、ナビゲーションメニューの左端の表示や、ページメタデータの埋め込みに使用されます。 |
 |`siteDescription`|No| このサイトの説明文で、ページメタデータ (OGP/RSS/Atom) の埋め込みに使用されます。サイズは、`1200px`x`630px`が標準的に使用されます。 |
 |`siteImage`|Yes| このサイトの画像パスで、ページメタデータ (OGP) の埋め込みに使用されます。画像は `assetsDir` などに配置してデプロイ出来ます。 |
+|`siteIconAssetPath`|Yes| 雛形の OGP SVG テンプレートで使用するサイトアイコン画像のパスです。画像は `assetsDir` 配下に置き、`icon.png` のような公開後のパスで指定します。 |
+|`ogpImageTheme`|Yes| 雛形の OGP SVG テンプレートを選択するテーマです。`light` または `dark` を指定でき、省略時のデフォルトは `light` です。雛形では `og-image-light.svg` や `og-image-timeline-dark.svg` のようなファイルを探索します。 |
 |`locale`|No| サイト全体の言語指定です。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。例えば英語の場合は`en`、日本語の場合は`ja`です。この指定を行っても、コンテンツが自動的に翻訳されるわけではありません。 |
 |`frontPage`|No| サイトのフロントページ（トップページ）として、どのカテゴリを表示するかを指定します。既定は`timeline`で、これはタイムラインを表示する、特殊なカテゴリ名です。 |
 |`headerIcon`|Yes| 文書のタイトルに表示するアイコンの指定です。名称は [bootstrap icons](https://icons.getbootstrap.com/) で指定します。文書にも個別に指定することが出来ますが、省略された場合にこの値が使用されます。 |
@@ -981,6 +983,10 @@ my-page
 │   ├── index-category.html
 │   ├── index-timeline.html
 │   ├── navigation-bar.html
+│   ├── og-image-light.svg
+│   ├── og-image-dark.svg
+│   ├── og-image-timeline-light.svg
+│   ├── og-image-timeline-dark.svg
 │   ├── site-script.js
 │   ├── site-style.css
 │   ├── sitemap.xml
@@ -1070,12 +1076,29 @@ flowchart TD
 - ブログカテゴリを有効化した場合は、`index-blog.html` / `blog-entry.html` / `index-blog-single.html` が必須です。
 - タイムラインを生成する場合は、`index-timeline.html` / `timeline-entry.html` が必須です。
 
-#### アセット
+#### スクリプト/CSS
 
 |ファイル|詳細|
 |:----|:----|
 |`site-script.js`|サイト内で使用する共通のJavaScriptを生成します|
 |`site-style.css`|サイト内で使用する共通のCSSを生成します|
+
+#### .assets ディレクトリ
+
+`.assets/` は、ビルド時にそのまま `outDir` へコピーされる静的アセット用ディレクトリです。
+画像、favicon、OGP テンプレートから参照するアイコンなど、funcity のスクリプト処理が不要なファイルはここへ置きます。
+ディレクトリ構造は維持されるため、例えば `.assets/images/logo.png` は `dist/images/logo.png` として出力されます。
+
+`atr init` で生成される標準のアセットには、 `.assets/favicon.ico` と `.assets/icon.png` が含まれています。
+`.assets/icon.png` はOPGテンプレートに挿入するアイコンに使用されます。
+
+標準の雛形では、次のような用途を想定しています:
+
+- `common-header.html` などから参照する favicon や固定画像
+- `variables.siteImage` に指定する OGP 用の固定画像
+- `variables.siteIconAssetPath` で OGP SVG テンプレートから読み込むアイコン画像
+
+SVG テンプレートや HTML テンプレートから参照する場合は、`{{toRelativePath 'icon.png'}}` や `{{toRelativePath siteIconAssetPath}}` のように、公開後のパスを基準に扱います。
 
 #### メタデータ生成
 
@@ -1084,6 +1107,54 @@ flowchart TD
 |`atom.xml`|ATOM形式のフィードを生成します|
 |`feed.xml`|RSS形式のフィードを生成します|
 |`sitemap.xml`|Googleサイトマップを生成します|
+
+#### OGPイメージ生成
+
+a-terra-forge は、ページとは別に OGP 用 PNG 画像もビルド時に生成できます。
+これは HTML テンプレートとは別の SVG テンプレートを funcity スクリプトとして評価し、その結果を PNG に変換して出力します。
+標準の雛形では、以下のテーマ別テンプレートが含まれています:
+
+|ファイル|詳細|
+|:----|:----|
+|`og-image-light.svg`|通常ページ用のライトテーマ OGP 画像テンプレートです|
+|`og-image-dark.svg`|通常ページ用のダークテーマ OGP 画像テンプレートです|
+|`og-image-timeline-light.svg`|タイムラインページ用のライトテーマ OGP 画像テンプレートです|
+|`og-image-timeline-dark.svg`|タイムラインページ用のダークテーマ OGP 画像テンプレートです|
+
+テンプレートの選択は `variables.ogpImageTheme` に従って行われます。
+`light` の場合は `*-light.svg`、`dark` の場合は `*-dark.svg` が使用され、省略時や未知の値では `light` が使われます。
+
+また、テンプレートはページ種別ごとにも分けられます。探索順は以下の通りです:
+
+1. `og-image-{entryMode}-{theme}.svg`
+2. `og-image-{theme}.svg`
+
+`entryMode` には `category` / `blog` / `blog-single` / `timeline` が入ります。
+そのため、例えばブログ単一ページだけレイアウトを変えたい場合は `og-image-blog-single-dark.svg` のようなファイルを追加できます。
+
+出力される PNG のファイル名はページ単位で決まっています:
+
+- カテゴリページ・ブログ一覧ページ・タイムラインページ: `og-image.png`
+- ブログ単一ページ: `{htmlファイル名}.og-image.png`
+
+生成された画像への相対パスは `ogImagePath` としてページテンプレートに渡され、標準の `common-header.html` ではこれを使って `og:image` と `twitter:image` を絶対 URL で出力します。
+
+OGP 用 SVG テンプレートには、通常のページテンプレートと同じように `articleEntries` や `entryMode`、`atr.json` の `variables.*`、`formatDate`、`getMessage`、`toRelativePath` などをそのまま使えます。
+そのため、既定テンプレートと同様にテンプレート内で `pageTitle` や `pageDescription` を組み立てられます。
+
+サイトアイコンなどの静的画像を SVG に埋め込みたい場合は、画像を `.assets/` 配下へ置き、`variables.siteIconAssetPath` に公開後のパスを指定します。
+テンプレートでは `{{toRelativePath siteIconAssetPath}}` のように参照できます。
+
+例えば `atr.json` では次のように指定できます:
+
+```json
+{
+  "variables": {
+    "siteIconAssetPath": "icon.png",
+    "ogpImageTheme": "dark"
+  }
+}
+```
 
 ### funcity変数群
 
@@ -1121,6 +1192,7 @@ flowchart TD
 |:----|:----|
 |`articleEntries`|表示対象の文書エントリ一覧です。各要素の構造は後述の「記事エントリ」を参照してください|
 |`entryMode`|`category` / `blog` / `blog-single` / `timeline` のいずれかです。テンプレートの分岐に使えます|
+|`ogImagePath`|このページに対応する生成済み OGP PNG への相対パスです。対応する OGP SVG テンプレートが見つかった場合のみ設定されます|
 |`getEntry entry`|1件分のエントリHTMLを返します。`entry.entryHtml` や `entry.entryPath` を解決してくれるので、一覧側で実体を気にせず描画できます|
 |`navItems`|左側ナビゲーション項目です。各要素は `label`, `href`, `isActive`, `children?` を持ちます|
 |`navItemsAfter`|右寄せナビゲーション項目です。`afterMenuOrder` が空でなければ使えます|

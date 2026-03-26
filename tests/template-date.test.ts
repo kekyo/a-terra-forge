@@ -59,5 +59,11 @@ describe('template dates', () => {
     expect(commonHeader).toContain(
       '<meta property="article:modified_time" content="{{last committerDates}}">'
     );
+    expect(commonHeader).toContain(
+      '<meta property="og:image" content="{{toAbsolutePath ogImagePath}}">'
+    );
+    expect(commonHeader).toContain(
+      '<meta name="twitter:image" content="{{toAbsolutePath ogImagePath}}">'
+    );
   });
 });

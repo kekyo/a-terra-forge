@@ -242,6 +242,108 @@ describe('atrPreview', () => {
     httpServer.emit('close');
   });
 
+  it('passes the overridden assetsDir into generateDocs and keeps a temp preview outDir.', async (fn) => {
+    const rootDir = await createTempDir(fn, 'root-assets-override');
+    const configDocsDir = resolve(rootDir, 'docs');
+    const configTemplatesDir = resolve(rootDir, '.templates');
+    const overrideDocsDir = resolve(rootDir, 'demo-docs');
+    const overrideTemplatesDir = resolve(rootDir, 'scaffold', '.templates');
+    const overrideAssetsDir = resolve(rootDir, 'scaffold', '.assets');
+    const overrideOutDir = resolve(rootDir, 'demo', 'dist');
+    await mkdir(configDocsDir, { recursive: true });
+    await mkdir(configTemplatesDir, { recursive: true });
+    await mkdir(overrideDocsDir, { recursive: true });
+    await mkdir(overrideTemplatesDir, { recursive: true });
+    await mkdir(overrideAssetsDir, { recursive: true });
+
+    const configPath = join(rootDir, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify(
+        {
+          variables: {
+            docsDir: './docs',
+            templatesDir: './.templates',
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const previewRootBaseDir = resolve(join(rootDir, 'preview-root'));
+    mockState.generateDocsMock.mockResolvedValue(undefined);
+
+    const httpServer = new EventEmitter();
+    const devServer = {
+      config: {
+        root: rootDir,
+        logLevel: 'info',
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+        server: {
+          open: false,
+          hmr: false,
+        },
+      },
+      middlewares: {
+        use: vi.fn(),
+      },
+      watcher: {
+        add: vi.fn(),
+        unwatch: vi.fn(),
+        on: vi.fn(),
+      },
+      ws: {
+        send: vi.fn(),
+      },
+      httpServer,
+      openBrowser: vi.fn(),
+      resolvedUrls: { local: ['http://localhost:5173/'] },
+    } as unknown as ViteDevServer;
+
+    vi.resetModules();
+    const { atrPreview } = await import('../src/vite');
+    const plugin = atrPreview({
+      configPath,
+      previewBaseDir: previewRootBaseDir,
+      variables: {
+        docsDir: overrideDocsDir,
+        templatesDir: overrideTemplatesDir,
+        assetsDir: overrideAssetsDir,
+        outDir: overrideOutDir,
+      },
+    });
+
+    const configureServerHook = plugin.configureServer;
+    if (!configureServerHook) {
+      throw new Error('configureServer is not defined.');
+    }
+    const pluginContext = {} as any;
+    if (typeof configureServerHook === 'function') {
+      await configureServerHook.call(pluginContext, devServer);
+    } else {
+      await configureServerHook.handler.call(pluginContext, devServer);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const [options] = mockState.generateDocsMock.mock.calls[0] ?? [];
+    expect(options).toBeDefined();
+    expect(options.docsDir).toBe(resolve(overrideDocsDir));
+    expect(options.templatesDir).toBe(resolve(overrideTemplatesDir));
+    expect(options.assetsDir).toBe(resolve(overrideAssetsDir));
+    expect(typeof options.outDir).toBe('string');
+    expect(options.outDir.startsWith(previewRootBaseDir)).toBe(true);
+    expect(options.outDir).not.toBe(resolve(overrideOutDir));
+
+    httpServer.emit('close');
+  });
+
   it('serves from the preview base directory and rewrites to the active preview output.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-preview-base');
     const docsDir = join(rootDir, 'docs');
