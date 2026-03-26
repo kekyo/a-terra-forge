@@ -4,7 +4,7 @@
 // https://github.com/kekyo/a-terra-forge
 
 import { readFile } from 'fs/promises';
-import { dirname, resolve } from 'path';
+import { basename, dirname, posix, resolve } from 'path';
 import {
   compileScriptCached,
   createIncludeFunction,
@@ -27,6 +27,25 @@ import { writeContentFile } from '../utils';
 const templateExecutionBackend = 'source' as const;
 const templateAggressiveOptimize = false;
 
+export interface TemplateResolver {
+  readonly templatesDir: string;
+  readonly templateNames: readonly string[];
+  readonly resolveTemplate: (
+    logicalPath: string
+  ) => Promise<ResolvedTemplateFile | undefined>;
+  readonly getResolvedTemplateBySourceId: (
+    sourceId: string
+  ) => ResolvedTemplateFile | undefined;
+}
+
+export interface ResolvedTemplateFile {
+  readonly resolver: TemplateResolver;
+  readonly templateName: string;
+  readonly logicalPath: string;
+  readonly path: string;
+  readonly script: string;
+}
+
 const compileTemplate = (sourceId: string, templateScript: string) =>
   compileScriptCached(
     templateScript,
@@ -41,6 +60,101 @@ type ImportHandlers = {
   readonly tryIncludeTemplate: Function;
   readonly importTemplate: Function;
   readonly tryImportTemplate: Function;
+};
+
+const normalizeTemplateLogicalPath = (value: string): string | undefined => {
+  const replaced = value.trim().replaceAll('\\', '/');
+  if (replaced.length === 0 || replaced.startsWith('/')) {
+    return undefined;
+  }
+  if (/^[A-Za-z]:\//.test(replaced)) {
+    return undefined;
+  }
+  const normalized = posix.normalize(replaced);
+  if (
+    normalized === '.' ||
+    normalized === '' ||
+    normalized === '..' ||
+    normalized.startsWith('../')
+  ) {
+    return undefined;
+  }
+  return normalized;
+};
+
+const resolveRelativeTemplateLogicalPath = (
+  importerLogicalPath: string,
+  request: string
+): string | undefined => {
+  const importerDir = posix.dirname(importerLogicalPath);
+  const resolved = posix.normalize(posix.join(importerDir, request));
+  if (
+    resolved === '.' ||
+    resolved === '' ||
+    resolved === '..' ||
+    resolved.startsWith('../')
+  ) {
+    return undefined;
+  }
+  return normalizeTemplateLogicalPath(resolved);
+};
+
+export const createTemplateResolver = (
+  templatesDir: string,
+  templateNames: readonly string[]
+): TemplateResolver => {
+  const resolutionCache = new Map<
+    string,
+    Promise<ResolvedTemplateFile | undefined>
+  >();
+  const resolutionsBySourceId = new Map<string, ResolvedTemplateFile>();
+
+  const resolver: TemplateResolver = {
+    templatesDir,
+    templateNames,
+    resolveTemplate: async (logicalPath: string) => {
+      const normalizedLogicalPath = normalizeTemplateLogicalPath(logicalPath);
+      if (!normalizedLogicalPath) {
+        return undefined;
+      }
+
+      const cached = resolutionCache.get(normalizedLogicalPath);
+      if (cached) {
+        return await cached;
+      }
+
+      const resolving = (async () => {
+        for (const templateName of templateNames) {
+          const templatePath = resolve(
+            templatesDir,
+            templateName,
+            normalizedLogicalPath
+          );
+          const script = await readFileIfExists(templatePath);
+          if (script === undefined) {
+            continue;
+          }
+          const resolvedTemplate: ResolvedTemplateFile = {
+            resolver,
+            templateName,
+            logicalPath: normalizedLogicalPath,
+            path: templatePath,
+            script,
+          };
+          resolutionsBySourceId.set(templatePath, resolvedTemplate);
+          return resolvedTemplate;
+        }
+        return undefined;
+      })();
+
+      resolutionCache.set(normalizedLogicalPath, resolving);
+      return await resolving;
+    },
+    getResolvedTemplateBySourceId: (sourceId: string) =>
+      resolutionsBySourceId.get(sourceId),
+  };
+
+  return resolver;
 };
 
 const createIncludeAlias = (targetName: 'include' | 'tryInclude'): Function =>
@@ -63,17 +177,33 @@ const createIncludeAlias = (targetName: 'include' | 'tryInclude'): Function =>
     return await targetFunction.call(this, arg0);
   });
 
-const createImportHandlers = (logs: FunCityLogEntry[]): ImportHandlers => {
+const createImportHandlers = (
+  template: ResolvedTemplateFile,
+  logs: FunCityLogEntry[]
+): ImportHandlers => {
   const includeHandlers = createIncludeFunction({
     resolve: async (request, context) => {
-      const includePath = resolve(dirname(context.sourceId), request);
-      const includeScript = await readFileIfExists(includePath);
-      if (includeScript === undefined) {
+      const importer = template.resolver.getResolvedTemplateBySourceId(
+        context.sourceId
+      );
+      if (!importer) {
+        return undefined;
+      }
+      const includeLogicalPath = resolveRelativeTemplateLogicalPath(
+        importer.logicalPath,
+        request
+      );
+      if (!includeLogicalPath) {
+        return undefined;
+      }
+      const resolvedTemplate =
+        await template.resolver.resolveTemplate(includeLogicalPath);
+      if (!resolvedTemplate) {
         return undefined;
       }
       return {
-        sourceId: includePath,
-        script: includeScript,
+        sourceId: resolvedTemplate.path,
+        script: resolvedTemplate.script,
       };
     },
     logs,
@@ -136,8 +266,7 @@ const renderFunCity = async (
  * Render a template with nested include handling.
  */
 export const renderTemplateWithImportHandler = async (
-  categoryIndexTemplatePath: string,
-  templateScript: string,
+  template: ResolvedTemplateFile,
   baseVariables: FunCityVariables,
   logs: FunCityLogEntry[],
   _importStack: readonly string[],
@@ -148,7 +277,7 @@ export const renderTemplateWithImportHandler = async (
     tryIncludeTemplate,
     importTemplate,
     tryImportTemplate,
-  } = createImportHandlers(logs);
+  } = createImportHandlers(template, logs);
 
   const variables = new Map(baseVariables);
   variables.set('include', includeTemplate);
@@ -157,8 +286,8 @@ export const renderTemplateWithImportHandler = async (
   variables.set('tryImport', tryImportTemplate);
 
   const result = await renderFunCity(
-    categoryIndexTemplatePath,
-    templateScript,
+    template.path,
+    template.script,
     variables,
     logs,
     signal
@@ -196,10 +325,48 @@ export const renderOptionalTemplateFile = async (
     return;
   }
 
+  const sourceDir = dirname(templatePath);
+  let templateBySourceId: ResolvedTemplateFile | undefined;
+  const singleFileResolver: TemplateResolver = {
+    templatesDir: sourceDir,
+    templateNames: ['<single-file>'],
+    resolveTemplate: async (logicalPath: string) => {
+      const normalizedLogicalPath = normalizeTemplateLogicalPath(logicalPath);
+      if (!normalizedLogicalPath) {
+        return undefined;
+      }
+      const resolvedPath = resolve(sourceDir, normalizedLogicalPath);
+      const script = await readFileIfExists(resolvedPath);
+      if (script === undefined) {
+        return undefined;
+      }
+      const resolvedTemplate: ResolvedTemplateFile = {
+        resolver: singleFileResolver,
+        templateName: '<single-file>',
+        logicalPath: normalizedLogicalPath,
+        path: resolvedPath,
+        script,
+      };
+      if (resolvedPath === templatePath) {
+        templateBySourceId = resolvedTemplate;
+      }
+      return resolvedTemplate;
+    },
+    getResolvedTemplateBySourceId: (sourceId: string) =>
+      sourceId === templatePath ? templateBySourceId : undefined,
+  };
+  const template: ResolvedTemplateFile = {
+    resolver: singleFileResolver,
+    templateName: '<single-file>',
+    logicalPath: basename(templatePath),
+    path: templatePath,
+    script: templateScript,
+  };
+  templateBySourceId = template;
+
   const logs: FunCityLogEntry[] = [];
   const rendered = await renderTemplateWithImportHandler(
-    templatePath,
-    templateScript,
+    template,
     baseVariables,
     logs,
     [templatePath],

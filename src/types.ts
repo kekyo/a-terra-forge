@@ -80,6 +80,8 @@ export interface ATerraForgeVariablesInput {
   userAgent?: string;
   /** Site template asset names rendered from templates directory. */
   siteTemplates?: readonly string[];
+  /** Template directory names searched in priority order. */
+  templateNames?: readonly string[];
   /** Glob patterns for static content files to copy. */
   contentFiles?: readonly string[];
   /** Menu ordering for primary navigation. */
@@ -128,6 +130,8 @@ export interface ATerraForgeConfig {
   codeHighlight: CodeHighlightOptions;
   /** Beautiful Mermaid configuration. */
   beautifulMermaid?: BeautifulMermaidPluginOptions;
+  /** Template directory names searched in priority order. */
+  templateNames: readonly string[];
   /** Glob patterns for static content files to copy. */
   contentFiles: readonly string[];
   /** Menu ordering for primary navigation. */

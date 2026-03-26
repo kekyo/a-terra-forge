@@ -31,12 +31,14 @@ const silentLogger: Logger = {
 
 const writePackageFixture = async (root: string) => {
   await mkdir(join(root, 'scaffold', '.assets'), { recursive: true });
-  await mkdir(join(root, 'scaffold', '.templates'), { recursive: true });
+  await mkdir(join(root, 'scaffold', '.templates', 'default'), {
+    recursive: true,
+  });
   await mkdir(join(root, 'scaffold', 'docs'), { recursive: true });
 
   await writeFile(join(root, 'scaffold', '.assets', 'icon.png'), 'new-icon');
   await writeFile(
-    join(root, 'scaffold', '.templates', 'site-style.css'),
+    join(root, 'scaffold', '.templates', 'default', 'site-style.css'),
     'new-style',
     'utf8'
   );
@@ -63,7 +65,9 @@ describe('updateScaffold', () => {
 
     await writePackageFixture(sourceRoot);
     await mkdir(join(destination, '.assets'), { recursive: true });
-    await mkdir(join(destination, '.templates'), { recursive: true });
+    await mkdir(join(destination, '.templates', 'default'), {
+      recursive: true,
+    });
     await mkdir(join(destination, 'docs'), { recursive: true });
     await writeConfig(join(destination, 'atr.json'), {
       version: '0.1.2',
@@ -71,7 +75,7 @@ describe('updateScaffold', () => {
     });
     await writeFile(join(destination, '.assets', 'icon.png'), 'old-icon');
     await writeFile(
-      join(destination, '.templates', 'site-style.css'),
+      join(destination, '.templates', 'default', 'site-style.css'),
       'old-style',
       'utf8'
     );
@@ -87,7 +91,10 @@ describe('updateScaffold', () => {
       await readFile(join(destination, '.assets', 'icon.png'), 'utf8')
     ).toBe('new-icon');
     expect(
-      await readFile(join(destination, '.templates', 'site-style.css'), 'utf8')
+      await readFile(
+        join(destination, '.templates', 'default', 'site-style.css'),
+        'utf8'
+      )
     ).toBe('new-style');
     expect(await readFile(join(destination, 'docs', 'index.md'), 'utf8')).toBe(
       'keep-doc'
@@ -106,7 +113,9 @@ describe('updateScaffold', () => {
 
     await writePackageFixture(sourceRoot);
     await mkdir(join(destination, 'custom-assets'), { recursive: true });
-    await mkdir(join(destination, 'custom-templates'), { recursive: true });
+    await mkdir(join(destination, 'custom-templates', 'default'), {
+      recursive: true,
+    });
     await writeConfig(join(destination, 'atr.json'), {
       version: '0.1.2',
       variables: {
@@ -116,7 +125,7 @@ describe('updateScaffold', () => {
     });
     await writeFile(join(destination, 'custom-assets', 'icon.png'), 'old-icon');
     await writeFile(
-      join(destination, 'custom-templates', 'site-style.css'),
+      join(destination, 'custom-templates', 'default', 'site-style.css'),
       'old-style',
       'utf8'
     );
@@ -132,7 +141,7 @@ describe('updateScaffold', () => {
     ).toBe('new-icon');
     expect(
       await readFile(
-        join(destination, 'custom-templates', 'site-style.css'),
+        join(destination, 'custom-templates', 'default', 'site-style.css'),
         'utf8'
       )
     ).toBe('new-style');

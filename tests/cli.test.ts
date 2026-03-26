@@ -77,7 +77,9 @@ describe('CLI distribution', () => {
       true
     );
     expect(
-      existsSync(join(destination, '.templates', 'index-timeline.html'))
+      existsSync(
+        join(destination, '.templates', 'default', 'index-timeline.html')
+      )
     ).toBe(true);
     expect(existsSync(join(destination, 'vite.config.ts'))).toBe(false);
 
@@ -116,7 +118,7 @@ describe('CLI distribution', () => {
     const scaffoldRoot = await copyScaffold(fn, 'scaffold-base-url');
 
     await writeFile(
-      join(scaffoldRoot, '.templates', 'index-category.html'),
+      join(scaffoldRoot, '.templates', 'default', 'index-category.html'),
       '<html><body>{{baseUrl}}</body></html>',
       'utf8'
     );
@@ -166,7 +168,7 @@ describe('CLI distribution', () => {
   it('updates scaffold-managed files from the dist CLI.', async (fn) => {
     const destination = await copyScaffold(fn, 'update');
     const expectedStyle = await readFile(
-      join('scaffold', '.templates', 'site-style.css'),
+      join('scaffold', '.templates', 'default', 'site-style.css'),
       'utf8'
     );
     const expectedIcon = await readFile(
@@ -174,7 +176,7 @@ describe('CLI distribution', () => {
     );
 
     await writeFile(
-      join(destination, '.templates', 'site-style.css'),
+      join(destination, '.templates', 'default', 'site-style.css'),
       'old-style',
       'utf8'
     );
@@ -189,7 +191,10 @@ describe('CLI distribution', () => {
     expectSuccess(result);
 
     expect(
-      await readFile(join(destination, '.templates', 'site-style.css'), 'utf8')
+      await readFile(
+        join(destination, '.templates', 'default', 'site-style.css'),
+        'utf8'
+      )
     ).toBe(expectedStyle);
     expect(await readFile(join(destination, '.assets', 'icon.png'))).toEqual(
       expectedIcon

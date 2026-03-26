@@ -169,8 +169,7 @@ export const generateBlogDocument = async (
 
       const entryErrors: FunCityLogEntry[] = [];
       const entryRendered = await renderTemplateWithImportHandler(
-        blogEntryTemplate.path,
-        blogEntryTemplate.script,
+        blogEntryTemplate,
         entryTemplateVariables,
         entryErrors,
         [blogEntryTemplate.path],
@@ -345,8 +344,7 @@ export const generateBlogDocument = async (
 
   const logs: FunCityLogEntry[] = [];
   const rendered = await renderTemplateWithImportHandler(
-    pageTemplate.path,
-    pageTemplate.script,
+    pageTemplate,
     templateVariables,
     logs,
     [pageTemplate.path],
@@ -436,8 +434,7 @@ export const generateBlogDocument = async (
       );
       const singleLogs: FunCityLogEntry[] = [];
       const singleRendered = await renderTemplateWithImportHandler(
-        blogSingleTemplate.path,
-        blogSingleTemplate.script,
+        blogSingleTemplate,
         singleTemplateVariables,
         singleLogs,
         [blogSingleTemplate.path],

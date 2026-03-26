@@ -22,6 +22,9 @@ const testDate = dayjs().format(`YYYYMMDD_HHmmss`);
 const createTempDir = async (fn: TestContext, name: string) => {
   const basePath = join('test_results', testDate, fn.task.name, name);
   await mkdir(basePath, { recursive: true });
+  if (name.includes('templates')) {
+    await mkdir(join(basePath, 'default'), { recursive: true });
+  }
   return basePath;
 };
 
@@ -29,33 +32,34 @@ const writeRequiredTemplates = async (
   templatesDir: string,
   options: { indexTemplate?: string; entryTemplate?: string } = {}
 ) => {
+  await mkdir(join(templatesDir, 'default'), { recursive: true });
   const indexTemplate =
     options.indexTemplate ?? '<html><body>{{timelineIndexPath}}</body></html>';
   const entryTemplate =
     options.entryTemplate ??
     '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>';
   await writeFile(
-    join(templatesDir, 'index-timeline.html'),
+    join(templatesDir, 'default', 'index-timeline.html'),
     indexTemplate,
     'utf8'
   );
   await writeFile(
-    join(templatesDir, 'timeline-entry.html'),
+    join(templatesDir, 'default', 'timeline-entry.html'),
     entryTemplate,
     'utf8'
   );
   await writeFile(
-    join(templatesDir, 'index-blog.html'),
+    join(templatesDir, 'default', 'index-blog.html'),
     '<html><body>{{blogIndexPath}}</body></html>',
     'utf8'
   );
   await writeFile(
-    join(templatesDir, 'blog-entry.html'),
+    join(templatesDir, 'default', 'blog-entry.html'),
     '<article><header>{{title}}</header><section>{{contentHtml}}</section></article>',
     'utf8'
   );
   await writeFile(
-    join(templatesDir, 'index-blog-single.html'),
+    join(templatesDir, 'default', 'index-blog-single.html'),
     '<html><body>{{for article articleEntries}}{{article.title}}{{end}}</body></html>',
     'utf8'
   );
@@ -366,12 +370,16 @@ Details here`,
     const fallbackTemplate =
       '<html><head><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" /></head><body>Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       fallbackTemplate,
       'utf8'
     );
     const cssContent = 'body { color: red; }';
-    await writeFile(join(templatesDir, 'site-style.css'), cssContent, 'utf8');
+    await writeFile(
+      join(templatesDir, 'default', 'site-style.css'),
+      cssContent,
+      'utf8'
+    );
     await writeRequiredTemplates(templatesDir);
 
     const options: ATerraForgeProcessingOptions = {
@@ -406,6 +414,7 @@ Details here`,
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
     await mkdir(assetsDir, { recursive: true });
     await writeFile(join(assetsDir, 'icon.png'), redPngBuffer);
 
@@ -457,37 +466,37 @@ Timeline body
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>CATEGORY:{{ogImagePath}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'index-timeline.html'),
+      join(templatesDir, 'default', 'index-timeline.html'),
       '<html><body>TIMELINE:{{ogImagePath}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'timeline-entry.html'),
+      join(templatesDir, 'default', 'timeline-entry.html'),
       '<article>{{title}}</article>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'index-blog.html'),
+      join(templatesDir, 'default', 'index-blog.html'),
       '<html><body>BLOG:{{ogImagePath}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'blog-entry.html'),
+      join(templatesDir, 'default', 'blog-entry.html'),
       '<article>{{title}}</article>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'index-blog-single.html'),
+      join(templatesDir, 'default', 'index-blog-single.html'),
       '<html><body>BLOG_SINGLE:{{ogImagePath}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'og-image-light.svg'),
+      join(templatesDir, 'default', 'og-image-light.svg'),
       `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0d1117" />
   <image href="{{toRelativePath siteIconAssetPath}}" x="24" y="24" width="96" height="96" />
@@ -496,7 +505,7 @@ Timeline body
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'og-image-timeline-light.svg'),
+      join(templatesDir, 'default', 'og-image-timeline-light.svg'),
       `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="320" viewBox="0 0 640 320">
   <rect width="640" height="320" fill="#161b22" />
   <text x="32" y="96" fill="#ffffff">{{truncateText siteName 24}}</text>
@@ -581,6 +590,7 @@ Timeline body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     await mkdir(join(docsDir, 'guide'), { recursive: true });
     await writeFile(
@@ -598,12 +608,12 @@ Guide body
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{if ogImagePath?}}{{ogImagePath}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'og-image.svg'),
+      join(templatesDir, 'default', 'og-image.svg'),
       `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0d1117" />
 </svg>`,
@@ -657,7 +667,7 @@ Guide body
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       `{{set articleEntry0 (first articleEntries)}}<html><body>{{articleEntry0.category}}</body></html>`,
       'utf8'
     );
@@ -693,10 +703,10 @@ Guide body
 # Guide`,
       'utf8'
     );
-
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html>{{for article articleEntries}}{{article.entryHtml}}{{end}}</html>',
       'utf8'
     );
@@ -739,16 +749,20 @@ Guide body
     const fallbackTemplate =
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       fallbackTemplate,
       'utf8'
     );
     const cssContent = `body { color: {{themeColor}}; }
 /* {{formatDate 'YYYY' '2024-02-03'}} */`;
-    await writeFile(join(templatesDir, 'site-style.css'), cssContent, 'utf8');
+    await writeFile(
+      join(templatesDir, 'default', 'site-style.css'),
+      cssContent,
+      'utf8'
+    );
     const scriptContent = `console.log('{{siteName}} {{formatDate 'YYYY-MM-DD' '2024-02-03'}}');`;
     await writeFile(
-      join(templatesDir, 'site-script.js'),
+      join(templatesDir, 'default', 'site-script.js'),
       scriptContent,
       'utf8'
     );
@@ -821,6 +835,7 @@ Guide body
     const imageDir = join(markdownDir, 'images');
     await mkdir(imageDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     await writeFile(join(markdownDir, 'index.md'), '# Entry', 'utf8');
 
@@ -830,12 +845,12 @@ Guide body
     await writeFile(join(markdownDir, 'notes.txt'), textContent, 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'site-style.css'),
+      join(templatesDir, 'default', 'site-style.css'),
       ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
@@ -912,8 +927,9 @@ Guide body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html></html>',
       'utf8'
     );
@@ -964,6 +980,7 @@ Guide body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const guideDir = join(docsDir, 'guide');
     const referenceDir = join(docsDir, 'reference');
@@ -981,7 +998,7 @@ Guide body
     await writeFile(join(referenceAssetsDir, 'ref.png'), 'ref-logo', 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>CAT:{{title}}</body></html>',
       'utf8'
     );
@@ -1068,13 +1085,14 @@ Guide body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const guideDir = join(docsDir, 'guide');
     await mkdir(guideDir, { recursive: true });
     await writeFile(join(guideDir, 'index.md'), '# Guide', 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{title}}</body></html>',
       'utf8'
     );
@@ -1116,10 +1134,11 @@ Guide body
     const apiDir = join(docsDir, 'guide', 'api');
     await mkdir(apiDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     await writeFile(join(apiDir, 'index.md'), '# API', 'utf8');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>CAT</body></html>',
       'utf8'
     );
@@ -1153,9 +1172,10 @@ Guide body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
     await writeFile(join(docsDir, 'index.md'), '# Root', 'utf8');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>CAT</body></html>',
       'utf8'
     );
@@ -1189,12 +1209,13 @@ Guide body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
     await mkdir(outDir, { recursive: true });
     await writeFile(join(outDir, 'sentinel.txt'), 'keep', 'utf8');
 
     await writeFile(join(docsDir, 'index.md'), '# Root', 'utf8');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>CAT</body></html>',
       'utf8'
     );
@@ -1231,6 +1252,7 @@ Guide body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const guideImagesDir = join(docsDir, 'guide', 'images');
     const rootImagesDir = join(docsDir, 'images');
@@ -1241,7 +1263,7 @@ Guide body
     await writeFile(join(docsDir, 'guide', 'index.md'), '# Guide', 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>CAT</body></html>',
       'utf8'
     );
@@ -1311,12 +1333,16 @@ More text
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
     const cssContent = 'body { color: green; }';
-    await writeFile(join(templatesDir, 'site-style.css'), cssContent, 'utf8');
+    await writeFile(
+      join(templatesDir, 'default', 'site-style.css'),
+      cssContent,
+      'utf8'
+    );
     await writeRequiredTemplates(templatesDir);
 
     const options: ATerraForgeProcessingOptions = {
@@ -1352,6 +1378,7 @@ More text
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const markdown = `---
 title: Frontmatter Title
@@ -1374,7 +1401,7 @@ title: Frontmatter Title
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -1461,7 +1488,7 @@ Body text
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -1500,6 +1527,7 @@ Body text
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const markdown = `---
 title: Entry
@@ -1524,7 +1552,7 @@ title: Entry
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -1591,12 +1619,12 @@ title: Beta
     await writeFile(join(articleDir, 'b-beta.md'), beta, 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'site-style.css'),
+      join(templatesDir, 'default', 'site-style.css'),
       ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
@@ -1651,7 +1679,7 @@ title: Beta
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.title}};{{end}}</body></html>',
       'utf8'
     );
@@ -1726,7 +1754,7 @@ title: Gamma
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.title}};{{end}}</body></html>',
       'utf8'
     );
@@ -1781,14 +1809,14 @@ title: Note
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       categoryTemplate,
       'utf8'
     );
     const entryTemplate =
       '<article data-entry="{{fileName}}">{{contentHtml}}</article>';
     await writeFile(
-      join(templatesDir, 'category-entry.html'),
+      join(templatesDir, 'default', 'category-entry.html'),
       entryTemplate,
       'utf8'
     );
@@ -1850,7 +1878,7 @@ Second body
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -1916,7 +1944,7 @@ Body text
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -1956,12 +1984,12 @@ Body text
     const fallbackTemplate =
       '<body><link rel="stylesheet" href="{{getSiteTemplatePath \'site-style.css\'}}" />Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       fallbackTemplate,
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'site-style.css'),
+      join(templatesDir, 'default', 'site-style.css'),
       'body { color: red; }',
       'utf8'
     );
@@ -2012,7 +2040,7 @@ Body text
     await mkdir(markdownDir, { recursive: true });
     await writeFile(join(markdownDir, 'sample.md'), '# Heading', 'utf8');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<body>No placeholder here</body>',
       'utf8'
     );
@@ -2056,7 +2084,7 @@ Details here
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -2089,7 +2117,7 @@ Details here
 
     const template = `<html><body>{{toRelativePath siteImage}}|{{toRelativePath siteIcon}}|{{toAbsolutePath siteImage}}|{{toAbsolutePath siteIcon}}</body></html>`;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -2140,7 +2168,7 @@ Details here
     await writeFile(join(markdownDir, 'index.md'), '# Guide', 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{toAbsolutePath siteImage}}</body></html>',
       'utf8'
     );
@@ -2198,7 +2226,11 @@ Details here
     await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
 
     const partial = `<section class="partial">{{greeting}} {{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
-    await writeFile(join(templatesDir, 'partial.html'), partial, 'utf8');
+    await writeFile(
+      join(templatesDir, 'default', 'partial.html'),
+      partial,
+      'utf8'
+    );
 
     const template = `
 <html>
@@ -2210,7 +2242,7 @@ Details here
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -2248,7 +2280,11 @@ Details here
     await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
 
     const partial = `<section class="partial">{{formatDate 'YYYY/MM/DD' '2024-03-05'}}</section>`;
-    await writeFile(join(templatesDir, 'partial.html'), partial, 'utf8');
+    await writeFile(
+      join(templatesDir, 'default', 'partial.html'),
+      partial,
+      'utf8'
+    );
 
     const template = `
 <html>
@@ -2260,7 +2296,7 @@ Details here
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -2281,6 +2317,68 @@ Details here
     expect(html).not.toContain('missing.html');
   });
 
+  it('Resolves templates from templateNames in priority order with fallback.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-template-names');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, '.templates');
+    const outDir = join(siteRoot, 'out');
+    const configPath = join(siteRoot, 'atr.json');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
+    await mkdir(join(templatesDir, 'great'), { recursive: true });
+
+    const markdownDir = join(docsDir, 'guide');
+    await mkdir(markdownDir, { recursive: true });
+    await writeFile(join(markdownDir, 'index.md'), '# Body', 'utf8');
+
+    await writeRequiredTemplates(templatesDir);
+    await writeFile(
+      join(templatesDir, 'default', 'partial.html'),
+      '<section>DEFAULT PARTIAL</section>',
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'great', 'index-category.html'),
+      "<html><body>GREAT {{include 'partial.html'}} {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>",
+      'utf8'
+    );
+    await writeFile(
+      join(templatesDir, 'great', 'site-style.css'),
+      'body { color: blue; }',
+      'utf8'
+    );
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          templateNames: ['great', 'default'],
+          siteTemplates: ['site-style.css'],
+        },
+      }),
+      'utf8'
+    );
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath: configPath,
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'guide', 'index.html'), 'utf8');
+    const css = await readFile(join(outDir, 'site-style.css'), 'utf8');
+
+    expect(html).toContain('GREAT');
+    expect(html).toContain('DEFAULT PARTIAL');
+    expect(css).toContain('color: blue');
+  });
+
   it('Renders timeline entry templates at build time.', async (fn) => {
     const docsDir = await createTempDir(fn, 'docs');
     const templatesDir = await createTempDir(fn, '.templates');
@@ -2299,14 +2397,14 @@ Details here
     const pageTemplate =
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       pageTemplate,
       'utf8'
     );
 
     const indexTemplate = '<html><body>{{timelineIndexPath}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-timeline.html'),
+      join(templatesDir, 'default', 'index-timeline.html'),
       indexTemplate,
       'utf8'
     );
@@ -2318,7 +2416,7 @@ Details here
 </article>
 `;
     await writeFile(
-      join(templatesDir, 'timeline-entry.html'),
+      join(templatesDir, 'default', 'timeline-entry.html'),
       entryTemplate,
       'utf8'
     );
@@ -2362,6 +2460,7 @@ Details here
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     await writeFile(
       join(docsDir, 'first.md'),
@@ -2377,7 +2476,7 @@ Details here
     const categoryTemplate =
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       categoryTemplate,
       'utf8'
     );
@@ -2417,6 +2516,7 @@ Details here
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const firstPath = join(docsDir, 'first.md');
     const secondPath = join(docsDir, 'second.md');
@@ -2441,12 +2541,12 @@ title: Second
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'site-style.css'),
+      join(templatesDir, 'default', 'site-style.css'),
       ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );
@@ -2503,6 +2603,7 @@ title: Second
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const firstPath = join(docsDir, 'first.md');
     const secondPath = join(docsDir, 'second.md');
@@ -2527,7 +2628,7 @@ title: Second
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
@@ -2595,6 +2696,7 @@ Dirty edit`,
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const committedPath = join(docsDir, 'committed.md');
     const uncommittedPath = join(docsDir, 'uncommitted.md');
@@ -2619,7 +2721,7 @@ title: Uncommitted
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
@@ -2671,6 +2773,7 @@ title: Uncommitted
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const blogDir = join(docsDir, 'blog');
     await mkdir(blogDir, { recursive: true });
@@ -2710,7 +2813,7 @@ title: Draft
     const fallbackTemplate =
       '<html><body>Fallback {{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       fallbackTemplate,
       'utf8'
     );
@@ -2728,17 +2831,17 @@ title: Draft
       '</body></html>',
     ].join('\n');
     await writeFile(
-      join(templatesDir, 'index-blog.html'),
+      join(templatesDir, 'default', 'index-blog.html'),
       blogIndexTemplate,
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'blog-entry.html'),
+      join(templatesDir, 'default', 'blog-entry.html'),
       '<article>BLOG_ENTRY:{{title}}|{{entrySinglePath}}</article>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'index-blog-single.html'),
+      join(templatesDir, 'default', 'index-blog-single.html'),
       '<html><body>SINGLE:{{for entry articleEntries}}{{entry.title}}{{end}}</body></html>',
       'utf8'
     );
@@ -3164,7 +3267,7 @@ title: Reference
     const pageTemplate =
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>';
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       pageTemplate,
       'utf8'
     );
@@ -3274,7 +3377,7 @@ title: Reference
       '</body></html>',
     ].join('\n');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       template,
       'utf8'
     );
@@ -3340,6 +3443,7 @@ title: Reference
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const writeDoc = async (directory: string, title: string) => {
       await mkdir(directory, { recursive: true });
@@ -3382,7 +3486,7 @@ title: ${title}
       '</body></html>',
     ].join('\n');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       navTemplate,
       'utf8'
     );
@@ -3432,6 +3536,7 @@ title: ${title}
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const markdown = `---
 title: Highlight
@@ -3449,7 +3554,7 @@ console.log(value);
     await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
@@ -3488,6 +3593,7 @@ console.log(value);
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const markdownDir = join(docsDir, 'notes');
     await mkdir(markdownDir, { recursive: true });
@@ -3564,7 +3670,7 @@ Dirty edit`,
 </html>
 `;
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       categoryTemplate,
       'utf8'
     );
@@ -3659,6 +3765,7 @@ Dirty edit`,
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const markdown = `---
 id: 7
@@ -3674,14 +3781,14 @@ Body
     await writeFile(join(markdownDir, 'index.md'), markdown, 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
 
     await writeFile(
-      join(templatesDir, 'sitemap.xml'),
+      join(templatesDir, 'default', 'sitemap.xml'),
       `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 {{for url sitemapUrls}}
@@ -3731,6 +3838,7 @@ Body
 
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const committedDir = join(docsDir, 'guide');
     await mkdir(committedDir, { recursive: true });
@@ -3767,14 +3875,14 @@ Draft body
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeRequiredTemplates(templatesDir);
 
     await writeFile(
-      join(templatesDir, 'feed.xml'),
+      join(templatesDir, 'default', 'feed.xml'),
       `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
@@ -3798,7 +3906,7 @@ Draft body
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'atom.xml'),
+      join(templatesDir, 'default', 'atom.xml'),
       `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
   <title>{{escapeXml feedTitle}}</title>
@@ -3904,7 +4012,7 @@ Draft body
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
@@ -3954,7 +4062,7 @@ ${sampleUrl}
     );
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
@@ -4030,12 +4138,12 @@ ${sampleUrl}
     await writeFile(join(markdownDir, 'index.md'), '# Theme', 'utf8');
 
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'site-style.css'),
+      join(templatesDir, 'default', 'site-style.css'),
       ":root { --primary-rgb: {{toCssRgb primaryColor? '0, 0, 0'}}; --secondary-rgb: {{toCssRgb secondaryColor? '0, 0, 0'}}; }",
       'utf8'
     );

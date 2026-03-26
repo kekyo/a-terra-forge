@@ -48,7 +48,8 @@ import {
 } from './process/helpers';
 import { defaultUserAgent, parseFrontmatterInfo } from './process/frontmatter';
 import {
-  readFileIfExists,
+  createTemplateResolver,
+  type ResolvedTemplateFile,
   renderTemplateWithImportHandler,
 } from './process/templates';
 import {
@@ -64,7 +65,6 @@ import {
 } from './process/navigation';
 import {
   generateDirectoryDocument,
-  type PageTemplateInfo,
   type RenderedArticleInfo,
 } from './process/directory';
 import { generateBlogDocument } from './process/blog';
@@ -194,28 +194,25 @@ const resolveMermaidRenderer = (
 
 type SiteTemplateEntry = {
   name: string;
-  templatePath: string;
+  template: ResolvedTemplateFile;
   outputPath: string;
-  script: string;
 };
 
 const resolveSiteTemplateEntries = async (
-  templatesDir: string,
+  templateResolver: ReturnType<typeof createTemplateResolver>,
   outDir: string,
   siteTemplates: readonly string[]
 ): Promise<SiteTemplateEntry[]> => {
   const entries = await Promise.all(
     siteTemplates.map(async (name) => {
-      const templatePath = resolve(templatesDir, name);
-      const script = await readFileIfExists(templatePath);
-      if (script === undefined) {
+      const template = await templateResolver.resolveTemplate(name);
+      if (template === undefined) {
         return undefined;
       }
       return {
         name,
-        templatePath,
+        template,
         outputPath: resolve(outDir, name),
-        script,
       } satisfies SiteTemplateEntry;
     })
   );
@@ -251,11 +248,10 @@ const renderSiteTemplates = async (
       );
       const logs: FunCityLogEntry[] = [];
       const rendered = await renderTemplateWithImportHandler(
-        entry.templatePath,
-        entry.script,
+        entry.template,
         variables,
         logs,
-        [entry.templatePath],
+        [entry.template.path],
         signal
       );
       const isError = outputErrors(logs);
@@ -350,6 +346,10 @@ export const generateDocs = async (
   logger.info(`Preparing...`);
 
   const configVariablesRaw = new Map(config.variables);
+  const templateResolver = createTemplateResolver(
+    templatesDir,
+    config.templateNames
+  );
 
   const mermaidRenderer = resolveMermaidRenderer(
     configVariablesRaw.get('mermaidRenderer'),
@@ -462,11 +462,11 @@ export const generateDocs = async (
 
   const outDir = await createOutputStagingDir(finalOutDir);
   const siteTemplateEntries = await resolveSiteTemplateEntries(
-    templatesDir,
+    templateResolver,
     outDir,
     siteTemplates
   );
-  const ogImageTemplates = await loadOgImageTemplates(templatesDir);
+  const ogImageTemplates = await loadOgImageTemplates(templateResolver);
   const baseUrlRaw = configVariablesRaw.get('baseUrl');
   const trimmedBaseUrl =
     typeof baseUrlRaw === 'string' ? baseUrlRaw.trim() : '';
@@ -565,14 +565,6 @@ export const generateDocs = async (
     const blogCategoryNames = new Set(config.blogCategories);
     const hasBlogCategories = blogCategoryNames.size > 0;
 
-    const categoryIndexTemplatePath = join(templatesDir, 'index-category.html');
-    const categoryEntryTemplatePath = join(templatesDir, 'category-entry.html');
-    const timelineIndexTemplatePath = join(templatesDir, 'index-timeline.html');
-    const timelineEntryTemplatePath = join(templatesDir, 'timeline-entry.html');
-    const blogIndexTemplatePath = join(templatesDir, 'index-blog.html');
-    const blogEntryTemplatePath = join(templatesDir, 'blog-entry.html');
-    const blogSingleTemplatePath = join(templatesDir, 'index-blog-single.html');
-
     const frontPagePrefix =
       frontPage !== timelineKey ? `${frontPage.replaceAll('\\', '/')}/` : '';
     const rewriteContentPath =
@@ -586,30 +578,30 @@ export const generateDocs = async (
         : undefined;
 
     const [
-      pageTemplateScript,
-      timelineIndexTemplateScript,
-      timelineEntryTemplateScript,
-      categoryEntryTemplateScript,
-      blogIndexTemplateScript,
-      blogEntryTemplateScript,
-      blogSingleTemplateScript,
+      pageTemplate,
+      timelineIndexTemplate,
+      timelineEntryTemplate,
+      categoryEntryTemplate,
+      blogIndexTemplate,
+      blogEntryTemplate,
+      blogSingleTemplate,
     ] = await Promise.all([
-      readFile(categoryIndexTemplatePath, { encoding: 'utf-8' }),
+      templateResolver.resolveTemplate('index-category.html'),
       includeTimeline
-        ? readFile(timelineIndexTemplatePath, { encoding: 'utf-8' })
+        ? templateResolver.resolveTemplate('index-timeline.html')
         : Promise.resolve(undefined),
       includeTimeline
-        ? readFile(timelineEntryTemplatePath, { encoding: 'utf-8' })
+        ? templateResolver.resolveTemplate('timeline-entry.html')
         : Promise.resolve(undefined),
-      readFileIfExists(categoryEntryTemplatePath),
+      templateResolver.resolveTemplate('category-entry.html'),
       hasBlogCategories
-        ? readFile(blogIndexTemplatePath, { encoding: 'utf-8' })
-        : Promise.resolve(undefined),
-      hasBlogCategories
-        ? readFile(blogEntryTemplatePath, { encoding: 'utf-8' })
+        ? templateResolver.resolveTemplate('index-blog.html')
         : Promise.resolve(undefined),
       hasBlogCategories
-        ? readFile(blogSingleTemplatePath, { encoding: 'utf-8' })
+        ? templateResolver.resolveTemplate('blog-entry.html')
+        : Promise.resolve(undefined),
+      hasBlogCategories
+        ? templateResolver.resolveTemplate('index-blog-single.html')
         : Promise.resolve(undefined),
       copyTargetContentFiles(docsDir, config.contentFiles, outDir, {
         rewritePath: rewriteContentPath,
@@ -617,54 +609,9 @@ export const generateDocs = async (
       }),
       copyAssetFiles(assetsDir, outDir, configPath),
     ]);
-
-    const pageTemplate: PageTemplateInfo = {
-      script: pageTemplateScript,
-      path: categoryIndexTemplatePath,
-    };
-
-    const timelineIndexTemplate: PageTemplateInfo | undefined =
-      timelineIndexTemplateScript
-        ? {
-            script: timelineIndexTemplateScript,
-            path: timelineIndexTemplatePath,
-          }
-        : undefined;
-    const timelineEntryTemplate: PageTemplateInfo | undefined =
-      timelineEntryTemplateScript
-        ? {
-            script: timelineEntryTemplateScript,
-            path: timelineEntryTemplatePath,
-          }
-        : undefined;
-    const categoryEntryTemplate: PageTemplateInfo | undefined =
-      categoryEntryTemplateScript
-        ? {
-            script: categoryEntryTemplateScript,
-            path: categoryEntryTemplatePath,
-          }
-        : undefined;
-    const blogIndexTemplate: PageTemplateInfo | undefined =
-      blogIndexTemplateScript
-        ? {
-            script: blogIndexTemplateScript,
-            path: blogIndexTemplatePath,
-          }
-        : undefined;
-    const blogEntryTemplate: PageTemplateInfo | undefined =
-      blogEntryTemplateScript
-        ? {
-            script: blogEntryTemplateScript,
-            path: blogEntryTemplatePath,
-          }
-        : undefined;
-    const blogSingleTemplate: PageTemplateInfo | undefined =
-      blogSingleTemplateScript
-        ? {
-            script: blogSingleTemplateScript,
-            path: blogSingleTemplatePath,
-          }
-        : undefined;
+    if (!pageTemplate) {
+      throw new Error('Category template is missing: index-category.html');
+    }
 
     const articleFileInfos = Array.from(
       filteredGroupedArticleFiles.values()

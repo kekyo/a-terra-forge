@@ -9,11 +9,11 @@ import { describe, expect, it } from 'vitest';
 describe('template dates', () => {
   it('renders created and updated dates in blog and timeline entries', async () => {
     const blogTemplate = await readFile(
-      'scaffold/.templates/blog-entry.html',
+      'scaffold/.templates/default/blog-entry.html',
       'utf8'
     );
     const timelineTemplate = await readFile(
-      'scaffold/.templates/timeline-entry.html',
+      'scaffold/.templates/default/timeline-entry.html',
       'utf8'
     );
 
@@ -36,11 +36,11 @@ describe('template dates', () => {
 
   it('uses aggregated created and updated dates for category pages and metadata', async () => {
     const categoryTemplate = await readFile(
-      'scaffold/.templates/index-category.html',
+      'scaffold/.templates/default/index-category.html',
       'utf8'
     );
     const commonHeader = await readFile(
-      'scaffold/.templates/common-header.html',
+      'scaffold/.templates/default/common-header.html',
       'utf8'
     );
 

@@ -135,6 +135,7 @@ describe('mergeATerraForgeConfig', () => {
       ]),
       messages: new Map([['', new Map([['hello', 'base']])]]),
       codeHighlight: {},
+      templateNames: ['default'],
       contentFiles: ['a.txt'],
       menuOrder: ['alpha'],
       afterMenuOrder: ['omega'],
@@ -185,6 +186,54 @@ describe('loadATerraForgeConfig', () => {
     expect(config.variables.get('outDir')).toBe(defaultOutDir);
     expect(config.variables.get('tmpDir')).toBe(defaultTmpDir);
     expect(config.variables.get('cacheDir')).toBe(defaultCacheDir);
+  });
+
+  it('defaults templateNames to default when missing.', async (fn) => {
+    const root = await createTempDir(fn, 'default-template-names');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(configPath, '{}', 'utf8');
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.templateNames).toEqual(['default']);
+    expect(config.variables.get('templateNames')).toEqual(['default']);
+  });
+
+  it('normalizes templateNames and removes duplicates.', async (fn) => {
+    const root = await createTempDir(fn, 'normalized-template-names');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          templateNames: [' great ', 'great/', 'default', 'default'],
+        },
+      }),
+      'utf8'
+    );
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.templateNames).toEqual(['great', 'default']);
+    expect(config.variables.get('templateNames')).toEqual(['great', 'default']);
+  });
+
+  it('rejects templateNames that escape the templates directory.', async (fn) => {
+    const root = await createTempDir(fn, 'invalid-template-names');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          templateNames: ['../outside'],
+        },
+      }),
+      'utf8'
+    );
+
+    await expect(loadATerraForgeConfig(configPath)).rejects.toThrow(
+      'variables.templateNames'
+    );
   });
 
   it('reads codeHighlight from variables when top-level is missing.', async (fn) => {

@@ -965,6 +965,7 @@ Below are all values defined in `atr.json` on `variables` key:
 |`assetsDir`|No|Asset directory path. Default is `.assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `.assets/favicon.ico` → `dist/favicon.ico`). |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
 |`templatesDir`|No|Overrides the templates directory. Default is `.templates/`. The path is resolved relative to the directory containing `atr.json`. |
+|`templateNames`|No|Template directory names under `templatesDir` searched in priority order. Default is `["default"]`. For example, `["great", "default"]` first loads `.templates/great/` and falls back to `.templates/default/` for missing files. |
 |`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
 |`tmpDir`|No|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
 |`cacheDir`|No|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |
@@ -1011,22 +1012,27 @@ my-page
 ├── .gitignore
 ├── .assets/  ...
 ├── .templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── common-header.html
-│   ├── feed.xml
-│   ├── index-blog-single.html
-│   ├── index-blog.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── site-script.js
-│   ├── site-style.css
-│   ├── sitemap.xml
-│   └── timeline-entry.html
+│   └── default
+│       ├── atom.xml
+│       ├── blog-entry.html
+│       ├── category-entry.html
+│       ├── common-header.html
+│       ├── feed.xml
+│       ├── index-blog-single.html
+│       ├── index-blog.html
+│       ├── index-category.html
+│       ├── index-timeline.html
+│       ├── navigation-bar.html
+│       ├── site-script.js
+│       ├── site-style.css
+│       ├── sitemap.xml
+│       └── timeline-entry.html
 └── .github/  ...
 ```
+
+The scaffold's standard templates live under `.templates/default/`.
+If you want themed overrides, add another directory such as `.templates/great/` and set `variables.templateNames` to `["great", "default"]`.
+Files found in `great` win, and missing files fall back to `default`.
 
 ### Transformation process
 
@@ -1314,16 +1320,19 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 
 #### Common customization examples
 
-1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/additional-header.html` and let `common-header.html` include it via `tryInclude`.
-2. If you want to split existing templates, create partial templates such as `.templates/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
+1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/default/additional-header.html` or `.templates/great/additional-header.html` and let `common-header.html` include it via `tryInclude`.
+2. If you want to split existing templates, create partial templates such as `.templates/default/parts/*.html` or `.templates/great/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
 3. If you want to apply localization inside your own added HTML, call `{{getMessage 'contact' 'Contact'}}` or `{{getMessage category}}` explicitly.
-4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/robots.txt` as a funcity script.
+4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/default/robots.txt` or the first themed directory from `templateNames` as a funcity script.
 
 For example, to add `robots.txt`, you can write:
 
 ```json
 {
   "variables": {
+    "templateNames": [
+      "default"
+    ],
     "siteTemplates": [
       "site-style.css",
       "site-script.js",
@@ -1335,6 +1344,8 @@ For example, to add `robots.txt`, you can write:
   }
 }
 ```
+
+Create the template file at `.templates/default/robots.txt` or under the first directory listed in `templateNames`.
 
 ```txt
 User-agent: *

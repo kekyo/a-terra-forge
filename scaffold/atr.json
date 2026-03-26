@@ -5,6 +5,7 @@
     "siteName": "atr-doc-site",
     "siteDescription": "Sample a-terra-forge site",
     "siteIconAssetPath": "icon.png",
+    "templateNames": ["default"],
     "frontPage": "timeline",
     "headerIcon": "activity",
     "primaryColor": "#0080ff",

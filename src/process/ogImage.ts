@@ -19,7 +19,11 @@ import {
   toPosixRelativePath,
   writeBinaryFile,
 } from '../utils';
-import { readFileIfExists, renderTemplateWithImportHandler } from './templates';
+import {
+  renderTemplateWithImportHandler,
+  type ResolvedTemplateFile,
+  type TemplateResolver,
+} from './templates';
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -31,8 +35,7 @@ export type OgImageEntryMode = 'category' | 'blog' | 'blog-single' | 'timeline';
 export type OgImageTheme = 'light' | 'dark';
 
 export interface OgImageTemplateInfo {
-  readonly script: string;
-  readonly path: string;
+  readonly template: ResolvedTemplateFile;
 }
 
 export interface OgImageTemplateSet {
@@ -232,14 +235,15 @@ const resolveTemplate = (
  * Resolve available OGP image templates from the templates directory.
  */
 export const loadOgImageTemplates = async (
-  templatesDir: string
+  templateResolver: TemplateResolver
 ): Promise<OgImageTemplateSet> => {
   const defaultEntries = await Promise.all(
     ogImageThemes.map(async (theme) => {
-      const themedPath = resolve(templatesDir, `og-image-${theme}.svg`);
-      const themedScript = await readFileIfExists(themedPath);
-      if (themedScript !== undefined) {
-        return [theme, { script: themedScript, path: themedPath }] as const;
+      const themedTemplate = await templateResolver.resolveTemplate(
+        `og-image-${theme}.svg`
+      );
+      if (themedTemplate !== undefined) {
+        return [theme, { template: themedTemplate }] as const;
       }
       return undefined;
     })
@@ -248,15 +252,13 @@ export const loadOgImageTemplates = async (
   const modeEntries = await Promise.all(
     ogImageEntryModes.flatMap((mode) =>
       ogImageThemes.map(async (theme) => {
-        const themedPath = resolve(
-          templatesDir,
+        const themedTemplate = await templateResolver.resolveTemplate(
           `og-image-${mode}-${theme}.svg`
         );
-        const themedScript = await readFileIfExists(themedPath);
-        if (themedScript !== undefined) {
+        if (themedTemplate !== undefined) {
           return [
             toTemplateKey(mode, theme),
-            { script: themedScript, path: themedPath },
+            { template: themedTemplate },
           ] as const;
         }
         return undefined;
@@ -323,11 +325,10 @@ export const renderOgImage = async ({
 
   const logs: FunCityLogEntry[] = [];
   const svg = await renderTemplateWithImportHandler(
-    template.path,
-    template.script,
+    template.template,
     variables,
     logs,
-    [template.path],
+    [template.template.path],
     signal
   );
 

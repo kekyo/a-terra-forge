@@ -56,6 +56,7 @@ describe('atrPreview', () => {
     const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     const previewRootBaseDir = resolve(join(rootDir, 'preview-root'));
@@ -169,6 +170,7 @@ describe('atrPreview', () => {
     const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     await writeFile(
@@ -350,6 +352,7 @@ describe('atrPreview', () => {
     const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     await writeFile(
@@ -465,6 +468,7 @@ describe('atrPreview', () => {
       const templatesDir = join(rootDir, '.templates');
       await mkdir(docsDir, { recursive: true });
       await mkdir(templatesDir, { recursive: true });
+      await mkdir(join(templatesDir, 'default'), { recursive: true });
 
       const configPath = join(rootDir, 'atr.json');
       await writeFile(
@@ -559,6 +563,7 @@ describe('atrPreview', () => {
     const srcDir = join(rootDir, 'src');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
     await mkdir(assetsDir, { recursive: true });
     await mkdir(srcDir, { recursive: true });
 
@@ -670,7 +675,7 @@ describe('atrPreview', () => {
     expect(ignored(join(rootDir, 'config.local.json'))).toBe(false);
     expect(ignored(join(rootDir, 'nested', 'config.json'))).toBe(true);
     expect(ignored(join(docsDir, 'index.md'))).toBe(false);
-    expect(ignored(join(templatesDir, 'index.html'))).toBe(false);
+    expect(ignored(join(templatesDir, 'default', 'index.html'))).toBe(false);
     expect(ignored(join(assetsDir, 'logo.png'))).toBe(false);
     expect(ignored(join(srcDir, 'index.ts'))).toBe(false);
     expect(ignored(join(rootDir, 'vite.config.ts'))).toBe(false);

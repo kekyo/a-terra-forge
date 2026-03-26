@@ -33,23 +33,23 @@ const assertCommonHeaderIncludeInHead = (html: string) => {
 describe('template theme', () => {
   it('applies theme before styles are loaded', async () => {
     const commonHeader = await readFile(
-      'scaffold/.templates/common-header.html',
+      'scaffold/.templates/default/common-header.html',
       'utf8'
     );
     const indexTemplate = await readFile(
-      'scaffold/.templates/index-timeline.html',
+      'scaffold/.templates/default/index-timeline.html',
       'utf8'
     );
     const categoryTemplate = await readFile(
-      'scaffold/.templates/index-category.html',
+      'scaffold/.templates/default/index-category.html',
       'utf8'
     );
     const blogTemplate = await readFile(
-      'scaffold/.templates/index-blog.html',
+      'scaffold/.templates/default/index-blog.html',
       'utf8'
     );
     const blogSingleTemplate = await readFile(
-      'scaffold/.templates/index-blog-single.html',
+      'scaffold/.templates/default/index-blog-single.html',
       'utf8'
     );
 

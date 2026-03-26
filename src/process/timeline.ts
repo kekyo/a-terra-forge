@@ -175,8 +175,7 @@ export const generateTimelineDocument = async (
 
       const entryErrors: FunCityLogEntry[] = [];
       const entryRendered = await renderTemplateWithImportHandler(
-        timelineEntryTemplate.path,
-        timelineEntryTemplate.script,
+        timelineEntryTemplate,
         entryTemplateVariables,
         entryErrors,
         [timelineEntryTemplate.path],
@@ -341,8 +340,7 @@ export const generateTimelineDocument = async (
 
   const logs: FunCityLogEntry[] = [];
   const rendered = await renderTemplateWithImportHandler(
-    indexTemplate.path,
-    indexTemplate.script,
+    indexTemplate,
     templateVariables,
     logs,
     [indexTemplate.path],

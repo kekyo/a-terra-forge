@@ -39,6 +39,9 @@ const testDate = dayjs().format(`YYYYMMDD_HHmmss`);
 const createTempDir = async (fn: TestContext, name: string) => {
   const basePath = join('test_results', testDate, fn.task.name, name);
   await mkdir(basePath, { recursive: true });
+  if (name.includes('templates')) {
+    await mkdir(join(basePath, 'default'), { recursive: true });
+  }
   return basePath;
 };
 
@@ -56,17 +59,17 @@ describe('generateDocs', () => {
 
     await writeFile(join(docsDir, 'entry.md'), '# Title', 'utf8');
     await writeFile(
-      join(templatesDir, 'index-category.html'),
+      join(templatesDir, 'default', 'index-category.html'),
       '<html><body>{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'index-timeline.html'),
+      join(templatesDir, 'default', 'index-timeline.html'),
       '<html><body>{{timelineIndexPath}}</body></html>',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'timeline-entry.html'),
+      join(templatesDir, 'default', 'timeline-entry.html'),
       '<article>{{contentHtml}}</article>',
       'utf8'
     );

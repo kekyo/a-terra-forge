@@ -27,7 +27,10 @@ import {
   toPosixPath,
 } from './helpers';
 import { type CategoryEntry, createEntryGetter } from './entries';
-import { renderTemplateWithImportHandler } from './templates';
+import {
+  type ResolvedTemplateFile,
+  renderTemplateWithImportHandler,
+} from './templates';
 import {
   buildNavItems,
   getDirectoryLabel,
@@ -44,13 +47,7 @@ import {
 
 //////////////////////////////////////////////////////////////////////////////
 
-/**
- * Template script and origin path.
- */
-export interface PageTemplateInfo {
-  readonly script: string;
-  readonly path: string;
-}
+export type PageTemplateInfo = ResolvedTemplateFile;
 
 /**
  * Rendered article content snapshot.
@@ -199,8 +196,7 @@ export const generateDirectoryDocument = async (
 
           const entryErrors: FunCityLogEntry[] = [];
           const entryRendered = await renderTemplateWithImportHandler(
-            categoryEntryTemplate.path,
-            categoryEntryTemplate.script,
+            categoryEntryTemplate,
             entryTemplateVariables,
             entryErrors,
             [categoryEntryTemplate.path],
@@ -340,8 +336,7 @@ export const generateDirectoryDocument = async (
 
   const logs: FunCityLogEntry[] = [];
   const rendered = await renderTemplateWithImportHandler(
-    pageTemplate.path,
-    pageTemplate.script,
+    pageTemplate,
     templateVariables,
     logs,
     [pageTemplate.path],
