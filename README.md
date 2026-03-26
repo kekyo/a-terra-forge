@@ -662,7 +662,6 @@ To customize this, define the `messages` variable in `atr.json`:
   },
   "messages": {
     "en": {
-      "date": "Date",
       "createdDate": "Created",
       "updatedDate": "Updated",
       "author": "Author",
@@ -675,7 +674,6 @@ To customize this, define the `messages` variable in `atr.json`:
       "uncommitted": "uncommitted"
     },
     "ja": {
-      "date": "日時",
       "createdDate": "執筆日",
       "updatedDate": "更新日",
       "author": "執筆者",

@@ -663,7 +663,6 @@ New article created: food/index.md
   },
   "messages": {
     "en": {
-      "date": "Date",
       "createdDate": "Created",
       "updatedDate": "Updated",
       "author": "Author",
@@ -676,7 +675,6 @@ New article created: food/index.md
       "uncommitted": "uncommitted"
     },
     "ja": {
-      "date": "日時",
       "createdDate": "執筆日",
       "updatedDate": "更新日",
       "author": "執筆者",
