@@ -1,8 +1,12 @@
 {
+  "version": "0.1.2",
   "variables": {
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",
     "siteDescription": "Sample a-terra-forge site",
+    "fontList": ["Noto Sans", "sans-serif"],
+    "siteIconAssetPath": "icon.png",
+    "templateNames": ["default"],
     "frontPage": "timeline",
     "headerIcon": "activity",
     "primaryColor": "#0080ff",
@@ -21,7 +25,8 @@
   },
   "messages": {
     "en": {
-      "date": "Date",
+      "createdDate": "Created",
+      "updatedDate": "Updated",
       "author": "Author",
       "category": "Category",
       "tags": "Tags",
@@ -33,7 +38,8 @@
       "uncommitted": "uncommitted"
     },
     "ja": {
-      "date": "日時",
+      "createdDate": "執筆日",
+      "updatedDate": "更新日",
       "author": "執筆者",
       "category": "カテゴリ",
       "tags": "タグ",

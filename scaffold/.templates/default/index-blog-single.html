@@ -10,7 +10,7 @@ set articleEntry0 (first articleEntries)
 set pageTitle articleEntry0.title
 set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
 set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
-set committerDates (map (fun date (formatDate date)) (sort (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
 set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
 }}
 {{
@@ -22,35 +22,12 @@ if locale?
 {{end}}
   <head prefix="og: http://ogp.me/ns# fb: http://ogp.me/ns/fb# article: http://ogp.me/ns/article#">
     {{include 'common-header.html'}}
-    <meta property="og:type" content="article">
+    <meta property="og:type" content="blog">
   </head>
   <body>
 {{include 'navigation-bar.html'}}
     <div class="docs-outer">
       <div class="docs">
-        <div class="article-entry">
-          <div class="entry-header">
-            <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}{{if articleEntry0.anchorId?}} data-anchor="{{articleEntry0.anchorId}}"{{end}}>{{articleEntry0.title}}</h1>
-            {{if (not hideMeta?)}}
-            <div class="entry-meta">
-              {{if (length articleTags)}}
-              <p>
-                <span class="me-1">{{getMessage 'tags'}}:</span>
-                {{join ',' (map (fun tag (concat '<span class="badge rounded-pill">' tag '</span>')) articleTags)}}
-              </p>
-              {{end}}
-              {{if articleEntry0.git?}}
-                {{if (length committerDates)}}
-                <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' articleEntry0.git.committer.date}}</p>
-                {{end}}
-                {{if (length authorNames)}}
-                <p>{{getMessage 'author'}}: {{getMessage articleEntry0.git.author.name}}</p>
-                {{end}}
-              {{end}}
-            </div>
-            {{end}}
-          </div>
-        </div>
         {{
         for articleEntry articleEntries
           getEntry articleEntry

@@ -1,10 +1,12 @@
-<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}"{{if entrySinglePath?}} data-entry-url="{{entrySinglePath}}"{{end}}>
+<article class="stream-entry article-entry{{if (not git?)}} article-entry--no-git{{elseif git.dirty?}} article-entry--dirty{{end}}"{{if entrySinglePath?}} data-entry-url="{{entrySinglePath}}"{{elseif categoryPath?}} data-entry-url="{{categoryPath}}"{{end}}>
   <header class="entry-header">
     <h1{{if headerIconCode?}} style="--header-icon: '{{headerIconCode}}';"{{end}}{{if anchorId?}} data-anchor="{{anchorId}}"{{end}}>
       {{
       if entrySinglePath?
       }}
       <a href="{{entrySinglePath}}">{{title}}</a>
+      {{elseif categoryPath?}}
+      <a href="{{categoryPath}}{{if anchorId?}}#{{anchorId}}{{end}}">{{title}}</a>
       {{
       else
         title
@@ -24,8 +26,8 @@
       {{end}}
       {{
       if tags?
-        set articleTags (distinct tags)
-        if (length articleTags)
+        set articleTags (distinct (map (fun tag (getMessage tag)) tags?))
+        if (length articleTags) 
       }}
       <p>
         <span class="me-1">{{getMessage 'tags'}}:</span>
@@ -37,10 +39,23 @@
       }}
       {{
       if git?
-        if git.committer.date?
+        if git.created.committer.date?
       }}
-      <p>{{getMessage 'date'}}: {{formatDate 'YYYY/MM/DD' git.committer.date}}</p>
+      <p>{{getMessage 'createdDate'}}: {{formatDate 'YYYY/MM/DD' git.created.committer.date}}</p>
       {{
+        end
+        if git.updated.committer.date?
+          if git.created.committer.date?
+            if (not (eq git.updated.committer.date git.created.committer.date))
+      }}
+      <p>{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' git.updated.committer.date}}</p>
+      {{
+            end
+          else
+      }}
+      <p>{{getMessage 'updatedDate'}}: {{formatDate 'YYYY/MM/DD' git.updated.committer.date}}</p>
+      {{
+          end
         end
         if git.author.name?
       }}

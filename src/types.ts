@@ -40,8 +40,6 @@ export interface ATerraForgeProcessingOptions {
   docsDir?: string;
   /** Template directory (defaults to ".templates" when omitted). */
   templatesDir?: string;
-  /** Asset directory (defaults to ".assets" when omitted). */
-  assetsDir?: string;
   /** Output directory (defaults to "dist" when omitted). */
   outDir?: string;
   /** Temporary working directory base (defaults to the system temp directory when omitted). */
@@ -66,8 +64,6 @@ export interface ATerraForgeVariablesInput {
   docsDir?: string;
   /** Template directory. */
   templatesDir?: string;
-  /** Asset directory. */
-  assetsDir?: string;
   /** Output directory. */
   outDir?: string;
   /** Temporary working directory base. */
@@ -80,6 +76,8 @@ export interface ATerraForgeVariablesInput {
   userAgent?: string;
   /** Site template asset names rendered from templates directory. */
   siteTemplates?: readonly string[];
+  /** Template directory names searched in priority order. */
+  templateNames?: readonly string[];
   /** Glob patterns for static content files to copy. */
   contentFiles?: readonly string[];
   /** Menu ordering for primary navigation. */
@@ -88,6 +86,8 @@ export interface ATerraForgeVariablesInput {
   afterMenuOrder?: readonly string[];
   /** Categories rendered with blog-style ordering and templates. */
   blogCategories?: readonly string[];
+  /** Font family fallback list used by default CSS and SVG templates. */
+  fontList?: readonly string[];
   /** Code highlighting configuration values. */
   codeHighlight?: Record<string, unknown>;
   /** Additional variable entries. */
@@ -128,6 +128,8 @@ export interface ATerraForgeConfig {
   codeHighlight: CodeHighlightOptions;
   /** Beautiful Mermaid configuration. */
   beautifulMermaid?: BeautifulMermaidPluginOptions;
+  /** Template directory names searched in priority order. */
+  templateNames: readonly string[];
   /** Glob patterns for static content files to copy. */
   contentFiles: readonly string[];
   /** Menu ordering for primary navigation. */
@@ -175,7 +177,10 @@ export interface GitStatusMetadata {
   stage: number;
 }
 
-export interface GitCommitMetadata {
+/**
+ * Git revision metadata for a specific commit in a document history.
+ */
+export interface GitRevisionMetadata {
   oid: string;
   shortOid: string;
   message: string;
@@ -185,7 +190,20 @@ export interface GitCommitMetadata {
   tree: string;
   author: GitUserMetadata;
   committer: GitUserMetadata;
+}
+
+/**
+ * Git metadata attached to a rendered document.
+ *
+ * @remarks
+ * The top-level commit fields remain aliases of the latest update commit for
+ * backward compatibility. `created` points to the earliest reachable commit of
+ * the document, while `updated` points to the latest commit.
+ */
+export interface GitCommitMetadata extends GitRevisionMetadata {
   file: GitFileMetadata;
   status?: GitStatusMetadata;
   dirty?: boolean;
+  created: GitRevisionMetadata;
+  updated: GitRevisionMetadata;
 }

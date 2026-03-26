@@ -6,8 +6,14 @@
     <meta name="description" content="{{pageDescription}}">
     <meta property="og:description" content="{{pageDescription}}">
     <meta property="og:site_name" content="{{siteName}}">
-    {{if siteImage?}}
-    <meta property="og:image" content="{{toRelativePath siteImage}}">
+    {{if ogImagePath?}}
+    <meta property="og:image" content="{{toAbsolutePath ogImagePath}}">
+    <meta name="twitter:image" content="{{toAbsolutePath ogImagePath}}">
+    {{else}}
+      {{if siteImage?}}
+    <meta property="og:image" content="{{toAbsolutePath siteImage}}">
+    <meta name="twitter:image" content="{{toAbsolutePath siteImage}}">
+      {{end}}
     {{end}}
     {{if locale?}}
     <meta property="og:locale" content="{{locale}}">
@@ -23,7 +29,7 @@
     {{
     if (length committerDates)
     }}
-    <meta property="article:modified_time" content="{{formatDate (last committerDates)}}">
+    <meta property="article:modified_time" content="{{last committerDates}}">
     {{end}}
     {{
     if (length articleTags)

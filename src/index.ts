@@ -20,13 +20,13 @@ import {
 import { generateDocs } from './process';
 import { initScaffold } from './init';
 import { createNewArticle } from './new';
+import { updateScaffold } from './update';
 import type {
   ATerraForgeConfigOverrides,
   ATerraForgeProcessingOptions,
 } from './types';
 import {
   type ConsoleLogLevel,
-  defaultAssetDir,
   defaultCacheDir,
   defaultDocsDir,
   defaultOutDir,
@@ -59,7 +59,6 @@ const resolveCliPath = (value: unknown): string | undefined => {
 type BuildCliOptions = {
   docs?: string;
   templates?: string;
-  assets?: string;
   out?: string;
   temp?: string;
   cache?: string;
@@ -70,6 +69,12 @@ type BuildCliOptions = {
 
 type NewCliOptions = {
   config?: string;
+  log?: ConsoleLogLevel;
+};
+
+type UpdateCliOptions = {
+  config?: string;
+  force?: boolean;
   log?: ConsoleLogLevel;
 };
 
@@ -102,7 +107,6 @@ const resolveBuildOptions = async (
   const configDir = dirname(configPath);
   const defaultDocsDirResolved = resolve(configDir, defaultDocsDir);
   const defaultTemplatesDirResolved = resolve(configDir, defaultTemplatesDir);
-  const defaultAssetsDirResolved = resolve(configDir, defaultAssetDir);
   const defaultOutDirResolved = resolve(configDir, defaultOutDir);
   const defaultTmpDirResolved = resolve(configDir, defaultTmpDir);
   const defaultCacheDirResolved = resolve(configDir, defaultCacheDir);
@@ -115,10 +119,6 @@ const resolveBuildOptions = async (
       resolveCliPath(opts.templates) ??
       variableOptions.templatesDir ??
       defaultTemplatesDirResolved,
-    assetsDir:
-      resolveCliPath(opts.assets) ??
-      variableOptions.assetsDir ??
-      defaultAssetsDirResolved,
     outDir:
       resolveCliPath(opts.out) ??
       variableOptions.outDir ??
@@ -182,7 +182,6 @@ if (isDirectExecution) {
     .summary('Build static site contents for deployment')
     .addOption(new Option('-d, --docs <dir>', 'Markdown document directory'))
     .addOption(new Option('-t, --templates <dir>', 'Template directory'))
-    .addOption(new Option('-a, --assets <dir>', 'Asset directory'))
     .addOption(new Option('-o, --out <dir>', 'Output directory'))
     .addOption(new Option('--temp <dir>', 'Temporary working directory'))
     .addOption(new Option('--cache <dir>', 'Cache directory'))
@@ -268,6 +267,32 @@ if (isDirectExecution) {
       const result = await createNewArticle({ docsDir, category });
       const relativePath = toPosixRelativePath(docsDir, result.path);
       logger.info(`New article created: ${relativePath}`);
+    });
+
+  program
+    .command('update')
+    .summary('Overwrite scaffold-managed templates and template assets')
+    .addOption(new Option('-f, --force', 'Overwrite regardless of version'))
+    .addOption(
+      new Option(
+        '-c, --config <path>',
+        'Config file path (atr.json5/atr.jsonc/atr.json)'
+      )
+    )
+    .addOption(
+      new Option('--log <level>', 'Log level').choices(logLevelChoices)
+    )
+    .action(async (opts: UpdateCliOptions) => {
+      banner();
+      const logLevel = resolveLogLevel(opts.log);
+      const configPath = opts.config
+        ? resolve(opts.config)
+        : resolveATerraForgeConfigPathFromDir(process.cwd());
+      await updateScaffold({
+        configPath,
+        force: opts.force ?? false,
+        logger: getTrimmingConsoleLogger(logLevel),
+      });
     });
 
   program.parseAsync(process.argv).catch((error) => {

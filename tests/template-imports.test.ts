@@ -3,16 +3,31 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { mkdtemp, writeFile } from 'fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'fs/promises';
 import { tmpdir } from 'os';
-import { join } from 'path';
+import { dirname, join } from 'path';
 import { describe, expect, it } from 'vitest';
 import { outputErrors, type FunCityLogEntry } from 'funcity';
 
-import { renderTemplateWithImportHandler } from '../src/process/templates';
+import {
+  createTemplateResolver,
+  renderTemplateWithImportHandler,
+} from '../src/process/templates';
 
 const createTempDir = async (name: string): Promise<string> =>
   await mkdtemp(join(tmpdir(), `atr-template-imports-${name}-`));
+
+const writeTemplate = async (
+  templatesDir: string,
+  templateName: string,
+  logicalPath: string,
+  content: string
+) => {
+  const filePath = join(templatesDir, templateName, logicalPath);
+  await mkdir(join(templatesDir, templateName), { recursive: true });
+  await mkdir(dirname(filePath), { recursive: true });
+  await writeFile(filePath, content, 'utf8');
+};
 
 const collectErrorLines = (logs: readonly FunCityLogEntry[]): string[] => {
   const lines: string[] = [];
@@ -24,19 +39,24 @@ const collectErrorLines = (logs: readonly FunCityLogEntry[]): string[] => {
 };
 
 const renderTemplate = async (
-  templatePath: string,
-  templateScript: string
+  templatesDir: string,
+  logicalPath: string,
+  templateNames: readonly string[] = ['default']
 ): Promise<{
   readonly logs: FunCityLogEntry[];
   readonly lines: string[];
 }> => {
+  const resolver = createTemplateResolver(templatesDir, templateNames);
+  const template = await resolver.resolveTemplate(logicalPath);
+  if (!template) {
+    throw new Error(`Template not found for test: ${logicalPath}`);
+  }
   const logs: FunCityLogEntry[] = [];
   await renderTemplateWithImportHandler(
-    templatePath,
-    templateScript,
+    template,
     new Map<string, unknown>(),
     logs,
-    [templatePath],
+    [template.path],
     new AbortController().signal
   );
   return {
@@ -47,12 +67,14 @@ const renderTemplate = async (
 
 describe('template include rendering', () => {
   it('keeps parse error source ids isolated for cached templates.', async () => {
-    const templateScript = '{{if true}}';
-    const firstPath = '/virtual/templates/first.html';
-    const secondPath = '/virtual/templates/second.html';
+    const dir = await createTempDir('isolated');
+    await writeTemplate(dir, 'default', 'first.html', '{{if true}}');
+    await writeTemplate(dir, 'default', 'second.html', '{{if true}}');
 
-    const firstResult = await renderTemplate(firstPath, templateScript);
-    const secondResult = await renderTemplate(secondPath, templateScript);
+    const firstPath = join(dir, 'default', 'first.html');
+    const secondPath = join(dir, 'default', 'second.html');
+    const firstResult = await renderTemplate(dir, 'first.html');
+    const secondResult = await renderTemplate(dir, 'second.html');
 
     expect(firstResult.logs.length).toBeGreaterThan(0);
     expect(secondResult.logs.length).toBeGreaterThan(0);
@@ -72,13 +94,16 @@ describe('template include rendering', () => {
 
   it('reports parse errors from included templates using the included path.', async () => {
     const dir = await createTempDir('parse');
-    const parentPath = join(dir, 'parent.html');
-    const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{include 'partial.html'}}";
+    const partialPath = join(dir, 'default', 'partial.html');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'partial.html'}}"
+    );
+    await writeTemplate(dir, 'default', 'partial.html', '{{if true}}');
 
-    await writeFile(partialPath, '{{if true}}', 'utf8');
-
-    const result = await renderTemplate(parentPath, parentScript);
+    const result = await renderTemplate(dir, 'parent.html');
 
     expect(result.lines.some((line) => line.includes(`${partialPath}:`))).toBe(
       true
@@ -87,13 +112,16 @@ describe('template include rendering', () => {
 
   it('reports reducer errors from included templates using the included path.', async () => {
     const dir = await createTempDir('reducer');
-    const parentPath = join(dir, 'parent.html');
-    const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{include 'partial.html'}}";
+    const partialPath = join(dir, 'default', 'partial.html');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'partial.html'}}"
+    );
+    await writeTemplate(dir, 'default', 'partial.html', '{{missingVar}}');
 
-    await writeFile(partialPath, '{{missingVar}}', 'utf8');
-
-    const result = await renderTemplate(parentPath, parentScript);
+    const result = await renderTemplate(dir, 'parent.html');
 
     expect(result.lines.some((line) => line.includes(`${partialPath}:`))).toBe(
       true
@@ -103,11 +131,16 @@ describe('template include rendering', () => {
 
   it('reports missing included templates using the importer path.', async () => {
     const dir = await createTempDir('missing');
-    const parentPath = join(dir, 'parent.html');
-    const missingPath = join(dir, 'missing.html');
-    const parentScript = "{{include 'missing.html'}}";
+    const parentPath = join(dir, 'default', 'parent.html');
+    const missingPath = join(dir, 'default', 'missing.html');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'missing.html'}}"
+    );
 
-    const result = await renderTemplate(parentPath, parentScript);
+    const result = await renderTemplate(dir, 'parent.html');
 
     expect(result.lines.some((line) => line.includes(`${parentPath}:`))).toBe(
       true
@@ -122,14 +155,21 @@ describe('template include rendering', () => {
 
   it('reports circular includes using the importer node path.', async () => {
     const dir = await createTempDir('circular');
-    const parentPath = join(dir, 'parent.html');
-    const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{include 'partial.html'}}";
+    const partialPath = join(dir, 'default', 'partial.html');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'partial.html'}}"
+    );
+    await writeTemplate(
+      dir,
+      'default',
+      'partial.html',
+      "{{include 'parent.html'}}"
+    );
 
-    await writeFile(parentPath, parentScript, 'utf8');
-    await writeFile(partialPath, "{{include 'parent.html'}}", 'utf8');
-
-    const result = await renderTemplate(parentPath, parentScript);
+    const result = await renderTemplate(dir, 'parent.html');
 
     expect(result.lines.some((line) => line.includes(`${partialPath}:`))).toBe(
       true
@@ -141,14 +181,21 @@ describe('template include rendering', () => {
 
   it('keeps import aliases working inside nested includes.', async () => {
     const dir = await createTempDir('alias');
-    const parentPath = join(dir, 'parent.html');
-    const partialPath = join(dir, 'partial.html');
-    const parentScript = "{{include 'partial.html'}}";
+    const partialPath = join(dir, 'default', 'partial.html');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'partial.html'}}"
+    );
+    await writeTemplate(
+      dir,
+      'default',
+      'partial.html',
+      "{{import 'parent.html'}}"
+    );
 
-    await writeFile(parentPath, parentScript, 'utf8');
-    await writeFile(partialPath, "{{import 'parent.html'}}", 'utf8');
-
-    const result = await renderTemplate(parentPath, parentScript);
+    const result = await renderTemplate(dir, 'parent.html');
 
     expect(result.lines.some((line) => line.includes(`${partialPath}:`))).toBe(
       true
@@ -156,5 +203,56 @@ describe('template include rendering', () => {
     expect(
       result.lines.some((line) => line.includes('circular include detected'))
     ).toBe(true);
+  });
+
+  it('falls back to later template directories for missing included templates.', async () => {
+    const dir = await createTempDir('fallback');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'partial.html'}}"
+    );
+    await writeTemplate(dir, 'default', 'partial.html', '{{if true}}');
+
+    const result = await renderTemplate(dir, 'parent.html', [
+      'great',
+      'default',
+    ]);
+
+    expect(result.lines.length).toBeGreaterThan(0);
+    expect(
+      result.lines.some((line) =>
+        line.includes(join(dir, 'default', 'partial.html'))
+      )
+    ).toBe(true);
+  });
+
+  it('prefers higher-priority template directories for included templates.', async () => {
+    const dir = await createTempDir('override');
+    await writeTemplate(
+      dir,
+      'default',
+      'parent.html',
+      "{{include 'partial.html'}}"
+    );
+    await writeTemplate(dir, 'default', 'partial.html', '{{missingDefault}}');
+    await writeTemplate(dir, 'great', 'partial.html', '{{missingGreat}}');
+
+    const result = await renderTemplate(dir, 'parent.html', [
+      'great',
+      'default',
+    ]);
+
+    expect(
+      result.lines.some((line) =>
+        line.includes(join(dir, 'great', 'partial.html'))
+      )
+    ).toBe(true);
+    expect(
+      result.lines.some((line) =>
+        line.includes(join(dir, 'default', 'partial.html'))
+      )
+    ).toBe(false);
   });
 });

@@ -17,12 +17,15 @@ const testDate = dayjs().format(`YYYYMMDD_HHmmss`);
 const createTempDir = async (fn: TestContext, name: string) => {
   const basePath = join('test_results', testDate, fn.task.name, name);
   await mkdir(basePath, { recursive: true });
+  if (name.includes('templates')) {
+    await mkdir(join(basePath, 'default'), { recursive: true });
+  }
   return basePath;
 };
 
 const writeCategoryTemplate = async (templatesDir: string) => {
   await writeFile(
-    join(templatesDir, 'index-category.html'),
+    join(templatesDir, 'default', 'index-category.html'),
     "<html><body>{{if (eq mermaidRenderer 'mermaid')}}mermaid-runtime{{end}}{{for article articleEntries}}{{article.entryHtml}}{{end}}</body></html>",
     'utf8'
   );

@@ -44,8 +44,26 @@ const extractMediaBlock = (css: string, mediaQuery: string) =>
   extractMediaBlocks(css, mediaQuery)[0] ?? null;
 
 describe('template style', () => {
+  it('defines a configurable base font family from fontList', async () => {
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
+
+    expect(css).toContain(
+      "--font-family-base: {{cond fontList? (join ', ' fontList) 'Noto Sans, sans-serif'}};"
+    );
+    expect(css).toMatch(/--bs-body-font-family:\s*var\(--font-family-base\);/);
+    expect(css).toMatch(
+      /body\s*\{[^}]*display:\s*flex;[^}]*font-family:\s*var\(--font-family-base\);/
+    );
+  });
+
   it('sets smaller docs padding for the smartphone breakpoint', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const mediaBlocks = extractMediaBlocks(css, '@media (max-width: 575.98px)');
 
     expect(mediaBlocks.length).toBeGreaterThan(0);
@@ -57,7 +75,10 @@ describe('template style', () => {
   });
 
   it('truncates navbar labels for the expanded navbar breakpoint', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const mediaBlock = extractMediaBlock(css, '@media (min-width: 576px)');
 
     expect(mediaBlock).not.toBeNull();
@@ -76,7 +97,10 @@ describe('template style', () => {
   });
 
   it('darkens the light theme navbar background', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const navMatch = css.match(
       /\[data-bs-theme="light"\]\s+\.navbar\.bg-body-tertiary\s*\{([^}]*)\}/
     );
@@ -87,7 +111,10 @@ describe('template style', () => {
   });
 
   it('sizes the image modal to the viewport width minus spacing', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const dialogMatch = css.match(
       /\.image-modal\s+\.image-modal-dialog\s*\{([^}]*)\}/
     );
@@ -101,7 +128,10 @@ describe('template style', () => {
   });
 
   it('clips image modal content to the rounded border', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const contentMatch = css.match(
       /\.image-modal\s+\.modal-content\s*\{([^}]*)\}/
     );
@@ -111,7 +141,10 @@ describe('template style', () => {
   });
 
   it('removes image modal padding at the smartphone breakpoint', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const mediaBlocks = extractMediaBlocks(css, '@media (max-width: 575.98px)');
 
     expect(mediaBlocks.length).toBeGreaterThan(0);
@@ -123,7 +156,10 @@ describe('template style', () => {
   });
 
   it('uses pointer cursors for media panels', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
 
     const mermaidMatch = css.match(
       /\.entry-body\s+\.mermaid-wrapper[^}]*\{[^}]*cursor:\s*pointer;/
@@ -145,7 +181,10 @@ describe('template style', () => {
   });
 
   it('renders blockquotes with the bootstrap quote icon', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const blockquoteMatch = css.match(/\.entry-body blockquote\s*\{([^}]*)\}/);
 
     expect(blockquoteMatch).not.toBeNull();
@@ -168,7 +207,10 @@ describe('template style', () => {
   });
 
   it('raises responsive oEmbed embeds above the external link overlay', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const wrapperMatch = css.match(/\.oembed-responsive-wrapper\s*\{([^}]*)\}/);
 
     expect(wrapperMatch).not.toBeNull();
@@ -177,7 +219,10 @@ describe('template style', () => {
   });
 
   it('keeps oEmbed layouts stacked regardless of viewport width', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const containerMatch = css.match(/\.oembed-container\s*\{([^}]*)\}/);
     const headerMatch = css.match(/\.oembed-header\s*\{([^}]*)\}/);
     const contentMatch = css.match(/\.oembed-content\s*\{([^}]*)\}/);
@@ -208,8 +253,39 @@ describe('template style', () => {
     expect(contentMatch?.[1]).toMatch(/order:\s*1;/);
   });
 
+  it('shows card media above labels on narrow viewports', async () => {
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
+    const bodyMatch = css.match(/^\.card-body\s*\{([^}]*)\}/m);
+    const imageMatch = css.match(/^\.card-image\s*\{([^}]*)\}/m);
+    const mobileBlock = extractMediaBlock(css, '@media (max-width: 599.98px)');
+    const wideBlock = extractMediaBlock(css, '@media (min-width: 600px)');
+    const bodyIndex = css.indexOf('.card-body {');
+    const imageIndex = css.indexOf('.card-image {');
+    const mobileIndex = css.indexOf('@media (max-width: 599.98px)');
+
+    expect(bodyMatch).not.toBeNull();
+    expect(bodyMatch?.[1]).toMatch(/order:\s*1;/);
+    expect(imageMatch).not.toBeNull();
+    expect(imageMatch?.[1]).toMatch(/order:\s*2;/);
+    expect(mobileBlock).not.toBeNull();
+    expect(mobileBlock).toMatch(/\.card-body\s*\{[^}]*order:\s*2;/);
+    expect(mobileBlock).toMatch(/\.card-image\s*\{[^}]*order:\s*1;/);
+    expect(wideBlock).not.toBeNull();
+    expect(wideBlock).toMatch(
+      /\.card-link\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1\.2fr\)\s+minmax\(0,\s*0\.9fr\);/
+    );
+    expect(mobileIndex).toBeGreaterThan(bodyIndex);
+    expect(mobileIndex).toBeGreaterThan(imageIndex);
+  });
+
   it('defines primary and secondary palette variables', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(
       /--primary-rgb:\s*\{\{toCssRgb\s+primaryColor\?\s+'13,\s*110,\s*253'\}\};/
     );
@@ -230,7 +306,10 @@ describe('template style', () => {
   });
 
   it('defines stepwise rem heading sizes at root and breakpoints', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const tabletBlocks = extractMediaBlocks(
       css,
       '@media (max-width: 915.98px)'
@@ -246,6 +325,9 @@ describe('template style', () => {
     expect(css).toContain('--heading-h4-size: 1.5rem;');
     expect(css).toContain('--heading-h5-size: 1.25rem;');
     expect(css).toContain('--heading-h6-size: 1rem;');
+    expect(css).toContain(
+      '--heading-h1-margin-right: calc(var(--heading-h1-size) * 2);'
+    );
     expect(
       tabletBlocks.some(
         (block) =>
@@ -267,7 +349,10 @@ describe('template style', () => {
   });
 
   it('defines inline code palette variables for each theme', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(
       /:root\[data-bs-theme="light"\][\s\S]*--inline-code-color:\s*color-mix\(in\s+srgb,\s*var\(--inline-code\)\s+65%,\s*#303030c0\);/
     );
@@ -283,7 +368,10 @@ describe('template style', () => {
   });
 
   it('overrides primary tint and shade values with OKLCH adjustments', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const oklchMatch = css.match(
       /@supports\s+\(color:\s*oklch\(from\s+black\s+l\s+c\s+h\)\)[\s\S]*?\{([\s\S]*?)\}/
     );
@@ -307,14 +395,20 @@ describe('template style', () => {
   });
 
   it('styles inline code with the inline palette', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(
       /\.entry-body\s+:not\(pre\)\s*>\s*code\s*\{[^}]*color:\s*var\(--inline-code-color\);[^}]*background-color:\s*var\(--inline-code-bg\);/
     );
   });
 
   it('maps the bootstrap theme palette to the primary colors', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(/--bs-primary:\s*rgb\(var\(--bs-primary-rgb\)\);/);
     expect(css).toMatch(/--bs-secondary:\s*rgb\(var\(--bs-secondary-rgb\)\);/);
     expect(css).toMatch(/--bs-primary-rgb:\s*var\(--primary-rgb\);/);
@@ -328,7 +422,10 @@ describe('template style', () => {
   });
 
   it('overrides bootstrap primary colors for hard-coded components', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(
       /\.form-check-input:checked[^}]*\{[^}]*background-color:\s*var\(--bs-primary\);/
     );
@@ -341,7 +438,10 @@ describe('template style', () => {
   });
 
   it('styles badges with the primary-derived palette', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(/--badge-bg:\s*var\(--primary-alpha-50\);/);
     expect(css).toMatch(/--badge-color:\s*var\(--primary-tint-69\);/);
     expect(css).toMatch(
@@ -350,7 +450,10 @@ describe('template style', () => {
   });
 
   it('applies primary palette to headings and stream accents', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const h1Match = css.match(/h1\s*\{([^}]*)\}/);
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
     const h2Match = css.match(/h2\s*\{[^}]*border-left:[^}]*\}/);
@@ -358,6 +461,9 @@ describe('template style', () => {
 
     expect(h1Match).not.toBeNull();
     expect(h1Match?.[1]).toMatch(/font-size:\s*var\(--heading-h1-size\);/);
+    expect(h1Match?.[1]).toMatch(
+      /margin-right:\s*var\(--heading-h1-margin-right\);/
+    );
     expect(h1Match?.[1]).toMatch(
       /border-bottom:\s*0\.15rem\s+solid\s+var\(--primary-alpha-75\);/
     );
@@ -378,7 +484,10 @@ describe('template style', () => {
   });
 
   it('defines panel palette variables', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     expect(css).toMatch(
       /--panel-surface:\s*\{\{cond\s+panelSurface\?\s+panelSurface\s+'var\(--panel-surface-base\)'\}\};/
     );
@@ -394,7 +503,10 @@ describe('template style', () => {
   });
 
   it('derives panel base palette from the primary color', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const darkMatch = css.match(
       /:root\[data-bs-theme="dark"\]\s*\{[^}]*--panel-surface-base:[^}]*\}/
     );
@@ -418,7 +530,10 @@ describe('template style', () => {
   });
 
   it('clears floats on entry body headings', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const headingClearMatch = css.match(
       /\.entry-body h1,\s*\.entry-body h2,\s*\.entry-body h3,\s*\.entry-body h4,\s*\.entry-body h5,\s*\.entry-body h6\s*\{([^}]*)\}/
     );
@@ -428,7 +543,10 @@ describe('template style', () => {
   });
 
   it('sizes the h1 icon from the heading scale variable', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const h1IconMatch = css.match(/h1::before\s*\{([^}]*)\}/);
 
     expect(h1IconMatch).not.toBeNull();
@@ -439,7 +557,10 @@ describe('template style', () => {
   });
 
   it('exposes heading permalink positioning variables', async () => {
-    const css = await readFile('scaffold/.templates/site-style.css', 'utf8');
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
     const h1Match = css.match(/h1\s*\{[^}]*--heading-anchor-left:[^}]*\}/);
     const h2Match = css.match(/h2\s*\{[^}]*--heading-anchor-left:[^}]*\}/);
     const anchorMatch = css.match(

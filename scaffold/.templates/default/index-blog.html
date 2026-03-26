@@ -6,14 +6,12 @@ Under MIT.
 https://github.com/kekyo/a-terra-forge
 -->
 {{
-set articleEntry0 (first articleEntries)
-set pageTitle articleEntry0.title
-set pageDescription (cond articleEntry0.description? articleEntry0.description siteDescription)
+set tpc (cond prerenderCount? prerenderCount 5)
+set pageTitle (getMessage title)
+set pageDescription siteDescription
 set authorNames (distinct (collect (map (fun articleEntry articleEntry.git?.author.name) articleEntries)))
-set committerDates (map (fun date (formatDate date)) (sort (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
+set committerDates (sort (collect (map (fun articleEntry articleEntry.git?.committer.date) articleEntries)))
 set articleTags (distinct (collect (flatMap (fun articleEntry (cond articleEntry.tags articleEntry.tags [])) articleEntries)))
-}}
-{{
 if locale?
 }}
 <html lang="{{locale}}">
@@ -27,12 +25,16 @@ if locale?
   <body>
 {{include 'navigation-bar.html'}}
     <div class="docs-outer">
-      <div class="docs">
-        {{
-        for articleEntry articleEntries
-          getEntry articleEntry
-        end
-        }}
+      <div class="docs" data-blog-index="{{blogIndexPath}}">
+        <div id="blog-list" class="stream-list"{{if tpc}} data-blog-prerender="{{tpc}}"{{end}}>
+          {{
+          for articleEntry (slice 0 tpc articleEntries)
+            getEntry articleEntry
+          end
+          }}
+        </div>
+        <div id="blog-status" class="stream-status" role="status" aria-live="polite"></div>
+        <div id="blog-sentinel" class="stream-sentinel" aria-hidden="true"></div>
       </div>
     </div>
     <script

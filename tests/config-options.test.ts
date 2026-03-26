@@ -8,9 +8,9 @@ import { resolve } from 'path';
 import { describe, expect, it, type TestContext } from 'vitest';
 
 import {
-  defaultAssetDir,
   defaultCacheDir,
   defaultDocsDir,
+  defaultFontList,
   defaultOutDir,
   defaultTemplatesDir,
   defaultTmpDir,
@@ -36,7 +36,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const variables = new Map<string, unknown>([
       ['docsDir', './docs'],
       ['templatesDir', '.templates'],
-      ['assetsDir', './.assets'],
       ['outDir', '../out'],
       ['tmpDir', './tmp'],
       ['cacheDir', '.cache'],
@@ -51,7 +50,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
 
     expect(resolved.docsDir).toBe(resolve(baseDir, './docs'));
     expect(resolved.templatesDir).toBe(resolve(baseDir, '.templates'));
-    expect(resolved.assetsDir).toBe(resolve(baseDir, './.assets'));
     expect(resolved.outDir).toBe(resolve(baseDir, '../out'));
     expect(resolved.tmpDir).toBe(resolve(baseDir, './tmp'));
     expect(resolved.cacheDir).toBe(resolve(baseDir, '.cache'));
@@ -63,7 +61,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
     const variables = new Map<string, unknown>([
       ['docsDir', 123],
       ['templatesDir', false],
-      ['assetsDir', 456],
       ['outDir', null],
       ['tmpDir', 123],
       ['cacheDir', {}],
@@ -76,7 +73,6 @@ describe('resolveATerraForgeProcessingOptionsFromVariables', () => {
 
     expect(resolved.docsDir).toBeUndefined();
     expect(resolved.templatesDir).toBeUndefined();
-    expect(resolved.assetsDir).toBeUndefined();
     expect(resolved.outDir).toBeUndefined();
     expect(resolved.tmpDir).toBeUndefined();
     expect(resolved.cacheDir).toBeUndefined();
@@ -135,6 +131,7 @@ describe('mergeATerraForgeConfig', () => {
       ]),
       messages: new Map([['', new Map([['hello', 'base']])]]),
       codeHighlight: {},
+      templateNames: ['default'],
       contentFiles: ['a.txt'],
       menuOrder: ['alpha'],
       afterMenuOrder: ['omega'],
@@ -181,10 +178,67 @@ describe('loadATerraForgeConfig', () => {
 
     expect(config.variables.get('docsDir')).toBe(defaultDocsDir);
     expect(config.variables.get('templatesDir')).toBe(defaultTemplatesDir);
-    expect(config.variables.get('assetsDir')).toBe(defaultAssetDir);
     expect(config.variables.get('outDir')).toBe(defaultOutDir);
     expect(config.variables.get('tmpDir')).toBe(defaultTmpDir);
     expect(config.variables.get('cacheDir')).toBe(defaultCacheDir);
+  });
+
+  it('defaults fontList when missing.', async (fn) => {
+    const root = await createTempDir(fn, 'default-font-list');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(configPath, '{}', 'utf8');
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.variables.get('fontList')).toEqual([...defaultFontList]);
+  });
+
+  it('defaults templateNames to default when missing.', async (fn) => {
+    const root = await createTempDir(fn, 'default-template-names');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(configPath, '{}', 'utf8');
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.templateNames).toEqual(['default']);
+    expect(config.variables.get('templateNames')).toEqual(['default']);
+  });
+
+  it('normalizes templateNames and removes duplicates.', async (fn) => {
+    const root = await createTempDir(fn, 'normalized-template-names');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          templateNames: [' great ', 'great/', 'default', 'default'],
+        },
+      }),
+      'utf8'
+    );
+
+    const config = await loadATerraForgeConfig(configPath);
+
+    expect(config.templateNames).toEqual(['great', 'default']);
+    expect(config.variables.get('templateNames')).toEqual(['great', 'default']);
+  });
+
+  it('rejects templateNames that escape the templates directory.', async (fn) => {
+    const root = await createTempDir(fn, 'invalid-template-names');
+    const configPath = resolve(root, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify({
+        variables: {
+          templateNames: ['../outside'],
+        },
+      }),
+      'utf8'
+    );
+
+    await expect(loadATerraForgeConfig(configPath)).rejects.toThrow(
+      'variables.templateNames'
+    );
   });
 
   it('reads codeHighlight from variables when top-level is missing.', async (fn) => {

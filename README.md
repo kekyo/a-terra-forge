@@ -75,7 +75,7 @@ $ npm i -g a-terra-forge
 There are two main usage patterns: using the CLI directly, and using the Vite plugin.
 In either case, there is a scaffold generation feature.
 
-- Using the CLI directly is the basic way to use a-terra-forge. There are commands to generate a new document scaffold and to build the site.
+- Using the CLI directly is the basic way to use a-terra-forge. There are commands to generate a new document scaffold, build the site, and refresh scaffold-managed assets.
 - The Vite plugin uses [Vite](https://vite.dev/) for web development to preview the built site in a browser.
   When you save documents, the page preview updates automatically, enabling a pseudo [WYSIWYG](https://en.wikipedia.org/wiki/WYSIWYG) experience where you can always write while watching the page.
 
@@ -123,7 +123,6 @@ my-page
 │       ├── index.md
 │       └── rich-demo.md
 ├── .gitignore
-├── .assets/  ...
 ├── .templates/  ...
 └── .github/  ...
 ```
@@ -244,7 +243,6 @@ my-page
 │       ├── index.md
 │       └── rich-demo.md
 ├── .gitignore
-├── .assets/  ...
 ├── .templates/  ...
 └── .github/  ...
 ```
@@ -389,6 +387,7 @@ Below is a partial excerpt of `atr.json`:
 
 ```json
 {
+  "version": "0.1.2",
   "variables": {
     "baseUrl": "https://atr-doc-site.github.io",
     "siteName": "atr-doc-site",
@@ -403,6 +402,8 @@ Below is a partial excerpt of `atr.json`:
   }
 }
 ```
+
+The top-level `version` is used by `atr update` to determine whether the scaffold can be refreshed. It is not part of `variables`, and it is automatically rewritten to the current atr CLI version after a successful update.
 
 The definitions included in `variables` above are treated as "variables" and are defined so they can be referenced by a-terra-forge's internal processing and template scripts (described later). These values can be used to adjust overall site generation and appearance.
 
@@ -428,6 +429,38 @@ For example, changing `primaryColor` to `#ff4040` will alter the accent color as
 The variables above include several items for adjusting categories. These are settings based on categories, so you should check them again after referring to the categories described later.
 
 `atr.json` still contains many predefined variables, but these will be covered in a separate chapter.
+
+### Upgrade a-terra-forge
+
+To upgrade the a-terra-forge CLI to the latest version, use the following NPM command:
+
+```bash
+$ npm update -g a-terra-forge
+```
+
+This will upgrade the a-terra-forge CLI itself.
+
+After upgrading it, you may want to bring the standard files under `.templates/` in your editing space up to date as well.
+In that case, use the `atr update` command:
+
+```bash
+$ atr update
+```
+
+This command overwrites only scaffold-managed files under `templatesDir`. Document files such as `docs/` are not touched.
+If you still have assets in the old root `.assets/` directory, move them into `.templates/{templateName}/.assets/` because builds no longer read the root `.assets/`.
+
+`atr update` uses the top-level `version` field in `atr.json` to determine which scaffold version your editing space currently has.
+
+- If the editing space version is newer than the current CLI version, the update is stopped for safety.
+- If `version` is missing or invalid, the update is also stopped for safety.
+- Add `-f` to skip these checks and force the update.
+
+```bash
+$ atr update -f
+```
+
+When the update succeeds, the top-level `version` in `atr.json` is automatically rewritten to the current a-terra-forge CLI version string.
 
 ---
 
@@ -662,7 +695,8 @@ To customize this, define the `messages` variable in `atr.json`:
   },
   "messages": {
     "en": {
-      "date": "Date",
+      "createdDate": "Created",
+      "updatedDate": "Updated",
       "author": "Author",
       "category": "Category",
       "timeline": "Timeline",
@@ -673,7 +707,8 @@ To customize this, define the `messages` variable in `atr.json`:
       "uncommitted": "uncommitted"
     },
     "ja": {
-      "date": "日時",
+      "createdDate": "執筆日",
+      "updatedDate": "更新日",
       "author": "執筆者",
       "category": "カテゴリ",
       "timeline": "タイムライン",
@@ -901,14 +936,22 @@ In that mode the template must load the Mermaid runtime script, and the default 
 
 ## atr.json
 
-Below are all values defined in `atr.json`:
+Below are all values defined in `atr.json` on `variables` key:
 
 |Variable name|Template only|Details|
 |:----|:----|:----|
+|`version`|No|The scaffold version stored by the editing space. Place it at the top level of `atr.json`, not inside `variables`. `atr update` compares this value with the current CLI version and automatically rewrites it to the current CLI version string after a successful update. |
+
+|Variable name|Template only|Details|
+|:----|:----|:----|
+|`version`|No|The scaffold version stored by the editing space. Place it at the top level of `atr.json`, not inside `variables`. `atr update` compares this value with the current CLI version and automatically rewrites it to the current CLI version string after a successful update. |
 |`baseUrl`|No|Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it. |
 |`siteName`|No|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
-|`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them in `assetsDir` or similar directories. |
+|`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them under `.templates/{templateName}/.assets/` or similar directories. |
 |`siteImage`|Yes| The site image path, used for embedding page metadata (OGP). The standard size used is `1200px`x`630px`. |
+|`fontList`|Yes|Font family fallback list used by the scaffold default CSS and OGP SVG templates. Specify it as an array such as `["Noto Sans", "sans-serif"]`, and it is rendered as a `font-family` value in the templates. Defaults to `["Noto Sans", "sans-serif"]` when omitted. |
+|`siteIconAssetPath`|Yes|Path to the site icon asset used by the scaffold OGP SVG templates. Place the image under `.templates/{templateName}/.assets/` and reference the published path such as `icon.png`. |
+|`ogpImageTheme`|Yes|Theme used to select the scaffold OGP SVG templates. Accepts `light` or `dark`. Default is `light`. The scaffold looks for templates such as `og-image-light.svg` and `og-image-timeline-dark.svg`. |
 |`locale`|No|The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. Even if you make this selection, the content will not be automatically translated. |
 |`frontPage`|No|Specifies which category to display as the site's front page (top page). The default is `timeline`, which is a special category name that shows the timeline. |
 |`headerIcon`|Yes|The icon displayed in document titles. The name is specified using [Bootstrap Icons](https://icons.getbootstrap.com/). You can also specify it per document, but this value is used when omitted.|
@@ -919,9 +962,9 @@ Below are all values defined in `atr.json`:
 |`codeHighlight`|No|Code highlight settings used by Shiki. See "Code highlighting settings" for details. |
 |`siteTemplates`|No|Site-wide asset files and a group of template files that are processed with funcity scripts. CSS and JavaScript files, RSS/Atom, and sitemaps are all processed as scripts and output. If you add files that require additional script processing to this list, they will also be recognized as script processing targets.  Defaults are: `site-style.css`,`site-script.js`,`feed.xml`,`atom.xml`,`sitemap.xml`. |
 |`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
-|`assetsDir`|No|Asset directory path. Default is `.assets/`. The path is resolved relative to the directory containing `atr.json`. Files under this directory are copied to `outDir` with the same structure (e.g., `.assets/favicon.ico` → `dist/favicon.ico`). |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
 |`templatesDir`|No|Overrides the templates directory. Default is `.templates/`. The path is resolved relative to the directory containing `atr.json`. |
+|`templateNames`|No|Template directory names under `templatesDir` searched in priority order. Default is `["default"]`. For example, `["great", "default"]` first loads `.templates/great/` and falls back to `.templates/default/` for missing files. Static files under `.templates/{templateName}/.assets/` are also copied in this priority order, so higher-priority templates overwrite lower-priority assets. |
 |`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
 |`tmpDir`|No|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
 |`cacheDir`|No|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |
@@ -966,24 +1009,32 @@ my-page
 ├── atr.json
 ├── docs/  ...
 ├── .gitignore
-├── .assets/  ...
 ├── .templates
-│   ├── atom.xml
-│   ├── blog-entry.html
-│   ├── category-entry.html
-│   ├── common-header.html
-│   ├── feed.xml
-│   ├── index-blog-single.html
-│   ├── index-blog.html
-│   ├── index-category.html
-│   ├── index-timeline.html
-│   ├── navigation-bar.html
-│   ├── site-script.js
-│   ├── site-style.css
-│   ├── sitemap.xml
-│   └── timeline-entry.html
+│   └── default
+│       ├── .assets
+│       │   ├── favicon.ico
+│       │   └── icon.png
+│       ├── atom.xml
+│       ├── blog-entry.html
+│       ├── category-entry.html
+│       ├── common-header.html
+│       ├── feed.xml
+│       ├── index-blog-single.html
+│       ├── index-blog.html
+│       ├── index-category.html
+│       ├── index-timeline.html
+│       ├── navigation-bar.html
+│       ├── site-script.js
+│       ├── site-style.css
+│       ├── sitemap.xml
+│       └── timeline-entry.html
 └── .github/  ...
 ```
+
+The scaffold's standard templates live under `.templates/default/`.
+Static assets owned by each template live under `.templates/{templateName}/.assets/`.
+If you want themed overrides, add another directory such as `.templates/great/` and set `variables.templateNames` to `["great", "default"]`.
+Files found in `great` win, and missing files fall back to `default`. The same priority is used when copying static assets from `.templates/{templateName}/.assets/`.
 
 ### Transformation process
 
@@ -1023,7 +1074,7 @@ flowchart TD
   G --> Q[Timeline + timeline.json + article-bodies/*.txt]
 
   R[site-style.css / site-script.js / feed.xml / atom.xml / sitemap.xml] --> S[Output to dist/]
-  T[.assets/** and contentFiles] --> S
+  T[.templates/*/.assets/** and contentFiles] --> S
   N --> S
   O --> S
   P --> S
@@ -1036,7 +1087,7 @@ Roughly speaking, the build proceeds in this order:
 2. Those results are passed to `index-category.html`, `index-blog.html`, `index-blog-single.html`, and `index-timeline.html` to assemble full pages.
 3. When needed, `category-entry.html`, `blog-entry.html`, and `timeline-entry.html` are used to decorate each entry fragment.
 4. `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, and `sitemap.xml` are rendered separately as site templates.
-5. Files under `.assets/` and static files matched by `contentFiles` are copied directly to the output directory.
+5. Files under `.templates/{templateName}/.assets/` and static files matched by `contentFiles` are copied directly to the output directory.
 
 Use `include` and `tryInclude` to split and reuse templates.
 Both are resolved relative to the calling template, and nested includes are supported.
@@ -1067,12 +1118,81 @@ The role of each file is shown below:
 - If blog categories are enabled, `index-blog.html`, `blog-entry.html`, and `index-blog-single.html` are required.
 - If the timeline is generated, `index-timeline.html` and `timeline-entry.html` are required.
 
-#### Assets
+#### Scripts/CSS
 
 |File|Details|
 |:----|:----|
 |`site-script.js`|Generates the shared JavaScript used by the site.|
 |`site-style.css`|Generates the shared CSS used by the site.|
+
+#### Asset directory
+
+`.templates/{templateName}/.assets/` is the static asset directory copied into `outDir` as-is during the build.
+Put files here when they do not need funcity processing, such as images, favicons, or icons referenced from OGP templates.
+The directory structure is preserved, so for example `.templates/default/.assets/images/logo.png` is published as `dist/images/logo.png`.
+
+When multiple template directories are listed in `templateNames`, lower-priority template assets are copied first and higher-priority template assets overwrite them.
+For example, with `["great", "default"]`, files in `.templates/great/.assets/` override files in `.templates/default/.assets/`.
+
+The standard assets generated by `atr init` include `.templates/default/.assets/favicon.ico` and `.templates/default/.assets/icon.png`.
+`.templates/default/.assets/icon.png` is used as the icon inserted into the OPG template.
+
+The default scaffold expects `.templates/{templateName}/.assets/` to hold things like:
+
+- favicons and fixed images referenced from `common-header.html` or other templates
+- a fixed image referenced by `variables.siteImage`
+- an icon image referenced from OGP SVG templates through `variables.siteIconAssetPath`
+
+When you reference these files from SVG or HTML templates, treat them as published paths, for example `{{toRelativePath 'icon.png'}}` or `{{toRelativePath siteIconAssetPath}}`.
+
+#### OGP image generation
+
+a-terra-forge can also generate OGP PNG images during the build, separate from page HTML.
+It renders dedicated SVG templates as funcity scripts, then converts the result to PNG files.
+The default scaffold includes the following theme-specific templates:
+
+|File|Details|
+|:----|:----|
+|`og-image-light.svg`|Light theme OGP image template for regular pages.|
+|`og-image-dark.svg`|Dark theme OGP image template for regular pages.|
+|`og-image-timeline-light.svg`|Light theme OGP image template for timeline pages.|
+|`og-image-timeline-dark.svg`|Dark theme OGP image template for timeline pages.|
+
+Template selection follows `variables.ogpImageTheme`.
+When it is `light`, `*-light.svg` is used. When it is `dark`, `*-dark.svg` is used. When omitted or invalid, it falls back to `light`.
+
+Templates can also be split by page mode. The lookup order is:
+
+1. `og-image-{entryMode}-{theme}.svg`
+2. `og-image-{theme}.svg`
+
+`entryMode` is one of `category`, `blog`, `blog-single`, or `timeline`.
+For example, if you want a special layout only for blog single pages, you can add `og-image-blog-single-dark.svg`.
+
+The generated PNG file name depends on the page type:
+
+- category pages, blog index pages, and timeline pages: `og-image.png`
+- blog single pages: `{html-file-name}.og-image.png`
+
+The relative path to the generated image is exposed to page templates as `ogImagePath`.
+The default `common-header.html` uses it to emit absolute `og:image` and `twitter:image` URLs.
+
+OGP SVG templates can use the same values as regular page templates, including `articleEntries`, `entryMode`, `variables.*` from `atr.json`, and helpers such as `formatDate`, `getMessage`, and `toRelativePath`.
+That means you can compute `pageTitle` or `pageDescription` inside the SVG template itself, just like the default scaffold does.
+
+If you want to embed static images such as a site icon into the SVG, place the file under `.templates/{templateName}/.assets/` and set `variables.siteIconAssetPath` to the published path.
+Inside the template, reference it with `{{toRelativePath siteIconAssetPath}}`.
+
+For example, in `atr.json`:
+
+```json
+{
+  "variables": {
+    "siteIconAssetPath": "icon.png",
+    "ogpImageTheme": "dark"
+  }
+}
+```
 
 #### Metadata generation
 
@@ -1118,6 +1238,7 @@ The following variables are available in `index-category.html`, `index-blog.html
 |:----|:----|
 |`articleEntries`|A list of document entries to display. The structure of each item is described in "Article entries" below.|
 |`entryMode`|One of `category`, `blog`, `blog-single`, or `timeline`. You can use this for conditional branches in templates.|
+|`ogImagePath`|The relative path to the generated OGP PNG for this page. It is only set when a matching OGP SVG template is available.|
 |`getEntry entry`|Returns the HTML for one entry. It resolves `entry.entryHtml` and `entry.entryPath`, so list templates do not need to care about where the actual content lives.|
 |`navItems`|The left-side navigation items. Each item has `label`, `href`, `isActive`, and optionally `children`.|
 |`navItemsAfter`|The right-aligned navigation items. Available when `afterMenuOrder` is not empty.|
@@ -1145,8 +1266,8 @@ The following are the main variables available on each element of `articleEntrie
 |`filePath`|The relative path from `docs/`.|
 |`directory`|The category directory the document belongs to.|
 |`anchorId`|The anchor ID for this document.|
-|`git`|Git metadata for the document. You can reference fields such as `git.author.name`, `git.committer.date`, and `git.dirty`.|
-|`date`|A date string, primarily a shorthand for `git.committer.date`.|
+|`git`|Git metadata for the document. Top-level fields such as `git.author.name`, `git.committer.date`, and `git.dirty` still refer to the latest update. You can also reference `git.created.committer.date` and `git.updated.committer.date`.|
+|`date`|A date string, primarily a shorthand for the latest update time (`git.committer.date`).|
 |`contentHtml`|The main body HTML. This is the full document body for category pages and single pages.|
 |`timelineHtml`|A shortened HTML body intended for timeline rendering.|
 |`entryHtml`|The HTML after the entry template has been applied.|
@@ -1187,7 +1308,7 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 |`variables.*` from `atr.json`|Configured values such as `baseUrl` and `siteName` are available directly.|
 |`version`|The a-terra-forge version string.|
 |`git_commit_hash`|The commit hash of a-terra-forge itself.|
-|`formatDate format value`|Formats a date/time value using `dayjs`. Example: `formatDate 'YYYY/MM/DD' git.committer.date`|
+|`formatDate format value`|Formats a date/time value using `dayjs`. Example: `formatDate 'YYYY/MM/DD' git.updated.committer.date`|
 |`getMessage key defaultValue?`|Resolves text using `messages` and the current `locale`. If not defined, it falls back to `defaultValue`, or to `key` itself if `defaultValue` is omitted.|
 |`escapeXml value`|Escapes a string for XML or HTML attributes. Useful for feeds and sitemaps.|
 |`toCssRgb value fallback`|Normalizes a color value into `r, g, b` format. Intended for use in `site-style.css`.|
@@ -1204,16 +1325,19 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 
 #### Common customization examples
 
-1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/additional-header.html` and let `common-header.html` include it via `tryInclude`.
-2. If you want to split existing templates, create partial templates such as `.templates/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
+1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/default/additional-header.html` or `.templates/great/additional-header.html` and let `common-header.html` include it via `tryInclude`.
+2. If you want to split existing templates, create partial templates such as `.templates/default/parts/*.html` or `.templates/great/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
 3. If you want to apply localization inside your own added HTML, call `{{getMessage 'contact' 'Contact'}}` or `{{getMessage category}}` explicitly.
-4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/robots.txt` as a funcity script.
+4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/default/robots.txt` or the first themed directory from `templateNames` as a funcity script.
 
 For example, to add `robots.txt`, you can write:
 
 ```json
 {
   "variables": {
+    "templateNames": [
+      "default"
+    ],
     "siteTemplates": [
       "site-style.css",
       "site-script.js",
@@ -1225,6 +1349,8 @@ For example, to add `robots.txt`, you can write:
   }
 }
 ```
+
+Create the template file at `.templates/default/robots.txt` or under the first directory listed in `templateNames`.
 
 ```txt
 User-agent: *

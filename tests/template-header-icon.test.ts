@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 describe('template header icon', () => {
   it('injects header icon styles for category headers', async () => {
     const template = await readFile(
-      'scaffold/.templates/index-category.html',
+      'scaffold/.templates/default/index-category.html',
       'utf8'
     );
     expect(template).toContain(
@@ -19,7 +19,7 @@ describe('template header icon', () => {
 
   it('injects header icon styles for timeline headers', async () => {
     const template = await readFile(
-      'scaffold/.templates/timeline-entry.html',
+      'scaffold/.templates/default/timeline-entry.html',
       'utf8'
     );
     expect(template).toContain(
@@ -29,13 +29,13 @@ describe('template header icon', () => {
 
   it('exposes entry urls on stream entries', async () => {
     const blogTemplate = await readFile(
-      'scaffold/.templates/blog-entry.html',
+      'scaffold/.templates/default/blog-entry.html',
       'utf8'
     );
     expect(blogTemplate).toContain('data-entry-url="{{entrySinglePath}}"');
 
     const timelineTemplate = await readFile(
-      'scaffold/.templates/timeline-entry.html',
+      'scaffold/.templates/default/timeline-entry.html',
       'utf8'
     );
     expect(timelineTemplate).toContain('data-entry-url="{{entrySinglePath}}"');
@@ -44,7 +44,7 @@ describe('template header icon', () => {
 
   it('renders timeline category as bootstrap pill badge', async () => {
     const template = await readFile(
-      'scaffold/.templates/timeline-entry.html',
+      'scaffold/.templates/default/timeline-entry.html',
       'utf8'
     );
     expect(template).toMatch(/badge rounded-pill/);

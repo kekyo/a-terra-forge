@@ -56,6 +56,7 @@ describe('atrPreview', () => {
     const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     const previewRootBaseDir = resolve(join(rootDir, 'preview-root'));
@@ -169,6 +170,7 @@ describe('atrPreview', () => {
     const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     await writeFile(
@@ -242,12 +244,112 @@ describe('atrPreview', () => {
     httpServer.emit('close');
   });
 
+  it('passes overridden docs and templates dirs into generateDocs and keeps a temp preview outDir.', async (fn) => {
+    const rootDir = await createTempDir(fn, 'root-assets-override');
+    const configDocsDir = resolve(rootDir, 'docs');
+    const configTemplatesDir = resolve(rootDir, '.templates');
+    const overrideDocsDir = resolve(rootDir, 'demo-docs');
+    const overrideTemplatesDir = resolve(rootDir, 'scaffold', '.templates');
+    const overrideOutDir = resolve(rootDir, 'demo', 'dist');
+    await mkdir(configDocsDir, { recursive: true });
+    await mkdir(configTemplatesDir, { recursive: true });
+    await mkdir(overrideDocsDir, { recursive: true });
+    await mkdir(overrideTemplatesDir, { recursive: true });
+
+    const configPath = join(rootDir, 'atr.json');
+    await writeFile(
+      configPath,
+      JSON.stringify(
+        {
+          variables: {
+            docsDir: './docs',
+            templatesDir: './.templates',
+          },
+        },
+        null,
+        2
+      ),
+      'utf8'
+    );
+
+    const previewRootBaseDir = resolve(join(rootDir, 'preview-root'));
+    mockState.generateDocsMock.mockResolvedValue(undefined);
+
+    const httpServer = new EventEmitter();
+    const devServer = {
+      config: {
+        root: rootDir,
+        logLevel: 'info',
+        logger: {
+          info: vi.fn(),
+          warn: vi.fn(),
+          error: vi.fn(),
+        },
+        server: {
+          open: false,
+          hmr: false,
+        },
+      },
+      middlewares: {
+        use: vi.fn(),
+      },
+      watcher: {
+        add: vi.fn(),
+        unwatch: vi.fn(),
+        on: vi.fn(),
+      },
+      ws: {
+        send: vi.fn(),
+      },
+      httpServer,
+      openBrowser: vi.fn(),
+      resolvedUrls: { local: ['http://localhost:5173/'] },
+    } as unknown as ViteDevServer;
+
+    vi.resetModules();
+    const { atrPreview } = await import('../src/vite');
+    const plugin = atrPreview({
+      configPath,
+      previewBaseDir: previewRootBaseDir,
+      variables: {
+        docsDir: overrideDocsDir,
+        templatesDir: overrideTemplatesDir,
+        outDir: overrideOutDir,
+      },
+    });
+
+    const configureServerHook = plugin.configureServer;
+    if (!configureServerHook) {
+      throw new Error('configureServer is not defined.');
+    }
+    const pluginContext = {} as any;
+    if (typeof configureServerHook === 'function') {
+      await configureServerHook.call(pluginContext, devServer);
+    } else {
+      await configureServerHook.handler.call(pluginContext, devServer);
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    const [options] = mockState.generateDocsMock.mock.calls[0] ?? [];
+    expect(options).toBeDefined();
+    expect(options.docsDir).toBe(resolve(overrideDocsDir));
+    expect(options.templatesDir).toBe(resolve(overrideTemplatesDir));
+    expect((options as { assetsDir?: string }).assetsDir).toBeUndefined();
+    expect(typeof options.outDir).toBe('string');
+    expect(options.outDir.startsWith(previewRootBaseDir)).toBe(true);
+    expect(options.outDir).not.toBe(resolve(overrideOutDir));
+
+    httpServer.emit('close');
+  });
+
   it('serves from the preview base directory and rewrites to the active preview output.', async (fn) => {
     const rootDir = await createTempDir(fn, 'root-preview-base');
     const docsDir = join(rootDir, 'docs');
     const templatesDir = join(rootDir, '.templates');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
     await writeFile(
@@ -363,6 +465,7 @@ describe('atrPreview', () => {
       const templatesDir = join(rootDir, '.templates');
       await mkdir(docsDir, { recursive: true });
       await mkdir(templatesDir, { recursive: true });
+      await mkdir(join(templatesDir, 'default'), { recursive: true });
 
       const configPath = join(rootDir, 'atr.json');
       await writeFile(
@@ -453,11 +556,12 @@ describe('atrPreview', () => {
     const rootDir = await createTempDir(fn, 'root-watch-allow');
     const docsDir = join(rootDir, 'docs');
     const templatesDir = join(rootDir, '.templates');
-    const assetsDir = join(rootDir, '.assets');
+    const templateAssetsDir = join(templatesDir, 'default', '.assets');
     const srcDir = join(rootDir, 'src');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
-    await mkdir(assetsDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
+    await mkdir(templateAssetsDir, { recursive: true });
     await mkdir(srcDir, { recursive: true });
 
     const configPath = join(rootDir, 'atr.json');
@@ -468,7 +572,6 @@ describe('atrPreview', () => {
           variables: {
             docsDir: './docs',
             templatesDir: './.templates',
-            assetsDir: './.assets',
           },
         },
         null,
@@ -568,8 +671,9 @@ describe('atrPreview', () => {
     expect(ignored(join(rootDir, 'config.local.json'))).toBe(false);
     expect(ignored(join(rootDir, 'nested', 'config.json'))).toBe(true);
     expect(ignored(join(docsDir, 'index.md'))).toBe(false);
-    expect(ignored(join(templatesDir, 'index.html'))).toBe(false);
-    expect(ignored(join(assetsDir, 'logo.png'))).toBe(false);
+    expect(ignored(join(templatesDir, 'default', 'index.html'))).toBe(false);
+    expect(ignored(join(templateAssetsDir, 'logo.png'))).toBe(false);
+    expect(ignored(join(rootDir, '.assets', 'logo.png'))).toBe(true);
     expect(ignored(join(srcDir, 'index.ts'))).toBe(false);
     expect(ignored(join(rootDir, 'vite.config.ts'))).toBe(false);
     expect(ignored(join(rootDir, 'other', 'extra.ts'))).toBe(true);

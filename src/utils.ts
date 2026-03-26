@@ -20,6 +20,7 @@ import {
   isAbsolute,
   join,
   normalize,
+  posix,
   relative,
   resolve,
   sep,
@@ -313,6 +314,20 @@ export const writeContentFile = async (path: string, content: string) => {
   await rename(path + '.tmp', path);
 };
 
+export const writeBinaryFile = async (path: string, content: Uint8Array) => {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path + '.tmp', content);
+  try {
+    if (existsSync(path)) {
+      await unlink(path);
+    }
+  } catch (e: unknown) {
+    await unlink(path + '.tmp');
+    throw e;
+  }
+  await rename(path + '.tmp', path);
+};
+
 export const buildDirectoryDestinationPath = (
   outDir: string,
   relativeDir: string
@@ -385,10 +400,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
 export const defaultTargetContents = ['./**/*.png', './**/*.jpg'] as const;
+export const defaultTemplateNames = ['default'] as const;
+export const defaultFontList = ['Noto Sans', 'sans-serif'] as const;
 export const defaultDocsDir = 'docs' as const;
 export const defaultTemplatesDir = '.templates' as const;
+export const defaultTemplateAssetsDir = '.assets' as const;
 export const defaultOutDir = 'dist' as const;
-export const defaultAssetDir = '.assets' as const;
 export const defaultTmpDir = tmpdir();
 export const defaultCacheDir = process.env.HOME
   ? join(process.env.HOME, '.cache', name)
@@ -733,12 +750,74 @@ const resolveVariableStringList = (
   return parseStringList(value, configPath, `variables.${key}`);
 };
 
+const normalizeTemplateDirectoryName = (
+  value: string,
+  configPath: string
+): string => {
+  const replaced = value.trim().replaceAll('\\', '/');
+  if (replaced.length === 0) {
+    throw new Error(
+      `"variables.templateNames" in atr.json must not contain empty values: ${configPath}`
+    );
+  }
+  if (replaced.startsWith('/')) {
+    throw new Error(
+      `"variables.templateNames" in atr.json must contain relative directory names: ${configPath}`
+    );
+  }
+  if (/^[A-Za-z]:\//.test(replaced)) {
+    throw new Error(
+      `"variables.templateNames" in atr.json must not contain absolute paths: ${configPath}`
+    );
+  }
+  const normalized = posix.normalize(replaced);
+  if (
+    normalized === '.' ||
+    normalized === '' ||
+    normalized === '..' ||
+    normalized.startsWith('../')
+  ) {
+    throw new Error(
+      `"variables.templateNames" in atr.json must stay within templatesDir: ${configPath}`
+    );
+  }
+  return normalized.replace(/\/+$/u, '');
+};
+
+const resolveTemplateNameList = (
+  variables: FunCityVariables,
+  configPath: string
+): readonly string[] => {
+  const rawTemplateNames = resolveVariableStringList(
+    variables,
+    configPath,
+    'templateNames',
+    defaultTemplateNames
+  );
+  const normalizedTemplateNames: string[] = [];
+  const seen = new Set<string>();
+
+  for (const templateName of rawTemplateNames) {
+    const normalized = normalizeTemplateDirectoryName(templateName, configPath);
+    if (seen.has(normalized)) {
+      continue;
+    }
+    seen.add(normalized);
+    normalizedTemplateNames.push(normalized);
+  }
+
+  return normalizedTemplateNames.length > 0
+    ? normalizedTemplateNames
+    : [...defaultTemplateNames];
+};
+
 const normalizeVariablesWithLists = (
   variables: FunCityVariables,
   configPath: string
 ): Pick<
   ATerraForgeConfig,
   | 'variables'
+  | 'templateNames'
   | 'contentFiles'
   | 'menuOrder'
   | 'afterMenuOrder'
@@ -767,10 +846,10 @@ const normalizeVariablesWithLists = (
 
   normalizeDirectoryVariable('docsDir', defaultDocsDir);
   normalizeDirectoryVariable('templatesDir', defaultTemplatesDir);
-  normalizeDirectoryVariable('assetsDir', defaultAssetDir);
   normalizeDirectoryVariable('outDir', defaultOutDir);
   normalizeDirectoryVariable('tmpDir', defaultTmpDir);
   normalizeDirectoryVariable('cacheDir', defaultCacheDir);
+  const templateNames = resolveTemplateNameList(normalized, configPath);
   const contentFiles = resolveVariableStringList(
     normalized,
     configPath,
@@ -795,14 +874,23 @@ const normalizeVariablesWithLists = (
     'blogCategories',
     []
   );
+  const fontList = resolveVariableStringList(
+    normalized,
+    configPath,
+    'fontList',
+    defaultFontList
+  );
 
   normalized.set('contentFiles', contentFiles);
+  normalized.set('templateNames', templateNames);
   normalized.set('menuOrder', menuOrder);
   normalized.set('afterMenuOrder', afterMenuOrder);
   normalized.set('blogCategories', blogCategories);
+  normalized.set('fontList', fontList);
 
   return {
     variables: normalized,
+    templateNames,
     contentFiles,
     menuOrder,
     afterMenuOrder,
@@ -811,14 +899,21 @@ const normalizeVariablesWithLists = (
 };
 
 const createDefaultATerraForgeConfig = (): ATerraForgeConfig => {
-  const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
-    normalizeVariablesWithLists(new Map(), '<defaults>');
+  const {
+    variables,
+    templateNames,
+    contentFiles,
+    menuOrder,
+    afterMenuOrder,
+    blogCategories,
+  } = normalizeVariablesWithLists(new Map(), '<defaults>');
 
   return {
     variables,
     messages: new Map(),
     codeHighlight: defaultCodeHighlightConfig,
     beautifulMermaid: undefined,
+    templateNames,
     contentFiles,
     menuOrder,
     afterMenuOrder,
@@ -831,8 +926,14 @@ const parseATerraForgeConfigObject = (
   configPath: string
 ): ATerraForgeConfig => {
   const parsedVariables = parseVariables(parsed.variables, configPath);
-  const { variables, contentFiles, menuOrder, afterMenuOrder, blogCategories } =
-    normalizeVariablesWithLists(parsedVariables, configPath);
+  const {
+    variables,
+    templateNames,
+    contentFiles,
+    menuOrder,
+    afterMenuOrder,
+    blogCategories,
+  } = normalizeVariablesWithLists(parsedVariables, configPath);
   const codeHighlightInput = resolveCodeHighlightInput(
     parsed.codeHighlight,
     parsedVariables
@@ -846,6 +947,7 @@ const parseATerraForgeConfigObject = (
       parsed['beautiful-mermaid'],
       configPath
     ),
+    templateNames,
     contentFiles,
     menuOrder,
     afterMenuOrder,
@@ -921,6 +1023,7 @@ export const mergeATerraForgeConfig = (
     messages: overrides.messages ?? baseConfig.messages,
     codeHighlight: overrides.codeHighlight ?? baseConfig.codeHighlight,
     beautifulMermaid: overrides.beautifulMermaid ?? baseConfig.beautifulMermaid,
+    templateNames: normalized.templateNames,
     contentFiles: normalized.contentFiles,
     menuOrder: normalized.menuOrder,
     afterMenuOrder: normalized.afterMenuOrder,
@@ -988,7 +1091,6 @@ const resolveVariablePath = (
 type ProcessingDirKey =
   | 'docsDir'
   | 'templatesDir'
-  | 'assetsDir'
   | 'outDir'
   | 'tmpDir'
   | 'cacheDir';
@@ -1013,7 +1115,6 @@ export const resolveATerraForgeProcessingOptionsFromVariables = (
 
   applyResolvedDirOption(resolved, variables, baseDir, 'docsDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'templatesDir');
-  applyResolvedDirOption(resolved, variables, baseDir, 'assetsDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'outDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'tmpDir');
   applyResolvedDirOption(resolved, variables, baseDir, 'cacheDir');

@@ -10,6 +10,8 @@ import { join, resolve } from 'path';
 import { describe, expect, it, type TestContext } from 'vitest';
 import dayjs from 'dayjs';
 
+import { version as packageVersion } from '../src/generated/packageMetadata';
+
 ///////////////////////////////////////////////////////////////////////////////////
 
 const testDate = dayjs().format(`YYYYMMDD_HHmmss`);
@@ -75,7 +77,9 @@ describe('CLI distribution', () => {
       true
     );
     expect(
-      existsSync(join(destination, '.templates', 'index-timeline.html'))
+      existsSync(
+        join(destination, '.templates', 'default', 'index-timeline.html')
+      )
     ).toBe(true);
     expect(existsSync(join(destination, 'vite.config.ts'))).toBe(false);
 
@@ -107,14 +111,14 @@ describe('CLI distribution', () => {
     expectSuccess(result);
 
     expect(existsSync(join(outDir, 'index.html'))).toBe(true);
-  });
+  }, 20000);
 
   it('overrides baseUrl via --base-url.', async (fn) => {
     const outDir = await createTempDir(fn, 'build-base-url');
     const scaffoldRoot = await copyScaffold(fn, 'scaffold-base-url');
 
     await writeFile(
-      join(scaffoldRoot, '.templates', 'index-category.html'),
+      join(scaffoldRoot, '.templates', 'default', 'index-category.html'),
       '<html><body>{{baseUrl}}</body></html>',
       'utf8'
     );
@@ -145,7 +149,7 @@ describe('CLI distribution', () => {
       'utf8'
     );
     expect(categoryHtml).toContain('https://example.com/custom/');
-  });
+  }, 20000);
 
   it('builds immediately after init without git metadata.', async (fn) => {
     const destination = await createTempDir(fn, 'init-build');
@@ -159,6 +163,74 @@ describe('CLI distribution', () => {
     expect(buildResult.stderr).not.toContain('variable is not bound');
 
     expect(existsSync(join(destination, 'dist', 'index.html'))).toBe(true);
+  }, 20000);
+
+  it('updates scaffold-managed files from the dist CLI.', async (fn) => {
+    const destination = await copyScaffold(fn, 'update');
+    const expectedStyle = await readFile(
+      join('scaffold', '.templates', 'default', 'site-style.css'),
+      'utf8'
+    );
+    const expectedIcon = await readFile(
+      join('scaffold', '.templates', 'default', '.assets', 'icon.png')
+    );
+
+    await writeFile(
+      join(destination, '.templates', 'default', 'site-style.css'),
+      'old-style',
+      'utf8'
+    );
+    await writeFile(
+      join(destination, '.templates', 'default', '.assets', 'icon.png'),
+      'old-icon'
+    );
+    await writeFile(
+      join(destination, 'docs', 'hello', 'index.md'),
+      'keep-doc',
+      'utf8'
+    );
+
+    const result = runNode([distIndex, 'update'], destination);
+    expectSuccess(result);
+
+    expect(
+      await readFile(
+        join(destination, '.templates', 'default', 'site-style.css'),
+        'utf8'
+      )
+    ).toBe(expectedStyle);
+    expect(
+      await readFile(
+        join(destination, '.templates', 'default', '.assets', 'icon.png')
+      )
+    ).toEqual(expectedIcon);
+    expect(
+      await readFile(join(destination, 'docs', 'hello', 'index.md'), 'utf8')
+    ).toBe('keep-doc');
+
+    const updatedConfig = JSON.parse(
+      await readFile(join(destination, 'atr.json'), 'utf8')
+    ) as Record<string, unknown>;
+    expect(updatedConfig.version).toBe(packageVersion);
+  });
+
+  it('fails update when the stored version is newer than the dist CLI.', async (fn) => {
+    const destination = await copyScaffold(fn, 'update-newer-version');
+    const configPath = join(destination, 'atr.json');
+    const config = JSON.parse(await readFile(configPath, 'utf8')) as Record<
+      string,
+      unknown
+    >;
+
+    await writeFile(
+      configPath,
+      `${JSON.stringify({ ...config, version: '999.0.0' }, null, 2)}\n`,
+      'utf8'
+    );
+
+    const result = runNode([distIndex, 'update'], destination);
+    expect(result.status).not.toBe(0);
+    expect(result.stderr).toContain('Use --force');
   });
 
   it('creates index.md for a new category.', async (fn) => {

@@ -32,3 +32,4 @@ artifacts/
 test_results/
 
 .cache/
+.tools/
