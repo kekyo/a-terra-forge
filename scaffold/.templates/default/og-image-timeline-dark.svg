@@ -22,7 +22,7 @@ set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.
       <stop offset="1" stop-color="{{accentColor}}" stop-opacity="0.72" />
     </linearGradient>
     <clipPath id="timeline-icon-clip-dark">
-      <rect x="988" y="72" width="140" height="140" rx="28" />
+      <rect x="988" y="48" width="140" height="140" rx="28" />
     </clipPath>
     <clipPath id="timeline-frame-clip-dark">
       <rect x="0" y="0" width="1200" height="630" rx="16" />
@@ -32,17 +32,17 @@ set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.
   <rect x="1" y="1" width="1198" height="628" rx="24" fill="#0d1117" stroke-width="0" />
   <g clip-path="url(#timeline-frame-clip-dark)">
     <rect x="60" y="60" width="1080" height="510" rx="16" fill="rgba(255,255,255,0.02)" />
-    <rect x="72" y="75" width="880" height="8" rx="4" fill="url(#timeline-accent-dark)" />
+    <rect x="72" y="100" width="850" height="8" rx="4" fill="url(#timeline-accent-dark)" />
     <circle cx="1114" cy="510" r="168" fill="{{accentCircleFill}}" />
 
     {{if siteIconAssetPath?}}
-    <rect x="988" y="72" width="140" height="140" rx="28" fill="#161b22" stroke-width="0" />
-    <image href="{{toRelativePath siteIconAssetPath}}" x="988" y="72" width="140" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#timeline-icon-clip-dark)" />
+    <rect x="988" y="48" width="140" height="140" rx="28" fill="#161b22" stroke-width="0" />
+    <image href="{{toRelativePath siteIconAssetPath}}" x="988" y="48" width="140" height="140" preserveAspectRatio="xMidYMid slice" clip-path="url(#timeline-icon-clip-dark)" />
     {{end}}
 
-    <text x="72" y="138" fill="#7d8590" font-family="Noto Sans, sans-serif" font-size="24" font-weight="700">{{escapeXml (getMessage 'timeline' 'Timeline')}}</text>
-    <text x="72" y="230" fill="#f0f6fc" font-family="Noto Sans, sans-serif" font-size="72" font-weight="800">{{svgTextSpans siteName 28 2 72 86}}</text>
-    <text x="72" y="300" fill="#c9d1d9" font-family="Noto Sans, sans-serif" font-size="34">{{svgTextSpans siteDescription 52 3 72 46}}</text>
+    <text x="72" y="188" fill="#7d8590" font-family="Noto Sans, sans-serif" font-size="24" font-weight="700">{{escapeXml (getMessage 'timeline' 'Timeline')}}</text>
+    <text x="72" y="280" fill="#f0f6fc" font-family="Noto Sans, sans-serif" font-size="72" font-weight="800">{{svgTextSpans siteName 28 2 72 86}}</text>
+    <text x="72" y="350" fill="#c9d1d9" font-family="Noto Sans, sans-serif" font-size="34">{{svgTextSpans siteDescription 52 3 72 46}}</text>
 
     <text x="72" y="550" fill="#8b949e" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml siteName}}</text>
     <text x="300" y="550" fill="#8b949e" font-family="Noto Sans, sans-serif" font-size="22">{{escapeXml baseUrl}}</text>
