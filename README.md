@@ -614,7 +614,9 @@ This order can be specified by the `menuOrder` variable in `atr.json`:
 }
 ```
 
-For `menuOrder`, specify the category directory names. Even for subcategories, do not specify the parent category name; specify only the subcategory name.
+For `menuOrder`, specify the category directory names.
+For categories that have subcategories, you can specify either the parent category name or the subcategory names.
+When both are mixed, the parent category name determines the placement of the whole category group, while the subcategory names only determine the order inside that group.
 Navigation menu items are placed to keep the order specified in this list.
 
 Note that even if you specify subcategory names as if the parent categories were split, the menu arrangement will not follow that structure, and only the order will be reflected.
@@ -622,6 +624,12 @@ In other words, the following settings yield the same result:
 
 - `"menuOrder": ["timeline", "hello", "web", "food", "server"]`
 - `"menuOrder": ["timeline", "hello", "web", "server", "food"]`
+
+It is also valid to mix the parent category name and subcategory names like this:
+
+- `"menuOrder": ["cat-b", "cat-a", "cat-c", "cat-a-2", "cat-d", "cat-a-1"]`
+
+In that case, `cat-a` and all of its subcategories are placed in the second top-level position, and only the submenu order becomes `cat-a-2`, `cat-a-1`.
 
 If there are categories not listed here, they are added to the end of the menu.
 
@@ -641,6 +649,7 @@ This can be specified by the `afterMenuOrder` variable:
 ```
 
 Note that `afterMenuOrder` is always evaluated after `menuOrder`.
+Like `menuOrder`, `afterMenuOrder` can also specify parent category names for categories that have subcategories.
 If a category specified in `afterMenuOrder` is included in `menuOrder`, it will be placed in the left group.
 
 The timeline category is special, but by using the category name `timeline`, you can also adjust its position in the navigation menu.

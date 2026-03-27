@@ -3624,6 +3624,119 @@ title: ${title}
     expect(subLines).toEqual(['LEFTSUB:topics:two', 'LEFTSUB:topics:one']);
   });
 
+  it('Recognizes parent categories with submenus in both menu order lists.', async (fn) => {
+    const siteRoot = await createTempDir(fn, 'site-nav-order-parent-groups');
+    const docsDir = join(siteRoot, 'docs');
+    const templatesDir = join(siteRoot, '.templates');
+    const outDir = join(siteRoot, 'out');
+
+    await mkdir(docsDir, { recursive: true });
+    await mkdir(templatesDir, { recursive: true });
+    await mkdir(join(templatesDir, 'default'), { recursive: true });
+
+    const writeDoc = async (directory: string, title: string) => {
+      await mkdir(directory, { recursive: true });
+      await writeFile(
+        join(directory, 'index.md'),
+        `---
+title: ${title}
+---
+
+# ${title}`,
+        'utf8'
+      );
+    };
+
+    await writeDoc(join(docsDir, 'cat-b'), 'Cat B');
+    await writeDoc(join(docsDir, 'cat-c'), 'Cat C');
+    await writeDoc(join(docsDir, 'cat-d'), 'Cat D');
+    await writeDoc(join(docsDir, 'cat-a', 'cat-a-1'), 'Cat A 1');
+    await writeDoc(join(docsDir, 'cat-a', 'cat-a-2'), 'Cat A 2');
+    await writeDoc(join(docsDir, 'cat-z', 'cat-z-1'), 'Cat Z 1');
+    await writeDoc(join(docsDir, 'cat-z', 'cat-z-2'), 'Cat Z 2');
+
+    const navTemplate = [
+      '<html><body>',
+      '<nav>',
+      '{{for navItem navItems}}',
+      'LEFT:{{navItem.label}}',
+      '{{if navItem.children?}}',
+      '{{for child navItem.children}}',
+      'LEFTSUB:{{navItem.label}}:{{child.label}}',
+      '{{end}}',
+      '{{end}}',
+      '{{end}}',
+      '{{for navItem navItemsAfter}}',
+      'RIGHT:{{navItem.label}}',
+      '{{if navItem.children?}}',
+      '{{for child navItem.children}}',
+      'RIGHTSUB:{{navItem.label}}:{{child.label}}',
+      '{{end}}',
+      '{{end}}',
+      '{{end}}',
+      '</nav>',
+      '</body></html>',
+    ].join('\n');
+    await writeFile(
+      join(templatesDir, 'default', 'index-category.html'),
+      navTemplate,
+      'utf8'
+    );
+    await writeRequiredTemplates(templatesDir);
+
+    const config = {
+      variables: {
+        frontPage: 'cat-c',
+        menuOrder: ['cat-b', 'cat-a', 'cat-c', 'cat-a-2', 'cat-d', 'cat-a-1'],
+        afterMenuOrder: ['cat-z', 'cat-z-2', 'cat-z-1'],
+      },
+    };
+    await writeFile(join(siteRoot, 'atr.json'), JSON.stringify(config), 'utf8');
+
+    const options: ATerraForgeProcessingOptions = {
+      docsDir: docsDir,
+      templatesDir: templatesDir,
+      outDir: outDir,
+      cacheDir: '.cache',
+      configPath: join(siteRoot, 'atr.json'),
+    };
+
+    const abortController = new AbortController();
+    await generateDocs(options, abortController.signal);
+
+    const html = await readFile(join(outDir, 'cat-b', 'index.html'), 'utf8');
+    const leftLines = html
+      .split('\n')
+      .filter((line) => line.startsWith('LEFT:'));
+    expect(leftLines).toEqual([
+      'LEFT:cat-b',
+      'LEFT:cat-a',
+      'LEFT:cat-c',
+      'LEFT:cat-d',
+    ]);
+
+    const leftSubLines = html
+      .split('\n')
+      .filter((line) => line.startsWith('LEFTSUB:cat-a:'));
+    expect(leftSubLines).toEqual([
+      'LEFTSUB:cat-a:cat-a-2',
+      'LEFTSUB:cat-a:cat-a-1',
+    ]);
+
+    const rightLines = html
+      .split('\n')
+      .filter((line) => line.startsWith('RIGHT:'));
+    expect(rightLines).toEqual(['RIGHT:cat-z']);
+
+    const rightSubLines = html
+      .split('\n')
+      .filter((line) => line.startsWith('RIGHTSUB:cat-z:'));
+    expect(rightSubLines).toEqual([
+      'RIGHTSUB:cat-z:cat-z-2',
+      'RIGHTSUB:cat-z:cat-z-1',
+    ]);
+  });
+
   it('Highlights code blocks with Shiki and line numbers.', async (fn) => {
     const siteRoot = await createTempDir(fn, 'site-highlight');
     const docsDir = join(siteRoot, 'docs');
