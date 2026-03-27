@@ -42,8 +42,8 @@ set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.
     {{end}}
 
     <text x="72" y="188" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="24" font-weight="700">{{escapeXml (getMessage 'timeline' 'Timeline')}}</text>
-    <text x="72" y="280" fill="#0f172a" font-family="{{escapeXml fontFamily}}" font-size="72" font-weight="800">{{svgTextSpans siteName 28 2 72 86}}</text>
-    <text x="72" y="350" fill="#334155" font-family="{{escapeXml fontFamily}}" font-size="34">{{svgTextSpans siteDescription 52 3 72 46}}</text>
+    <text x="72" y="280" fill="#0f172a" font-family="{{escapeXml fontFamily}}" font-size="72" font-weight="800">{{svgTextSpans siteName 26 2 72 86}}</text>
+    <text x="72" y="430" fill="#334155" font-family="{{escapeXml fontFamily}}" font-size="34">{{svgTextSpans siteDescription 52 3 72 46}}</text>
 
     <text x="72" y="550" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="22">{{escapeXml siteName}}</text>
     <text x="300" y="550" fill="#475569" font-family="{{escapeXml fontFamily}}" font-size="22">{{escapeXml baseUrl}}</text>

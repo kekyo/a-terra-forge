@@ -66,8 +66,8 @@ set accentCircleFill (concat 'rgba(' (toCssRgb accentColor '47, 129, 247') ', 0.
     <text x="72" y="188" fill="#7d8590" font-family="{{escapeXml fontFamily}}" font-size="24" font-weight="700">{{escapeXml pageCategory}}</text>
     {{end}}
 
-    <text x="72" y="280" fill="#f0f6fc" font-family="{{escapeXml fontFamily}}" font-size="72" font-weight="800">{{svgTextSpans pageTitle 28 2 72 86}}</text>
-    <text x="72" y="350" fill="#c9d1d9" font-family="{{escapeXml fontFamily}}" font-size="34">{{svgTextSpans pageDescription 52 3 72 46}}</text>
+    <text x="72" y="280" fill="#f0f6fc" font-family="{{escapeXml fontFamily}}" font-size="72" font-weight="800">{{svgTextSpans pageTitle 26 2 72 86}}</text>
+    <text x="72" y="430" fill="#c9d1d9" font-family="{{escapeXml fontFamily}}" font-size="34">{{svgTextSpans pageDescription 52 3 72 46}}</text>
 
     {{if updatedLabel?}}
     <text x="72" y="500" fill="#8b949e" font-family="{{escapeXml fontFamily}}" font-size="24">{{escapeXml updatedLabel}}</text>
