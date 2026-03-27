@@ -51,6 +51,7 @@ const buildConfig: UserConfig = {
         'events',
         'child_process',
         'worker_threads',
+        '@foliojs-fork/linebreak',
         'glob',
         'commander',
         '@resvg/resvg-js',
