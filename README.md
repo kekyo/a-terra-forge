@@ -439,7 +439,7 @@ The variables above include several items for adjusting categories. These are se
 To upgrade the a-terra-forge CLI to the latest version, use the following NPM command:
 
 ```bash
-$ npm update -g a-terra-forge
+$ npm install -g a-terra-forge@latest
 ```
 
 This will upgrade the a-terra-forge CLI itself.
@@ -465,6 +465,14 @@ $ atr update -f
 ```
 
 When the update succeeds, the top-level `version` in `atr.json` is automatically rewritten to the current a-terra-forge CLI version string.
+
+If you're using the Vite plugin, you can also update the plugins in the editor:
+
+```bash
+$ npm install a-terra-forge@latest
+```
+
+Running this command may update `package.json` and `package-lock.json`.
 
 ---
 
@@ -1347,6 +1355,7 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 |`formatDate format value`|Formats a date/time value using `dayjs`. Example: `formatDate 'YYYY/MM/DD' git.updated.committer.date`|
 |`getMessage key defaultValue?`|Resolves text using `messages` and the current `locale`. If not defined, it falls back to `defaultValue`, or to `key` itself if `defaultValue` is omitted.|
 |`escapeXml value`|Escapes a string for XML or HTML attributes. Useful for feeds and sitemaps.|
+|`svgTextSpans value maxUnits maxLines x lineHeight`|Wraps text for SVG `<text>` elements and returns `<tspan>` fragments. It is intended for OGP SVG templates such as `{{svgTextSpans pageTitle 26 2 72 86}}`, where `x` is repeated for each line and subsequent lines use `dy=lineHeight`.|
 |`toCssRgb value fallback`|Normalizes a color value into `r, g, b` format. Intended for use in `site-style.css`.|
 |`toRelativePath path`|Returns a path relative to the file currently being generated. This helps keep links correct even if `frontPage` changes.|
 |`toAbsolutePath path`|Returns an absolute URL based on `baseUrl`. Useful for OGP metadata and feeds.|
@@ -1361,10 +1370,12 @@ In `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, `sitemap.xml`, an
 
 #### Common customization examples
 
-1. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/default/additional-header.html` or `.templates/great/additional-header.html` and let `common-header.html` include it via `tryInclude`.
-2. If you want to split existing templates, create partial templates such as `.templates/default/parts/*.html` or `.templates/great/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
-3. If you want to apply localization inside your own added HTML, call `{{getMessage 'contact' 'Contact'}}` or `{{getMessage category}}` explicitly.
-4. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/default/robots.txt` or the first themed directory from `templateNames` as a funcity script.
+1. First, create your own template. Create a directory such as `.templates/{{your-template}}/` and add that name to `variables.templateNames`.
+   Since the `variables.templateNames` list searches for files from the beginning to the end, if you define it as `templateNames: [“my-template”, “default”]`, the file you prepared in `.templates/my-template/` will be used first.
+2. If you want to inject analytics tags or extra meta tags into `<head>`, create `.templates/{{your-template}}/additional-header.html` and let `common-header.html` include it via `tryInclude`.
+3. If you want to split existing templates, create partial templates such as `.templates/{{your-template}}/parts/*.html` and load them with `{{include 'parts/foo.html'}}`.
+4. If you want to apply localization inside your own added HTML, call `{{getMessage 'contact' 'Contact'}}` or `{{getMessage category}}` explicitly.
+5. If you want to output `robots.txt` or similar files, add them to `variables.siteTemplates` in `atr.json` and create `.templates/{{your-template}}/robots.txt` as a funcity script.
 
 For example, to add `robots.txt`, you can write:
 
@@ -1386,7 +1397,7 @@ For example, to add `robots.txt`, you can write:
 }
 ```
 
-Create the template file at `.templates/default/robots.txt` or under the first directory listed in `templateNames`.
+Create the template file at `.templates/{{your-template}}/robots.txt`.
 
 ```txt
 User-agent: *
