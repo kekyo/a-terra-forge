@@ -172,7 +172,7 @@ describe('CLI distribution', () => {
       'utf8'
     );
     const expectedIcon = await readFile(
-      join('scaffold', '.templates', 'default', '.assets', 'icon.png')
+      join('scaffold', '.templates', 'default', 'assets', 'icon.png')
     );
 
     await writeFile(
@@ -181,7 +181,7 @@ describe('CLI distribution', () => {
       'utf8'
     );
     await writeFile(
-      join(destination, '.templates', 'default', '.assets', 'icon.png'),
+      join(destination, '.templates', 'default', 'assets', 'icon.png'),
       'old-icon'
     );
     await writeFile(
@@ -201,7 +201,7 @@ describe('CLI distribution', () => {
     ).toBe(expectedStyle);
     expect(
       await readFile(
-        join(destination, '.templates', 'default', '.assets', 'icon.png')
+        join(destination, '.templates', 'default', 'assets', 'icon.png')
       )
     ).toEqual(expectedIcon);
     expect(

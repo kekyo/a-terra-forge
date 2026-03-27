@@ -20,8 +20,219 @@
   const imageModalContentClass = 'image-modal-content-body';
   const endOfArticle = "{{getMessage 'endOfArticle' 'End of article.'}}";
   const noArticlesYet = "{{getMessage 'noArticlesYet' 'No articles yet.'}}";
+  let hideNavOgPreview = () => {};
+  let initNavOgPreview = () => {};
   let mermaidInitialized = false;
   let mermaidThemeKey = '';
+
+  {{if atrPreview?}}
+  const navOgPreviewTooltipClass = 'nav-og-preview-tooltip';
+  const navOgPreviewTooltipVisibleClass = 'nav-og-preview-tooltip--visible';
+  const navOgPreviewImageClass = 'nav-og-preview-tooltip-image';
+  const navOgPreviewLinkSelector =
+    '.navbar .nav-link[href]:not([href="#"]), .navbar .dropdown-item[href]';
+  const navOgPreviewViewportGap = 16;
+  const navOgPreviewOffset = 12;
+  const navOgPreviewInteractionMediaQuery = window.matchMedia(
+    '(hover: hover) and (pointer: fine)'
+  );
+  const navOgPreviewCache = new Map();
+  let navOgPreviewTooltip = null;
+  let navOgPreviewActiveLink = null;
+
+  const clampNavOgPreviewPosition = (value, min, max) =>
+    Math.min(Math.max(value, min), max);
+
+  const shouldEnableNavOgPreview = () =>
+    navOgPreviewInteractionMediaQuery.matches;
+
+  const ensureNavOgPreviewTooltip = () => {
+    if (navOgPreviewTooltip instanceof HTMLElement) {
+      return navOgPreviewTooltip;
+    }
+    const tooltip = document.createElement('div');
+    tooltip.className = navOgPreviewTooltipClass;
+    tooltip.setAttribute('aria-hidden', 'true');
+    const image = document.createElement('img');
+    image.className = navOgPreviewImageClass;
+    image.alt = '';
+    image.loading = 'lazy';
+    image.decoding = 'async';
+    tooltip.appendChild(image);
+    document.body.appendChild(tooltip);
+    navOgPreviewTooltip = tooltip;
+    return tooltip;
+  };
+
+  const getNavOgPreviewImage = () => {
+    const tooltip = ensureNavOgPreviewTooltip();
+    const image = tooltip.querySelector(`.${navOgPreviewImageClass}`);
+    return image instanceof HTMLImageElement ? image : null;
+  };
+
+  const resolveNavOgPreviewPageUrl = (link) => {
+    const href = link.getAttribute('href')?.trim() ?? '';
+    if (!href || href === '#' || href.startsWith('javascript:')) {
+      return null;
+    }
+    try {
+      const resolved = new URL(href, window.location.href);
+      resolved.hash = '';
+      return resolved.toString();
+    } catch {
+      return null;
+    }
+  };
+
+  const fetchNavOgPreviewImageUrl = async (pageUrl) => {
+    const cached = navOgPreviewCache.get(pageUrl);
+    if (cached) {
+      return cached;
+    }
+    const request = fetch(pageUrl, {
+      cache: 'no-store',
+      headers: {
+        accept: 'text/html',
+      },
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          return null;
+        }
+        const html = await response.text();
+        const parsed = new DOMParser().parseFromString(html, 'text/html');
+        const meta = parsed.querySelector(
+          'meta[property="og:image"], meta[name="twitter:image"]'
+        );
+        const content = meta?.getAttribute('content')?.trim();
+        if (!content) {
+          return null;
+        }
+        try {
+          return new URL(content, pageUrl).toString();
+        } catch {
+          return null;
+        }
+      })
+      .catch(() => null);
+    navOgPreviewCache.set(pageUrl, request);
+    return request;
+  };
+
+  const positionNavOgPreview = (link) => {
+    const tooltip = ensureNavOgPreviewTooltip();
+    const linkRect = link.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const maxLeft = Math.max(
+      navOgPreviewViewportGap,
+      window.innerWidth - tooltipRect.width - navOgPreviewViewportGap
+    );
+    const centeredLeft =
+      linkRect.left + linkRect.width / 2 - tooltipRect.width / 2;
+    const left = clampNavOgPreviewPosition(
+      centeredLeft,
+      navOgPreviewViewportGap,
+      maxLeft
+    );
+    let top = linkRect.bottom + navOgPreviewOffset;
+    if (
+      top + tooltipRect.height >
+      window.innerHeight - navOgPreviewViewportGap
+    ) {
+      top = linkRect.top - tooltipRect.height - navOgPreviewOffset;
+    }
+    if (top < navOgPreviewViewportGap) {
+      top = navOgPreviewViewportGap;
+    }
+    tooltip.style.left = `${Math.round(left)}px`;
+    tooltip.style.top = `${Math.round(top)}px`;
+  };
+
+  const showNavOgPreview = (link, imageUrl) => {
+    const tooltip = ensureNavOgPreviewTooltip();
+    const image = getNavOgPreviewImage();
+    if (!(image instanceof HTMLImageElement)) {
+      return;
+    }
+    image.src = imageUrl;
+    positionNavOgPreview(link);
+    tooltip.classList.add(navOgPreviewTooltipVisibleClass);
+  };
+
+  hideNavOgPreview = () => {
+    navOgPreviewActiveLink = null;
+    if (!(navOgPreviewTooltip instanceof HTMLElement)) {
+      return;
+    }
+    navOgPreviewTooltip.classList.remove(navOgPreviewTooltipVisibleClass);
+  };
+
+  const handleNavOgPreviewEnter = (event) => {
+    if (!shouldEnableNavOgPreview()) {
+      return;
+    }
+    const link = event.currentTarget;
+    if (!(link instanceof HTMLAnchorElement)) {
+      return;
+    }
+    navOgPreviewActiveLink = link;
+    const pageUrl = resolveNavOgPreviewPageUrl(link);
+    if (!pageUrl) {
+      hideNavOgPreview();
+      return;
+    }
+    void fetchNavOgPreviewImageUrl(pageUrl).then((imageUrl) => {
+      if (navOgPreviewActiveLink !== link) {
+        return;
+      }
+      if (!imageUrl) {
+        hideNavOgPreview();
+        return;
+      }
+      showNavOgPreview(link, imageUrl);
+    });
+  };
+
+  const handleNavOgPreviewLeave = (event) => {
+    const link = event.currentTarget;
+    if (link === navOgPreviewActiveLink) {
+      hideNavOgPreview();
+    }
+  };
+
+  const addNavOgPreviewMediaQueryListener = () => {
+    const listener = () => {
+      hideNavOgPreview();
+    };
+    if (
+      typeof navOgPreviewInteractionMediaQuery.addEventListener === 'function'
+    ) {
+      navOgPreviewInteractionMediaQuery.addEventListener('change', listener);
+      return;
+    }
+    if (typeof navOgPreviewInteractionMediaQuery.addListener === 'function') {
+      navOgPreviewInteractionMediaQuery.addListener(listener);
+    }
+  };
+
+  initNavOgPreview = () => {
+    const links = document.querySelectorAll(navOgPreviewLinkSelector);
+    links.forEach((link) => {
+      if (!(link instanceof HTMLAnchorElement)) {
+        return;
+      }
+      link.addEventListener('mouseenter', handleNavOgPreviewEnter);
+      link.addEventListener('mouseleave', handleNavOgPreviewLeave);
+    });
+    window.addEventListener('resize', hideNavOgPreview);
+    document.addEventListener('click', hideNavOgPreview);
+    document.addEventListener('scroll', hideNavOgPreview, {
+      capture: true,
+      passive: true,
+    });
+    addNavOgPreviewMediaQueryListener();
+  };
+  {{end}}
 
   const getStoredTheme = () => {
     const saved = localStorage.getItem(storageKey);
@@ -821,10 +1032,12 @@
     const toggle = document.getElementById(toggleId);
     if (toggle instanceof HTMLInputElement) {
       toggle.addEventListener('change', () => {
+        hideNavOgPreview();
         applyTheme(toggle.checked ? 'dark' : 'light', true);
         renderMermaid(document);
       });
     }
+    initNavOgPreview();
     addCopyButtons(document);
     addHeadingPermalinks(document);
     renderMermaid(document);
@@ -852,6 +1065,7 @@
     if (getStoredTheme()) {
       return;
     }
+    hideNavOgPreview();
     applyTheme(event.matches ? 'dark' : 'light');
     renderMermaid(document);
   });

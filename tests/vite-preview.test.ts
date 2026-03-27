@@ -3,7 +3,7 @@
 // Under MIT.
 // https://github.com/kekyo/a-terra-forge
 
-import { mkdir, writeFile } from 'fs/promises';
+import { mkdir, readFile, writeFile } from 'fs/promises';
 import { join } from 'path';
 import { describe, expect, it, vi, type TestContext } from 'vitest';
 import dayjs from 'dayjs';
@@ -189,5 +189,13 @@ describe('createPreviewPathRewriteMiddleware', () => {
 
     expect(req.url).toBe('/guide');
     expect(next).toHaveBeenCalled();
+  });
+});
+
+describe('atrPreview source', () => {
+  it('sets the atrPreview runtime variable for preview builds', async () => {
+    const source = await readFile('src/vite/index.ts', 'utf8');
+
+    expect(source).toMatch(/nextVariables\.set\('atrPreview',\s*true\)/);
   });
 });

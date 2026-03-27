@@ -73,4 +73,19 @@ describe('site script', () => {
     expect(script).toMatch(/dataset\.entryUrl/);
     expect(script).toMatch(/buildHeadingAnchorUrl/);
   });
+
+  it('implements navbar OGP hover previews for atr preview builds', async () => {
+    const script = await readFile(
+      'scaffold/.templates/default/site-script.js',
+      'utf8'
+    );
+
+    expect(script).toContain('nav-og-preview-tooltip');
+    expect(script).toMatch(/mouseenter/);
+    expect(script).toMatch(/mouseleave/);
+    expect(script).toMatch(/DOMParser/);
+    expect(script).toContain(
+      'meta[property="og:image"], meta[name="twitter:image"]'
+    );
+  });
 });

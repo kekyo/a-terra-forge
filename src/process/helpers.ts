@@ -5,6 +5,7 @@
 
 import { dirname, resolve, sep } from 'path';
 import dayjs from 'dayjs';
+import LineBreaker from '@foliojs-fork/linebreak';
 import {
   combineVariables,
   type FunCityFunctionContext,
@@ -96,7 +97,7 @@ const truncateTextValue = (value: string, maxUnits: number): string => {
   return `${trimmed}${ellipsis}`;
 };
 
-const takeTextSegmentByUnits = (
+const takeHardTextSegmentByUnits = (
   value: string,
   maxUnits: number
 ): { line: string; rest: string } => {
@@ -132,6 +133,62 @@ const takeTextSegmentByUnits = (
   const line = value.slice(0, cutIndex).trimEnd();
   const rest = value.slice(cutIndex).trimStart();
   return { line, rest };
+};
+
+const resolveWrapBreakPosition = (
+  value: string,
+  maxUnits: number
+): number | undefined => {
+  const breaker = new LineBreaker(value);
+  let candidate: number | undefined;
+
+  while (true) {
+    const nextBreak = breaker.nextBreak();
+    if (!nextBreak) {
+      break;
+    }
+
+    const breakPosition = nextBreak.position;
+    if (breakPosition <= 0 || breakPosition > value.length) {
+      continue;
+    }
+
+    const visibleUnits = measureTextUnits(
+      value.slice(0, breakPosition).trimEnd()
+    );
+    if (visibleUnits > maxUnits) {
+      break;
+    }
+
+    candidate = breakPosition;
+    if (nextBreak.required) {
+      break;
+    }
+  }
+
+  return candidate;
+};
+
+const takeTextSegmentByUnits = (
+  value: string,
+  maxUnits: number
+): { line: string; rest: string } => {
+  if (!value) {
+    return { line: '', rest: '' };
+  }
+  if (measureTextUnits(value) <= maxUnits) {
+    return { line: value, rest: '' };
+  }
+
+  const breakPosition = resolveWrapBreakPosition(value, maxUnits);
+  if (breakPosition !== undefined) {
+    return {
+      line: value.slice(0, breakPosition).trimEnd(),
+      rest: value.slice(breakPosition).trimStart(),
+    };
+  }
+
+  return takeHardTextSegmentByUnits(value, maxUnits);
 };
 
 const wrapTextByUnits = (
