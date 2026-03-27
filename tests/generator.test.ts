@@ -276,7 +276,7 @@ const buildScaffoldOgImageSite = async (
   await mkdir(docsDir, { recursive: true });
   await cp('scaffold/.templates', templatesDir, { recursive: true });
   await writeFile(
-    join(templatesDir, 'default', '.assets', 'icon.png'),
+    join(templatesDir, 'default', 'assets', 'icon.png'),
     redPngBuffer
   );
   await writeFile(
@@ -414,11 +414,11 @@ Details here`,
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });
     await mkdir(join(templatesDir, 'default'), { recursive: true });
-    await mkdir(join(templatesDir, 'default', '.assets'), {
+    await mkdir(join(templatesDir, 'default', 'assets'), {
       recursive: true,
     });
     await writeFile(
-      join(templatesDir, 'default', '.assets', 'icon.png'),
+      join(templatesDir, 'default', 'assets', 'icon.png'),
       redPngBuffer
     );
 
@@ -932,10 +932,10 @@ Guide body
     await mkdir(templatesDir, { recursive: true });
     await mkdir(join(templatesDir, 'default'), { recursive: true });
     await mkdir(join(templatesDir, 'great'), { recursive: true });
-    await mkdir(join(templatesDir, 'default', '.assets', 'images'), {
+    await mkdir(join(templatesDir, 'default', 'assets', 'images'), {
       recursive: true,
     });
-    await mkdir(join(templatesDir, 'great', '.assets', 'images'), {
+    await mkdir(join(templatesDir, 'great', 'assets', 'images'), {
       recursive: true,
     });
     await writeFile(
@@ -945,22 +945,22 @@ Guide body
     );
     await writeRequiredTemplates(templatesDir);
     await writeFile(
-      join(templatesDir, 'default', '.assets', 'favicon.ico'),
+      join(templatesDir, 'default', 'assets', 'favicon.ico'),
       'default-icon',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'default', '.assets', 'images', 'logo.png'),
+      join(templatesDir, 'default', 'assets', 'images', 'logo.png'),
       'default-logo',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'great', '.assets', 'favicon.ico'),
+      join(templatesDir, 'great', 'assets', 'favicon.ico'),
       'great-icon',
       'utf8'
     );
     await writeFile(
-      join(templatesDir, 'great', '.assets', 'images', 'banner.png'),
+      join(templatesDir, 'great', 'assets', 'images', 'banner.png'),
       'great-banner',
       'utf8'
     );

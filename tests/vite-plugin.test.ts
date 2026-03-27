@@ -556,7 +556,7 @@ describe('atrPreview', () => {
     const rootDir = await createTempDir(fn, 'root-watch-allow');
     const docsDir = join(rootDir, 'docs');
     const templatesDir = join(rootDir, '.templates');
-    const templateAssetsDir = join(templatesDir, 'default', '.assets');
+    const templateAssetsDir = join(templatesDir, 'default', 'assets');
     const srcDir = join(rootDir, 'src');
     await mkdir(docsDir, { recursive: true });
     await mkdir(templatesDir, { recursive: true });

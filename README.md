@@ -448,7 +448,7 @@ $ atr update
 ```
 
 This command overwrites only scaffold-managed files under `templatesDir`. Document files such as `docs/` are not touched.
-If you still have assets in the old root `.assets/` directory, move them into `.templates/{templateName}/.assets/` because builds no longer read the root `.assets/`.
+If you still have assets in the old root `.assets/` directory, move them into `.templates/{templateName}/assets/` because builds no longer read the root `.assets/`.
 
 `atr update` uses the top-level `version` field in `atr.json` to determine which scaffold version your editing space currently has.
 
@@ -947,10 +947,10 @@ Below are all values defined in `atr.json` on `variables` key:
 |`version`|No|The scaffold version stored by the editing space. Place it at the top level of `atr.json`, not inside `variables`. `atr update` compares this value with the current CLI version and automatically rewrites it to the current CLI version string after a successful update. |
 |`baseUrl`|No|Specifies the base URL where this site will be published after deployment. It does not affect the navigation menu, but it is required for sitemap generation, so be sure to set it. |
 |`siteName`|No|The site name of this site, used for the left end of the navigation menu and for embedding page metadata.  |
-|`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them under `.templates/{templateName}/.assets/` or similar directories. |
+|`siteDescription`|No|The site description, used for embedding page metadata (OGP/RSS/Atom). Images can be deployed by placing them under `.templates/{templateName}/assets/` or similar directories. |
 |`siteImage`|Yes| The site image path, used for embedding page metadata (OGP). The standard size used is `1200px`x`630px`. |
 |`fontList`|Yes|Font family fallback list used by the scaffold default CSS and OGP SVG templates. Specify it as an array such as `["Noto Sans", "sans-serif"]`, and it is rendered as a `font-family` value in the templates. Defaults to `["Noto Sans", "sans-serif"]` when omitted. |
-|`siteIconAssetPath`|Yes|Path to the site icon asset used by the scaffold OGP SVG templates. Place the image under `.templates/{templateName}/.assets/` and reference the published path such as `icon.png`. |
+|`siteIconAssetPath`|Yes|Path to the site icon asset used by the scaffold OGP SVG templates. Place the image under `.templates/{templateName}/assets/` and reference the published path such as `icon.png`. |
 |`ogpImageTheme`|Yes|Theme used to select the scaffold OGP SVG templates. Accepts `light` or `dark`. Default is `light`. The scaffold looks for templates such as `og-image-light.svg` and `og-image-timeline-dark.svg`. |
 |`locale`|No|The language setting for the entire site. You can also specify it per document, but this value is used when it is omitted. For example, `en` for English and `ja` for Japanese. Even if you make this selection, the content will not be automatically translated. |
 |`frontPage`|No|Specifies which category to display as the site's front page (top page). The default is `timeline`, which is a special category name that shows the timeline. |
@@ -964,7 +964,7 @@ Below are all values defined in `atr.json` on `variables` key:
 |`contentFiles`|No|Specifies glob patterns for static files to copy from under `docs` during build. Use this to publish assets like images alongside generated pages. Defaults are: `./**/*.png`, `./**/*.jpg`. |
 |`docsDir`|No|Overrides the documents directory. Default is `docs/`. The path is resolved relative to the directory containing `atr.json`. |
 |`templatesDir`|No|Overrides the templates directory. Default is `.templates/`. The path is resolved relative to the directory containing `atr.json`. |
-|`templateNames`|No|Template directory names under `templatesDir` searched in priority order. Default is `["default"]`. For example, `["great", "default"]` first loads `.templates/great/` and falls back to `.templates/default/` for missing files. Static files under `.templates/{templateName}/.assets/` are also copied in this priority order, so higher-priority templates overwrite lower-priority assets. |
+|`templateNames`|No|Template directory names under `templatesDir` searched in priority order. Default is `["default"]`. For example, `["great", "default"]` first loads `.templates/great/` and falls back to `.templates/default/` for missing files. Static files under `.templates/{templateName}/assets/` are also copied in this priority order, so higher-priority templates overwrite lower-priority assets. |
 |`outDir`|No|Overrides the output directory. Default is `dist/`. The path is resolved relative to the directory containing `atr.json`. |
 |`tmpDir`|No|Overrides the temporary working directory. Default is system temporary directory. The path is resolved relative to the directory containing `atr.json`. |
 |`cacheDir`|No|Overrides the oEmbed/OGP discovery cache directory. Default is `$HOME/.cache/a-terra-forge/`. The path is resolved relative to the directory containing `atr.json`. |
@@ -1011,7 +1011,7 @@ my-page
 ├── .gitignore
 ├── .templates
 │   └── default
-│       ├── .assets
+│       ├── assets
 │       │   ├── favicon.ico
 │       │   └── icon.png
 │       ├── atom.xml
@@ -1032,9 +1032,9 @@ my-page
 ```
 
 The scaffold's standard templates live under `.templates/default/`.
-Static assets owned by each template live under `.templates/{templateName}/.assets/`.
+Static assets owned by each template live under `.templates/{templateName}/assets/`.
 If you want themed overrides, add another directory such as `.templates/great/` and set `variables.templateNames` to `["great", "default"]`.
-Files found in `great` win, and missing files fall back to `default`. The same priority is used when copying static assets from `.templates/{templateName}/.assets/`.
+Files found in `great` win, and missing files fall back to `default`. The same priority is used when copying static assets from `.templates/{templateName}/assets/`.
 
 ### Transformation process
 
@@ -1074,7 +1074,7 @@ flowchart TD
   G --> Q[Timeline + timeline.json + article-bodies/*.txt]
 
   R[site-style.css / site-script.js / feed.xml / atom.xml / sitemap.xml] --> S[Output to dist/]
-  T[.templates/*/.assets/** and contentFiles] --> S
+  T[.templates/*/assets/** and contentFiles] --> S
   N --> S
   O --> S
   P --> S
@@ -1087,7 +1087,7 @@ Roughly speaking, the build proceeds in this order:
 2. Those results are passed to `index-category.html`, `index-blog.html`, `index-blog-single.html`, and `index-timeline.html` to assemble full pages.
 3. When needed, `category-entry.html`, `blog-entry.html`, and `timeline-entry.html` are used to decorate each entry fragment.
 4. `site-style.css`, `site-script.js`, `feed.xml`, `atom.xml`, and `sitemap.xml` are rendered separately as site templates.
-5. Files under `.templates/{templateName}/.assets/` and static files matched by `contentFiles` are copied directly to the output directory.
+5. Files under `.templates/{templateName}/assets/` and static files matched by `contentFiles` are copied directly to the output directory.
 
 Use `include` and `tryInclude` to split and reuse templates.
 Both are resolved relative to the calling template, and nested includes are supported.
@@ -1127,17 +1127,17 @@ The role of each file is shown below:
 
 #### Asset directory
 
-`.templates/{templateName}/.assets/` is the static asset directory copied into `outDir` as-is during the build.
+`.templates/{templateName}/assets/` is the static asset directory copied into `outDir` as-is during the build.
 Put files here when they do not need funcity processing, such as images, favicons, or icons referenced from OGP templates.
-The directory structure is preserved, so for example `.templates/default/.assets/images/logo.png` is published as `dist/images/logo.png`.
+The directory structure is preserved, so for example `.templates/default/assets/images/logo.png` is published as `dist/images/logo.png`.
 
 When multiple template directories are listed in `templateNames`, lower-priority template assets are copied first and higher-priority template assets overwrite them.
-For example, with `["great", "default"]`, files in `.templates/great/.assets/` override files in `.templates/default/.assets/`.
+For example, with `["great", "default"]`, files in `.templates/great/assets/` override files in `.templates/default/assets/`.
 
-The standard assets generated by `atr init` include `.templates/default/.assets/favicon.ico` and `.templates/default/.assets/icon.png`.
-`.templates/default/.assets/icon.png` is used as the icon inserted into the OPG template.
+The standard assets generated by `atr init` include `.templates/default/assets/favicon.ico` and `.templates/default/assets/icon.png`.
+`.templates/default/assets/icon.png` is used as the icon inserted into the OPG template.
 
-The default scaffold expects `.templates/{templateName}/.assets/` to hold things like:
+The default scaffold expects `.templates/{templateName}/assets/` to hold things like:
 
 - favicons and fixed images referenced from `common-header.html` or other templates
 - a fixed image referenced by `variables.siteImage`
@@ -1180,7 +1180,7 @@ The default `common-header.html` uses it to emit absolute `og:image` and `twitte
 OGP SVG templates can use the same values as regular page templates, including `articleEntries`, `entryMode`, `variables.*` from `atr.json`, and helpers such as `formatDate`, `getMessage`, and `toRelativePath`.
 That means you can compute `pageTitle` or `pageDescription` inside the SVG template itself, just like the default scaffold does.
 
-If you want to embed static images such as a site icon into the SVG, place the file under `.templates/{templateName}/.assets/` and set `variables.siteIconAssetPath` to the published path.
+If you want to embed static images such as a site icon into the SVG, place the file under `.templates/{templateName}/assets/` and set `variables.siteIconAssetPath` to the published path.
 Inside the template, reference it with `{{toRelativePath siteIconAssetPath}}`.
 
 For example, in `atr.json`:
