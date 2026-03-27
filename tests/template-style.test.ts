@@ -110,6 +110,27 @@ describe('template style', () => {
     );
   });
 
+  it('sizes navbar OGP previews to about 400px with a fixed aspect ratio', async () => {
+    const css = await readFile(
+      'scaffold/.templates/default/site-style.css',
+      'utf8'
+    );
+
+    const tooltipMatch = css.match(/\.nav-og-preview-tooltip\s*\{([^}]*)\}/);
+    const imageMatch = css.match(
+      /\.nav-og-preview-tooltip-image\s*\{([^}]*)\}/
+    );
+
+    expect(tooltipMatch).not.toBeNull();
+    expect(tooltipMatch?.[1]).toMatch(
+      /width:\s*min\(400px,\s*calc\(100vw\s*-\s*2rem\)\);/
+    );
+    expect(imageMatch).not.toBeNull();
+    expect(imageMatch?.[1]).toMatch(/width:\s*100%;/);
+    expect(imageMatch?.[1]).toMatch(/height:\s*auto;/);
+    expect(imageMatch?.[1]).toMatch(/aspect-ratio:\s*1200\s*\/\s*630;/);
+  });
+
   it('sizes the image modal to the viewport width minus spacing', async () => {
     const css = await readFile(
       'scaffold/.templates/default/site-style.css',

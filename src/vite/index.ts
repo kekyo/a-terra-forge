@@ -159,6 +159,7 @@ export const atrPreview = (
   ): ATerraForgeConfigOverrides => {
     const nextVariables = new Map(configOverrides.variables ?? []);
     nextVariables.set('baseUrl', baseUrl);
+    nextVariables.set('atrPreview', true);
     return {
       ...configOverrides,
       variables: nextVariables,

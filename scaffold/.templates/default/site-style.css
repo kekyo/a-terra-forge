@@ -399,6 +399,62 @@ body {
   color: inherit;
 }
 
+{{if atrPreview?}}
+.nav-og-preview-tooltip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1090;
+  width: min(400px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
+  overflow: hidden;
+  border-radius: 0.85rem;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translate3d(0, 0.35rem, 0);
+  transform-origin: top center;
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    visibility 0s linear 120ms;
+  will-change: transform, opacity;
+}
+
+.nav-og-preview-tooltip--visible {
+  visibility: visible;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition-delay: 0s;
+}
+
+.nav-og-preview-tooltip-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+}
+
+[data-bs-theme="light"] .nav-og-preview-tooltip {
+  background-color: rgba(248, 250, 252, 0.98);
+  border: 1px solid rgba(16, 38, 64, 0.16);
+  box-shadow: 0 1rem 2.25rem rgba(16, 38, 64, 0.22);
+}
+
+[data-bs-theme="dark"] .nav-og-preview-tooltip {
+  background-color: rgba(14, 18, 26, 0.98);
+  border: 1px solid rgba(245, 248, 255, 0.16);
+  box-shadow: 0 1rem 2.25rem rgba(0, 0, 0, 0.36);
+}
+
+@media (hover: none), (pointer: coarse) {
+  .nav-og-preview-tooltip {
+    display: none !important;
+  }
+}
+{{end}}
+
 [data-bs-theme="light"] .navbar .nav-link.active::before {
   background-color: rgba(0, 0, 0, 0.2);
 }

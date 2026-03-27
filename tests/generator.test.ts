@@ -266,7 +266,8 @@ const readPngPixel = (
 const buildScaffoldOgImageSite = async (
   fn: TestContext,
   name: string,
-  variables: Record<string, unknown>
+  variables: Record<string, unknown>,
+  configOverrides?: Parameters<typeof generateDocs>[2]
 ) => {
   const siteRoot = await createTempDir(fn, name);
   const docsDir = join(siteRoot, 'docs');
@@ -331,7 +332,7 @@ Timeline body
   };
 
   const abortController = new AbortController();
-  await generateDocs(options, abortController.signal);
+  await generateDocs(options, abortController.signal, configOverrides);
 
   return {
     outDir,
@@ -3135,6 +3136,53 @@ Details`,
     expect(css).toContain('--font-family-base: IBM Plex Sans, sans-serif;');
     expect(css).toContain('--bs-body-font-family: var(--font-family-base);');
     expect(css).toContain('font-family: var(--font-family-base);');
+  });
+
+  it('renders navbar OGP preview assets only when atrPreview is enabled', async (fn) => {
+    const previewResult = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-nav-og-preview-preview',
+      {},
+      {
+        variables: new Map([['atrPreview', true]]),
+      }
+    );
+    const previewCss = await readFile(
+      join(previewResult.outDir, 'site-style.css'),
+      'utf8'
+    );
+    const previewScript = await readFile(
+      join(previewResult.outDir, 'site-script.js'),
+      'utf8'
+    );
+
+    expect(previewCss).toContain('.nav-og-preview-tooltip');
+    expect(previewCss).toContain('width: min(400px, calc(100vw - 2rem));');
+    expect(previewScript).toContain('nav-og-preview-tooltip');
+    expect(previewScript).toContain('mouseenter');
+    expect(previewScript).toContain(
+      'meta[property="og:image"], meta[name="twitter:image"]'
+    );
+
+    const normalResult = await buildScaffoldOgImageSite(
+      fn,
+      'site-scaffold-nav-og-preview-normal',
+      {}
+    );
+    const normalCss = await readFile(
+      join(normalResult.outDir, 'site-style.css'),
+      'utf8'
+    );
+    const normalScript = await readFile(
+      join(normalResult.outDir, 'site-script.js'),
+      'utf8'
+    );
+
+    expect(normalCss).not.toContain('.nav-og-preview-tooltip');
+    expect(normalScript).not.toContain('nav-og-preview-tooltip');
+    expect(normalScript).not.toContain(
+      'meta[property="og:image"], meta[name="twitter:image"]'
+    );
   });
 
   it('falls back to the light theme when ogpImageTheme is invalid', async (fn) => {
